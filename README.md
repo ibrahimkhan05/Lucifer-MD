@@ -1,7 +1,7 @@
 ## Lucifer-MD (BETA TEST)
-This bot script is by Wildan Izzudin. I have added features i needed with the help of chatgpt and youtube(added almost 60%). So i want to share this with you.
+This bot script is by Wildan Izzudin. I have added features that i needed with the help of chatgpt and youtube(added almost 60% new plugins). So i want to share this with you and i have also planned to add more feature in future, so stick with me.
 
-**Creator / Group** : [Wildan Izzudin] 
+**Original Creator** : [Wildan Izzudin] 
 
 ### Requirements
 
@@ -10,7 +10,7 @@ This bot script is by Wildan Izzudin. I have added features i needed with the he
 - [x] Server vCPU/RAM 1/2GB (Min)
 
 ### Server
-
+Use vps if you want full experience
 - [x] NAT VPS [Hostdata](https://hostdata.id/nat-vps-usa/)  (Recommended)
 - [x] Hosting Panel [Voxy Host](https://voxyhost.com/)
 - [x] VPS [OVH Hosting](https://www.ovhcloud.com/asia/vps/)
