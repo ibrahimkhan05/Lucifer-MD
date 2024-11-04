@@ -1,14 +1,18 @@
 {
    "name": "neoxr-bot",
-   "version": "4.0-rc",
+   "version": "4.0",
    "description": "WhatsApp Bot (Base)",
    "main": "index.js",
+   "engines": {
+      "node": ">= 18.x",
+      "npm": ">= 9.x"
+   },
    "scripts": {
       "start": "node ."
    },
    "repository": {
       "type": "git",
-      "url": "git+https://github.com/neoxr/wbot.git"
+      "url": "git+https://github.com/neoxr/neoxr-bot.git"
    },
    "keywords": [
       "wb",
@@ -17,14 +21,16 @@
    "author": "Wildan Izzudin",
    "license": "ISC",
    "bugs": {
-      "url": "https://github.com/neoxr/wbot/issues"
+      "url": "https://github.com/neoxr/neoxr-bot/issues"
    },
    "homepage": "https://github.com/neoxr/neoxr-bot#readme",
    "dependencies": {
-      "@adiwajshing/baileys": "npm:@neoxr/baileys",
+      "@adiwajshing/baileys": "git+https://github.com/neoxr/whiskeys-baileys",
       "@adiwajshing/keyed-db": "^0.2.4",
       "@colors/colors": "^1.6.0",
-      "@neoxr/wb": "^2.1.2",
+      "@neoxr/wb": "^3.2.2",
+      "@neoxr/youtube-scraper": "^3.1.5",
+      "audio-decode": "^2.2.0",
       "bytes": "^3.1.2",
       "cfonts": "3.1.1",
       "express": "~4.16.4",
@@ -51,7 +57,6 @@
       "pornhub.js": "1.12.1",
       "aptoide-scraper": "1.0.1",
       "@xct007/frieren-scraper": "0.0.2",
-      "yt-search": "2.11.1",
-      "@neoxr/youtube-scraper": "^3.1.5"
+      "yt-search": "2.11.1"
    }
 }

@@ -1,14 +1,11 @@
-
 "use strict";
-process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
+// process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
 require('events').EventEmitter.defaultMaxListeners = 500
-const { Baileys, MongoDB, PostgreSQL, Scandir, Function: Func } = new(require('@neoxr/wb'))
+const { Baileys, MongoDB, PostgreSQL, Function: Func, Config: env } = new(require('@neoxr/wb'))
 const spinnies = new(require('spinnies'))(),
    fs = require('fs'),
    path = require('path'),
    colors = require('@colors/colors'),
-   stable = require('json-stable-stringify'),
-   env = require('./config.json'),
    { platform } = require('os')
 const cache = new(require('node-cache'))({
    stdTTL: env.cooldown
@@ -22,6 +19,8 @@ const client = new Baileys({
    online: true,
    // To see the latest version : https://web.whatsapp.com/check-update?version=1&platform=web
    version: [2, 2413, 51]
+}, {
+   browser: ['Ubuntu', 'Firefox', '20.0.00']
 })
 
 /* starting to connect */
@@ -66,29 +65,6 @@ client.on('ready', async () => {
          if (tmpFiles.length > 0) {
             tmpFiles.filter(v => !v.endsWith('.file')).map(v => fs.unlinkSync('./temp/' + v))
          }
-         
-         /* this source from @jarspay */
-         const TIME = 1000 * 60 * 60
-         const filename = []
-         const files = await fs.readdirSync('./session')
-         for (const file of files) {
-            if (file != 'creds.json') filename.push(path.join('./session', file))
-         }
-
-         await Promise.allSettled(filename.map(async (file) => {
-            const stat = await fs.statSync(file)
-            if (stat.isFile() && (Date.now() - stat.mtimeMs >= TIME)) {
-               if (platform() === 'win32') {
-                  let fileHandle
-                  try {
-                     fileHandle = await fs.openSync(file, 'r+')
-                  } catch (e) {} finally {
-                     await fileHandle.close()
-                  }
-               }
-               await fs.unlinkSync(file)
-            }
-         }))
       } catch {}
    }, 60 * 1000 * 10)
 
@@ -121,6 +97,7 @@ client.on('message.delete', ctx => {
    if (!ctx || ctx.origin.fromMe || ctx.origin.isBot || !ctx.origin.sender) return
    if (cache.has(ctx.origin.sender) && cache.get(ctx.origin.sender) === 1) return
    cache.set(ctx.origin.sender, 1)
+   if (Object.keys(ctx.delete.message) < 1) return
    if (ctx.origin.isGroup && global.db.groups.some(v => v.jid == ctx.origin.chat) && global.db.groups.find(v => v.jid == ctx.origin.chat).antidelete) return sock.copyNForward(ctx.origin.chat, ctx.delete)
 })
 
@@ -148,10 +125,12 @@ client.on('group.add', async ctx => {
    const groupSet = global.db.groups.find(v => v.jid == ctx.jid)
    if (!global.db || !global.db.groups) return
    try {
-      const photo = await Func.fetchBuffer(await sock.profilePictureUrl(ctx.member, 'image'))
-      var pic = photo ? await Func.fetchBuffer(photo) : await Func.fetchBuffer(await sock.profilePictureUrl(ctx.jid, 'image'))
+      var pic = await sock.profilePictureUrl(ctx.member, 'image')
+      if (!pic) {
+         var pic = 'https://qu.ax/uPqo.jpg'
+      }
    } catch {
-      var pic = await Func.fetchBuffer('./media/image/default.jpg')
+      var pic = 'https://qu.ax/uPqo.jpg'
    }
 
    /* localonly to remove new member when the number not from indonesia */
@@ -177,10 +156,12 @@ client.on('group.remove', async ctx => {
    if (!global.db || !global.db.groups) return
    const groupSet = global.db.groups.find(v => v.jid == ctx.jid)
    try {
-      const photo = await Func.fetchBuffer(await sock.profilePictureUrl(ctx.member, 'image'))
-      var pic = photo ? await Func.fetchBuffer(photo) : await Func.fetchBuffer(await sock.profilePictureUrl(ctx.jid, 'image'))
+      var pic = await sock.profilePictureUrl(ctx.member, 'image')
+      if (!pic) {
+         var pic = 'https://qu.ax/uPqo.jpg'
+      }
    } catch {
-      var pic = await Func.fetchBuffer('./media/image/default.jpg')
+      var pic = 'https://qu.ax/uPqo.jpg'
    }
    const txt = (groupSet && groupSet.text_left ? groupSet.text_left : text).replace('+tag', `@${ctx.member.split`@`[0]}`).replace('+grup', `${ctx.subject}`)
    if (groupSet && groupSet.left) sock.sendMessageModify(ctx.jid, txt, null, {
