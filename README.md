@@ -1,55 +1,7 @@
-## NEOXR-BOT (BETA TEST)
+## Lucifer-MD (BETA TEST)
+This bot script is by Wildan Izzudin. I have added features that i needed with the help of chatgpt and youtube(added almost 60% new plugins). So i want to share this with you and i have also planned to add more feature in future, so stick with me.
 
-> An implementation of [@neoxr/wb](https://www.npmjs.com/package/@neoxr/wb) which has been optimized to be lightweigth.
-
-### Important
-
-> To use [@neoxr/wb >= v1.17.20](https://www.npmjs.com/package/@neoxr/wb) you must add the following components [Open Commit](https://github.com/neoxr/neoxr-bot/commit/26790679dea49494c25106edbaffc5ae9cb716ec)
-
-### Script Delay 🤣
-
-> Buat yang lapor ke kreator scriptnya delay itu bukan delay melainkan sistem anti spam (cooldown) supaya nomor tahan banned, jika di rasa sistem ini tidak berguna dan nomormu kebal dari banned matikan anti spam : **.antispam off*
-
-### Premium Script v4.1
-
-🏷️ Price : **Rp. 150.000 / $20.80**
-
-**Special Features & Benefit :**
-- Auto Download
-- Porn Detector (Image Only)
-- 24 Mini Games
-- Leveling & Roles
-- Email Verification
-- Send Email
-- Cloud Storage
-- Menfess w/ Session
-- Store Plugin (Product)
-- Mistery Box
-- High Optimation
-- Free Updates
-- Bonus ApiKey 30K Request (for 3 month)
-
-**Additional Features :**
-
-> Addional Features adalah fitur tambahan yang di jual terpisah / Additional features are features that are sold separately.
-
-🏷️ Cloud Storage (**+Rp. 35.000 / +$6.80**)
-
-> Cloud Storage ini berfungsi untuk menyimpan file media (sticker, foto, video, audio) ke cloud storage tanpa membebani disk space server karena file langsung di simpan kedalam database. Plugin **storage.js** dan **storage_ev.js**
-
-🏷️ Menfess (**+Rp. 15.000 / +$3.80**)
-
-> Menfess untuk mengirim chat confess kepada seseorang dan penerima pesan bisa membalas chat dari pengirim confess tanpa perlu menggunakan command/perintah
-
-🏷️ Payment Gateway (**+Rp. 80.000 / +$10.80**)
-
-> Payment Gateway ini berfungsi untuk melakukan pembayaran otomatis menggunakan QRIS pada fitur ini terdapat script **payment gateway**, plugin **payment.js**, **sewa.js** dan **buyprem.js** harga dan fee bisa di sesuaikan sesuai keinginan, dalam pembelian mendapat 2 script payment gateway yaitu dari saweria dan paydisini yang mendukung all payment
-
-🏷️ Game Plugins (**+Rp. 70.000 / +$9.80**)
-
-> 24 plugin game yang semuanya tanpa menggunakan api dan tanpa di enskripsi, dengan ini ada tambahan update schema, profile, rank, pocket, dll.
-
-**Creator / Group** : [Wildan Izzudin](https://wa.me/6285887776722) / [Chatbot](https://chat.whatsapp.com/D4OaImtQwH48CtlR0yt4Ff)
+**Original Creator** : [Wildan Izzudin] 
 
 ### Requirements
 
@@ -58,7 +10,7 @@
 - [x] Server vCPU/RAM 1/2GB (Min)
 
 ### Server
-
+Use vps if you want full experience
 - [x] NAT VPS [Hostdata](https://hostdata.id/nat-vps-usa/)  (Recommended)
 - [x] Hosting Panel [Voxy Host](https://voxyhost.com/)
 - [x] VPS [OVH Hosting](https://www.ovhcloud.com/asia/vps/)
@@ -76,8 +28,8 @@ There are 2 configuration files namely ```.env``` and ```config.json```, adjust 
 
 ```Javascript
 {
-   "owner": "6285887776722",
-   "owner_name": "Wildan Izzudin",
+   "owner": "your number",
+   "owner_name": "Ibrahim khan
    "database": "data",
    "limit": 15,
    "ram_limit": "900mb",
@@ -93,7 +45,7 @@ There are 2 configuration files namely ```.env``` and ```config.json```, adjust 
    "evaluate_chars":  ["=>", "~>", "<", ">", "$"],
    "pairing": {
       "state": true, // "true" if you want to use the pairing code
-      "number": 62xxxx // start number with country code
+      "number": 92xxxx // start number with country code
    }
 }
 ```
@@ -106,13 +58,13 @@ API_KEY = 'your_apikey'
 DATABASE_URL = ''
 
 ### Timezone (Important)
-TZ = 'Asia/Jakarta'
+TZ = 'Asia/Karachi'
 ```
 
 **Notes** :
 + ```ram_limit``` : ram usage limit, for example you have a server with 1gb of ram set before the maximum capacity is 900mb.
 
-+ ```API_KEY``` : some of the features in this script use apikey, especially the downloader feature, to get an apiKey you can get it on the [Neoxr Api's](https://api.neoxr.my.id) with prices that vary according to your needs.
++ ```API_KEY``` : some of the features in this script use apikey, especially the downloader feature, to get an apiKey you can get it on the [Beta Bot Api's](https://api.betabotz.eu.org/) i have used this my friend gaved it for free, you can buy palns(cheap).
 
 + ```DATABASE_URL``` : can be filled with mongo and postgresql URLs to use localdb just leave it blank and the data will be saved to the .json file.
 
