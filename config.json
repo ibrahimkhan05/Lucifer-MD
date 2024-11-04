@@ -3,7 +3,7 @@
    "owner_name": "Ibrahim",
    "database": "data",
    "limit": 15,
-   "ram_limit": "6000mb",
+   "ram_limit": "2000mb",
    "max_upload": 930,
    "max_upload_free": 80,
    "cooldown": 1,
