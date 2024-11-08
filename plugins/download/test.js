@@ -6,13 +6,49 @@ exports.run = {
     category: 'downloader',
     async: async (m, { client, text, isPrefix, command, Func }) => {
         try {
-            const client = new BingImageClient({
-                token: `${global.bing}`,
-                notify: false
-            });
-
-            const result = await client.getImages('cute cat')
-            console.log(result)
+            const cards = [{
+                header: {
+                   imageMessage: global.db.setting.cover,
+                   hasMediaAttachment: true,
+                },
+                body: {
+                   text: "P"
+                },
+                nativeFlowMessage: {
+                   buttons: [{
+                      name: "cta_url",
+                      buttonParamsJson: JSON.stringify({
+                         display_text: 'Contact Owner',
+                         url: 'https://api.neoxr.eu',
+                         webview_presentation: null
+                      })
+                   }]
+                }
+             }, {
+                header: {
+                   imageMessage: global.db.setting.cover,
+                   hasMediaAttachment: true,
+                },
+                body: {
+                   text: "P"
+                },
+                nativeFlowMessage: {
+                   buttons: [{
+                      name: "cta_url",
+                      buttonParamsJson: JSON.stringify({
+                         display_text: 'Contact Owner',
+                         url: 'https://api.neoxr.eu',
+                         webview_presentation: null
+                      })
+                   }]
+                }
+             }]
+             
+             client.sendCarousel(m.chat, cards, m, {
+                content: 'Hi!'
+             })
+             Readme
+             Keywords
 
         } catch (e) {
             console.error(e); // Log error for debugging
