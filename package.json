@@ -50,7 +50,7 @@
       "y2mate-dl": "1.0.4",
       "readline": "1.3.0",
       "node-schedule": "^2.1.1",
-      "nayan-bing-api": "1.0.1",
+      "bing-images": "1.0.0",
       "nayan-server": "2.2.8",
       "custom-google-play-scraper": "1.0.5",
       "nayan-media-downloader": "2.4.5",

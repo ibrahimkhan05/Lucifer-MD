@@ -1,7 +1,4 @@
-const { Youtube } = require('@neoxr/youtube-scraper');
-const yt = new Youtube({
-    fileAsUrl: false
-});
+const  { bingImageClinet } = require('bing-images')
 
 exports.run = {
     usage: ['test'],
@@ -9,17 +6,13 @@ exports.run = {
     category: 'downloader',
     async: async (m, { client, text, isPrefix, command, Func }) => {
         try {
-            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'lathi'), m);
-            client.sendReact(m.chat, '🕒', m.key);
-
-            // Step 1: Play the song using the YouTube scraper
-            const song = await yt.play(text);
-            console.log(song); // Log the song response for debugging
-
-            
-
-            // Send the message with details
-           
+            const client = new BingImageClient({
+                token: process.env.cookie,
+                notify: false
+                });
+                
+                const result = await client.getImages('cute cat')
+                console.log(result)
             
         } catch (e) {
             console.error(e); // Log error for debugging
