@@ -7,7 +7,7 @@ exports.run = {
     async: async (m, { client, text, isPrefix, command, Func }) => {
         try {
             const client = new BingImageClient({
-                token: process.env.cookie,
+                token: `${global.bing}`,
                 notify: false
             });
 
