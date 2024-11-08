@@ -6,7 +6,7 @@ exports.run = {
     category: 'downloader',
     async: async (m, { client, text, isPrefix, command, Func }) => {
         try {
-            const client = new BingImageClient({
+            const client = new bingImageClinet({
                 token: process.env.cookie,
                 notify: false
                 });
