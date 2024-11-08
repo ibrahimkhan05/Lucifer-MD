@@ -26,7 +26,7 @@ async function fetchQualities(url) {
         }
     } catch (error) {
         console.error(`Error fetching qualities: ${error.message}`);
-        return { error: error.message }; // Return error message
+        return { error: error.message };
     }
 }
 
@@ -36,12 +36,9 @@ async function handleUserRequest(m, { client, text, isPrefix, command, Func }) {
     }
 
     const url = text.split(' ')[0];
-
-    // Fetch available qualities from Python script
     const result = await fetchQualities(url);
 
     if (result.error) {
-        // Send error message to user
         await client.reply(m.chat, `Error fetching qualities: ${result.error}`, m);
         return;
     }
@@ -49,7 +46,7 @@ async function handleUserRequest(m, { client, text, isPrefix, command, Func }) {
     const formats = result;
 
     if (formats.length === 0) {
-        // No qualities available, inform user and proceed with default quality
+        // Send default option when no specific qualities are available
         const noQualitiesSections = [{
             rows: [{
                 title: 'Download with Default Quality',
@@ -62,13 +59,19 @@ async function handleUserRequest(m, { client, text, isPrefix, command, Func }) {
             sections: noQualitiesSections
         });
 
-        const noQualitiesButtons = [{ name: 'single_select', buttonParamsJson: noQualitiesButtonParamsJson }];
+        const noQualitiesButtons = [{ 
+            name: 'single_select', 
+            buttonParamsJson: noQualitiesButtonParamsJson 
+        }];
+        
         await client.sendIAMessage(m.chat, noQualitiesButtons, m, {
             header: 'Default Quality Selection',
-            content: 'No specific qualities are available. Proceeding with default quality.'
+            content: 'No specific qualities are available. Proceeding with default quality.',
+            footer: 'Choose a quality or proceed with default',
+            media: global.db.setting.cover
         });
     } else {
-        // Present available qualities to the user with format details
+        // Send a list of available qualities
         const qualitySections = [{
             rows: [
                 {
@@ -76,7 +79,7 @@ async function handleUserRequest(m, { client, text, isPrefix, command, Func }) {
                     id: `${isPrefix}cvbi ${url} best`
                 },
                 ...formats.map(format => ({
-                    title: `${format.label} - ${format.size}`, // Include size in the title
+                    title: `${format.label} - ${format.size}`,
                     id: `${isPrefix}cvbi ${url} ${format.id}`
                 }))
             ]
@@ -87,10 +90,16 @@ async function handleUserRequest(m, { client, text, isPrefix, command, Func }) {
             sections: qualitySections
         });
 
-        const qualityButtons = [{ name: 'single_select', buttonParamsJson: qualityButtonParamsJson }];
+        const qualityButtons = [{ 
+            name: 'single_select', 
+            buttonParamsJson: qualityButtonParamsJson 
+        }];
+        
         await client.sendIAMessage(m.chat, qualityButtons, m, {
             header: 'Select a Quality',
-            content: 'Choose one of the qualities below for the download.'
+            content: 'Choose one of the qualities below for the download.',
+            footer: 'Select a quality from below',
+            media: global.db.setting.cover
         });
     }
 }
