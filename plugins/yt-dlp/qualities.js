@@ -76,6 +76,8 @@ async function handleUserRequest(m, { client, text, isPrefix, command, Func }) {
 // Function to handle numeric input for selecting and downloading a quality
 async function handleQualitySelection(m, { client, text, isPrefix }) {
     const session = global.userSessions[m.chat];
+    
+    // Check if the session exists
     if (!session || !session.formats) {
         await client.reply(m.chat, `No ongoing session found. Please search for a video first using "${isPrefix}ytdl <url>".`, m);
         return;
@@ -87,8 +89,12 @@ async function handleQualitySelection(m, { client, text, isPrefix }) {
         return;
     }
 
+    // Fetch the selected format based on the number
     const selectedFormat = session.formats[userChoice - 1];
     const qualityId = selectedFormat.id;
+
+    // Log the selected format for debugging
+    console.log(`Selected format: ${selectedFormat.label} - ${selectedFormat.size}`);
 
     // Proceed with downloading the video
     const downloadCommand = `${isPrefix}cvbi ${session.url} ${qualityId}`;
