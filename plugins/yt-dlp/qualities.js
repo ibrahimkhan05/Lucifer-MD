@@ -68,7 +68,25 @@ async function handleUserRequest(m, { client, text, isPrefix, command, Func }) {
 
         qualityMessage += `\nReply with a number (e.g., 1).`;
 
-        await client.reply(m.chat, qualityMessage, m);
+        client.math = client.math ? client.math : {};
+        let id = m.chat;
+
+        // Check if the session is already ongoing
+        if (id in client.math) {
+            return client.reply(m.chat, "*^ This session isn't over yet!*", client.math[id][0]);
+        }
+
+        // Setting a timeout for user response
+        client.math[id] = [
+            await client.reply(m.chat, qualityMessage, m),
+            formats, 3, 
+            setTimeout(() => {
+                if (client.math[id]) {
+                    client.reply(m.chat, "*Time's up!* Please try again.", client.math[id][0]);
+                    delete client.math[id]; // Clear session after timeout
+                }
+            }, 30000)  // Timeout set to 30 seconds
+        ];
     }
 }
 
@@ -83,8 +101,6 @@ async function handleQualitySelection(m, { client, text, isPrefix }) {
     }
 
     const userChoice = parseInt(text.trim(), 10);
-    console.log(`User selected: ${userChoice}`);  // Debugging log
-
     if (isNaN(userChoice) || userChoice < 1 || userChoice > session.formats.length) {
         await client.reply(m.chat, `Invalid choice. Please reply with a number between 1 and ${session.formats.length}.`, m);
         return;
@@ -93,9 +109,6 @@ async function handleQualitySelection(m, { client, text, isPrefix }) {
     // Get the selected format based on the user's input
     const selectedFormat = session.formats[userChoice - 1];
     const qualityId = selectedFormat.id;
-
-    // Log the selected format for debugging
-    console.log(`Selected format: ${selectedFormat.label} - ${selectedFormat.size}`);
 
     // Construct the cvbi command with URL and quality ID
     const cvbiCommand = `${isPrefix}cvbi ${session.url} ${qualityId}`;
