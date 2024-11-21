@@ -51,7 +51,7 @@ async function handleUserRequest(m, { client, text, isPrefix, command, Func }) {
     const formats = result;
 
     // Start a new session for the user
-    global.ytdlSessions[m.chat] = { url, formats };
+    global.ytdlSessions[m.chat] = { url, formats, state: 'WAITING' };
 
     if (formats.length === 0) {
         // Send a default option if no specific qualities are available
@@ -72,7 +72,7 @@ async function handleUserRequest(m, { client, text, isPrefix, command, Func }) {
     }
 }
 
-// Function to handle numeric input for quality selection and downloading
+// Function to handle numeric input for quality selection and returning the cvbi command
 async function handleQualitySelection(m, { client, text, isPrefix }) {
     const session = global.ytdlSessions[m.chat];
 
@@ -95,12 +95,11 @@ async function handleQualitySelection(m, { client, text, isPrefix }) {
     // Log the selected format for debugging
     console.log(`Selected format: ${selectedFormat.label} - ${selectedFormat.size}`);
 
-    // Simulate the download process (you can replace this with actual download logic)
-    const downloadCommand = `${isPrefix}cvbi ${session.url} ${qualityId}`;
-    await client.reply(m.chat, `Downloading video in quality: ${selectedFormat.label}...`, m);
+    // Construct the cvbi command with URL and quality ID
+    const cvbiCommand = `${isPrefix}cvbi ${session.url} ${qualityId}`;
 
-    // Simulate successful download
-    await client.reply(m.chat, `Download completed for: ${selectedFormat.label}`, m);
+    // Send the cvbi command back to the user
+    await client.reply(m.chat, `Here is your download command:\n\n${cvbiCommand}`, m);
 
     // Optionally, you can clear the session after the download
     delete global.ytdlSessions[m.chat];
