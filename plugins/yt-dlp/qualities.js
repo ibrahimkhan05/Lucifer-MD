@@ -83,6 +83,8 @@ async function handleQualitySelection(m, { client, text, isPrefix }) {
     }
 
     const userChoice = parseInt(text.trim(), 10);
+    console.log(`User selected: ${userChoice}`);  // Debugging log
+
     if (isNaN(userChoice) || userChoice < 1 || userChoice > session.formats.length) {
         await client.reply(m.chat, `Invalid choice. Please reply with a number between 1 and ${session.formats.length}.`, m);
         return;
