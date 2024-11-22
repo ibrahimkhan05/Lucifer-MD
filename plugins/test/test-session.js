@@ -1,6 +1,6 @@
 exports.run = {
-    usage: ['session'],
-    category: 'test',
+    usage: ['kkk'],
+    category: 'testing',
     async: async (m, { client, text, body }) => {
         // Initialize session storage
         client.sessions = client.sessions || {};
