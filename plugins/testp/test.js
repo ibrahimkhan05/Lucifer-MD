@@ -18,7 +18,7 @@ exports.run = {
         ];
 
         // Start session with /session activate
-        if (text === 'session activate') {
+        if (text.trim() === 'session activate') {  // Ensure trimming spaces
             client.sessions[sessionId] = { active: true };
             await client.reply(m.chat, 'Session activated. Now you can send "/session 1" to get the corresponding day.', m);
             return;
