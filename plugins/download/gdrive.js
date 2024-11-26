@@ -12,6 +12,9 @@ exports.run = {
             return client.reply(m.chat, Func.example(isPrefix, command, 'https://drive.google.com/file/d/1sCMC4pXfPBdRvLhH0QCrg8dypKkI_i0y/view?usp=drive_link'), m);
          }
 
+         // Send an initial message that downloading is in progress
+         await client.reply(m.chat, '⏳ Downloading your file... Please wait a moment.', m);
+
          // Use the new API to fetch the download link
          const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/gdrive?url=${text}&apikey=beta-Ibrahim1209`);
 
