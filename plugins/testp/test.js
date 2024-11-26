@@ -1,24 +1,14 @@
+const { Youtube } = require('@neoxr/youtube-scraper')
+const yt = new Youtube({
+   fileAsUrl: false
+})
+
 exports.run = {
     usage: ['session'],
     category: 'test',
     async: async (m, { client, text, body }) => {
        // import { gpt } from "gpti";
-       const { gpt } = require("gpti");
-
-       let history = [
-           {
-               "role": "user",
-               "content": "Hello! How are you? Could you tell me your name?"
-           }
-       ];
-       
-       let data = await gpt.v3({
-           messages: history,
-           markdown: false,
-           stream: false
-       });
-       
-       console.log(data);
+       yt.play('wide awake').then(console.log)
 
     },
     error: false
