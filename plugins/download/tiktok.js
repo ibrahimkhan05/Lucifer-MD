@@ -8,9 +8,6 @@ exports.run = {
             if (!args || !args[0]) return client.reply(m.chat, Func.example(isPrefix, command, 'https://vm.tiktok.com/ZSR7c5G6y/'), m);
             if (!args[0].match('tiktok.com')) return client.reply(m.chat, global.status.invalid, m);
  
-            // Send a "downloading" status
-            await client.reply(m.chat, '⏳ Downloading your TikTok video/audio... Please wait a moment.', m);
- 
             client.sendReact(m.chat, '🕒', m.key);
  
             let old = new Date();
