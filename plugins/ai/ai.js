@@ -18,12 +18,7 @@ exports.run = {
             const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/search/openai-chat?text=${text}&apikey=beta-Ibrahim1209`)
             if (!json.status) return client.reply(m.chat, Func.jsonFormat(json), m)
             client.reply(m.chat, json.message, m)
-         } else if (command == 'ai2') {
-            if (!m.quoted && !text) return client.reply(m.chat, Func.example(isPrefix, command, 'what is java script'), m)
-            client.sendReact(m.chat, '🕒', m.key)
-            const json = await rsnchat.gpt(text)
-            client.reply(m.chat, json.message, m)
-         }
+         } 
       } catch (e) {
          client.reply(m.chat, Func.jsonFormat(e), m)
       }
