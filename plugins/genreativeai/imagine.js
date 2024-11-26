@@ -21,7 +21,11 @@ exports.run = {
 
             let generatedImages = [];
             let completedJobs = 0;
+            let failedJobs = 0;
             const totalJobs = Object.keys(models).length;
+
+            // Notify the user that the generation process has started
+            client.reply(m.chat, 'Please wait, generating images from all models...', m);
 
             const handleModelGeneration = async (modelKey, promptText) => {
                 const model = models[modelKey];
@@ -46,6 +50,8 @@ exports.run = {
                 exec(curlPostCommand, (error, stdout, stderr) => {
                     if (error) {
                         console.error(`exec error: ${error}`);
+                        failedJobs++;
+                        checkAllJobsCompleted();
                         return;
                     }
 
@@ -54,6 +60,8 @@ exports.run = {
                         postResponse = JSON.parse(stdout);
                     } catch (parseError) {
                         console.error(`JSON parse error: ${parseError}`);
+                        failedJobs++;
+                        checkAllJobsCompleted();
                         return;
                     }
 
@@ -69,6 +77,8 @@ exports.run = {
                             exec(curlStatusCommand, (error, stdout, stderr) => {
                                 if (error) {
                                     console.error(`exec error: ${error}`);
+                                    failedJobs++;
+                                    checkAllJobsCompleted();
                                     return;
                                 }
 
@@ -77,6 +87,8 @@ exports.run = {
                                     statusResponse = JSON.parse(stdout);
                                 } catch (parseError) {
                                     console.error(`JSON parse error: ${parseError}`);
+                                    failedJobs++;
+                                    checkAllJobsCompleted();
                                     return;
                                 }
 
@@ -85,37 +97,26 @@ exports.run = {
                                     const imageUrl = statusResponse.imageUrl;
                                     generatedImages.push({
                                         header: {
-                                            imageMessage: global.db.setting.cover, // The cover image link
+                                            imageMessage: imageUrl, // Use the result image URL here
                                             hasMediaAttachment: true
                                         },
                                         body: {
-                                            text: `${modelKey} generated` // You can modify this text if needed
+                                            text: `${modelKey} generated` // Optional: Custom text to display with the image
                                         },
                                         nativeFlowMessage: {
-                                            buttons: []
+                                            buttons: [] // You can add buttons here if needed
                                         }
                                     });
                                     completedJobs++;
-
-                                    // Once all jobs are completed, send the carousel
-                                    if (completedJobs === totalJobs) {
-                                        client.sendCarousel(m.chat, generatedImages, m, {
-                                            content: 'Here are the generated images from all models.'
-                                        });
-                                    }
                                 } else if (status === 'failed') {
-                                    completedJobs++;
-
-                                    // Check if all jobs are completed and send carousel
-                                    if (completedJobs === totalJobs) {
-                                        client.reply(m.chat, 'Some image generations failed. Please try again.', m);
-                                    }
-                                } else {
-                                    setTimeout(pollStatus, 9000);
+                                    failedJobs++;
                                 }
+
+                                checkAllJobsCompleted();
                             });
                         } catch (e) {
-                            client.reply(m.chat, 'Error fetching job status.', m);
+                            failedJobs++;
+                            checkAllJobsCompleted();
                         }
                     };
 
@@ -127,6 +128,20 @@ exports.run = {
             for (let modelKey in models) {
                 handleModelGeneration(modelKey, text);
             }
+
+            // Check if all jobs are completed and send carousel
+            const checkAllJobsCompleted = () => {
+                if (completedJobs + failedJobs === totalJobs) {
+                    if (generatedImages.length > 0) {
+                        // Send the carousel with only successful images
+                        client.sendCarousel(m.chat, generatedImages, m, {
+                            content: 'Here are the generated images from all models.'
+                        });
+                    } else {
+                        client.reply(m.chat, 'All image generation attempts have failed. Please try again.', m);
+                    }
+                }
+            };
 
         } catch (e) {
             console.error('Error:', e);
