@@ -147,9 +147,9 @@ exports.run = {
                 handleModelGeneration(modelKey, text);
             }
 
-            // Check if all jobs are completed and send carousel
+            // Function to check if all jobs are completed
             const checkAllJobsCompleted = () => {
-                if (completedJobs + failedJobs === totalJobs) {
+                if (completedJobs + failedJobs === totalJobs || timeoutReached) {
                     if (generatedImages.length > 0) {
                         // Send the carousel with only successful images
                         client.sendCarousel(m.chat, generatedImages, m, {
@@ -160,6 +160,13 @@ exports.run = {
                     }
                 }
             };
+
+            // Timeout after 50 seconds if not all jobs are completed
+            let timeoutReached = false;
+            setTimeout(() => {
+                timeoutReached = true;
+                checkAllJobsCompleted();
+            }, 50000); // 50 seconds timeout
 
         } catch (e) {
             console.error('Error:', e);
