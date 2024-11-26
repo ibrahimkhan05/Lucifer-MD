@@ -22,12 +22,14 @@ exports.run = {
          // Fetch media details from the provided Pinterest URL
          const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/pinterest?url=${encodeURIComponent(args[0])}&apikey=beta-Ibrahim1209`);
          
-         // Check if the API response was successful
-         if (!json.result.success) return client.reply(m.chat, Func.jsonFormat(json), m);
+         // Check if the response is valid and contains the expected data
+         if (!json || !json.result || !json.result.success) {
+            return client.reply(m.chat, '⚠️ Failed to fetch media details. Please check the URL or try again later.', m);
+         }
          
          const { data } = json.result;
          let mediaUrl = data.image;
-         
+
          // Handle different media types
          if (data.media_type === 'image') {
             // If the media is an image, send the image file
@@ -43,7 +45,7 @@ exports.run = {
       } catch (e) {
          // Handle any errors and send the error response
          console.log(e);
-         return client.reply(m.chat, global.status.error, m);
+         return client.reply(m.chat, '⚠️ An error occurred while processing the request. Please try again later.', m);
       }
    },
    error: false,
