@@ -77,9 +77,9 @@ const startImageGeneration = async (client, m) => {
 // Polling function to check job status
 const pollJobs = (jobIds, imageUrls, client, m) => {
     let pollInterval = setInterval(() => {
-        jobIds.forEach((jobId, index) => {
+        jobIds.forEach((jobId) => {
             const statusCheckCommand = `curl --request GET \
-                --url https://api.prodia.com/v1/sdxl/status/${jobId} \
+                --url https://api.prodia.com/v1/job/${jobId} \
                 --header 'X-Prodia-Key: 501eba46-a956-4649-96aa-2d9cc0f048bf' \
                 --header 'accept: application/json'`;
 
@@ -92,7 +92,9 @@ const pollJobs = (jobIds, imageUrls, client, m) => {
                 try {
                     const statusResponse = JSON.parse(stdout);
                     if (statusResponse.status === "succeeded" && statusResponse.imageUrl) {
-                        imageUrls.push(statusResponse.imageUrl); // Store the image URL
+                        if (!imageUrls.includes(statusResponse.imageUrl)) {
+                            imageUrls.push(statusResponse.imageUrl); // Store unique image URLs
+                        }
                     }
                 } catch (parseError) {
                     console.error(`Error parsing status response: ${parseError}`);
@@ -112,20 +114,18 @@ const pollJobs = (jobIds, imageUrls, client, m) => {
 const sendImages = (imageUrls, client, m) => {
     setTimeout(() => {
         if (imageUrls.length > 0) {
-            const cards = imageUrls.map(url => ({
+            const cards = imageUrls.map((url, index) => ({
                 header: {
-                    imageMessage: url,  // Use the generated image URL
-                    hasMediaAttachment: true,
+                    text: `Generated Image ${index + 1}`,
                 },
                 body: {
-                    text: "Generated Image",
+                    image: url, // Use the generated image URL
                 },
-                nativeFlowMessage: {
-                    buttons: []  // Add buttons if necessary
+                footer: {
+                    text: "Enjoy your artwork!",
                 }
             }));
 
-            // Send carousel with the images
             client.sendCarousel(m.chat, cards, m, { content: 'Here are your generated images:' });
         } else {
             client.reply(m.chat, 'Sorry, no images were generated.', m);
