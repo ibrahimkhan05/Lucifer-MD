@@ -11,52 +11,59 @@ const models = {
 };
 
 exports.run = {
-    usage: ['dreamshaperXL', 'dynavisionXL', 'juggernautXL', 'realismEngineSDXL', 'sd_xl_base', 'sd_xl_inpainting', 'turbovisionXL'],
+    usage: ['generate'],
     category: 'generativeai',
     async: async (m, { client, text, command }) => {
         try {
             if (!text) {
-                return client.reply(m.chat, `Please provide a prompt. Example: /${command} "your prompt here"`, m);
+                return client.reply(m.chat, 'Please provide a prompt. Example: /generate "your prompt here"', m);
             }
 
-            switch (command) {
-                case 'dreamshaperXL':
-                    await handleModelGeneration('dreamshaperXL', text, client, m);
-                    break;
-                case 'dynavisionXL':
-                    await handleModelGeneration('dynavisionXL', text, client, m);
-                    break;
-                case 'juggernautXL':
-                    await handleModelGeneration('juggernautXL', text, client, m);
-                    break;
-                case 'realismEngineSDXL':
-                    await handleModelGeneration('realismEngineSDXL', text, client, m);
-                    break;
-                case 'sd_xl_base':
-                    await handleModelGeneration('sd_xl_base', text, client, m);
-                    break;
-                case 'sd_xl_inpainting':
-                    await handleModelGeneration('sd_xl_inpainting', text, client, m);
-                    break;
-                case 'turbovisionXL':
-                    await handleModelGeneration('turbovisionXL', text, client, m);
-                    break;
-                default:
-                    client.reply(m.chat, 'Unknown command.', m);
+            client.sendReact(m.chat, '🕒', m.key);
+
+            // Array to store the image results from all models
+            const imageResults = [];
+
+            // Loop through all models and generate images
+            for (let modelKey in models) {
+                await handleModelGeneration(modelKey, text, client, m, imageResults);
             }
+
+            // Once all jobs are completed, send the images as a carousel
+            const cards = imageResults.map((result, index) => ({
+                header: {
+                    imageMessage: {
+                        url: result.imageUrl, // Image URL from the generation result
+                        caption: `Image generated with ${result.model} model.`
+                    },
+                    hasMediaAttachment: true,
+                },
+                body: {
+                    text: `Prompt: ${text}`
+                },
+                nativeFlowMessage: {
+                    buttons: []  // Removed the button for contact owner
+                }
+            }));
+
+            // Send the carousel with all the images
+            client.sendCarousel(m.chat, cards, m, {
+                content: 'Here are the images generated for your prompt!'
+            });
+
         } catch (e) {
             console.error('Error:', e);
-            return client.reply(m.chat, 'An error occurred.', m);
+            return client.reply(m.chat, 'An error occurred. Please try again later.', m);
         }
     },
     error: false,
     limit: true,
     premium: true,
     verified: true,
-    location: __filename
+    location: __filename,
 };
 
-const handleModelGeneration = async (modelKey, promptText, client, message) => {
+const handleModelGeneration = async (modelKey, promptText, client, message, imageResults) => {
     const model = models[modelKey];
     const curlPostCommand = `curl --request POST \
         --url https://api.prodia.com/v1/sdxl/generate \
@@ -82,11 +89,11 @@ const handleModelGeneration = async (modelKey, promptText, client, message) => {
             return client.reply(message.chat, `Failed to initiate image generation for ${modelKey}. Please try again.`, message);
         }
 
-        handleImageResponse(stdout, client, message, promptText);
+        handleImageResponse(stdout, client, message, promptText, modelKey, imageResults);
     });
 };
 
-const handleImageResponse = (stdout, client, message, promptText) => {
+const handleImageResponse = (stdout, client, message, promptText, modelKey, imageResults) => {
     let postResponse;
     try {
         postResponse = JSON.parse(stdout);
@@ -96,7 +103,7 @@ const handleImageResponse = (stdout, client, message, promptText) => {
     }
 
     const jobId = postResponse.job;
-    client.reply(message.chat, 'Your image generation job has been created.');
+    client.reply(message.chat, `Image generation for ${modelKey} is in progress...`);
 
     const pollStatus = async () => {
         try {
@@ -122,9 +129,16 @@ const handleImageResponse = (stdout, client, message, promptText) => {
                 const status = statusResponse.status;
                 if (status === 'succeeded') {
                     const imageUrl = statusResponse.imageUrl;
-                    client.sendFile(message.chat, imageUrl, '', `◦  *Prompt* : ${promptText}`, message);
+                    imageResults.push({
+                        model: modelKey,
+                        imageUrl: imageUrl
+                    });
+                    if (imageResults.length === Object.keys(models).length) {
+                        // Send all images in a carousel once all jobs are completed
+                        client.sendCarousel(message.chat, buildCarouselCards(imageResults), message);
+                    }
                 } else if (status === 'failed') {
-                    client.reply(message.chat, 'Image generation failed. Please try again.', message);
+                    client.reply(message.chat, `Image generation failed for ${modelKey}. Please try again.`, message);
                 } else {
                     setTimeout(pollStatus, 9000);
                 }
@@ -135,4 +149,22 @@ const handleImageResponse = (stdout, client, message, promptText) => {
     };
 
     pollStatus();
+};
+
+const buildCarouselCards = (imageResults) => {
+    return imageResults.map((result) => ({
+        header: {
+            imageMessage: {
+                url: result.imageUrl, // Image URL from the generation result
+                caption: `Image generated with ${result.model} model.`
+            },
+            hasMediaAttachment: true,
+        },
+        body: {
+            text: `Prompt: ${result.prompt}`
+        },
+        nativeFlowMessage: {
+            buttons: []  // No buttons now
+        }
+    }));
 };
