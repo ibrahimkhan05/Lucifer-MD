@@ -25,6 +25,7 @@ const startImageGeneration = async (client, m) => {
 
     const imageUrls = [];
     let jobsCompleted = 0;
+    const jobIds = [];
 
     client.reply(m.chat, 'Please wait while images are being generated...', m);
 
@@ -62,8 +63,8 @@ const startImageGeneration = async (client, m) => {
 
             try {
                 const postResponse = JSON.parse(stdout);
-                if (postResponse && postResponse.success && postResponse.data) {
-                    imageUrls.push(postResponse.data.url); // Add image URL to the array
+                if (postResponse && postResponse.job) {
+                    jobIds.push(postResponse.job); // Store job ID for polling
                 }
             } catch (parseError) {
                 console.error(`Error parsing response: ${parseError}`);
@@ -71,60 +72,71 @@ const startImageGeneration = async (client, m) => {
 
             jobsCompleted++;
 
-            // If all jobs are completed, send carousel message
+            // If all jobs are submitted, start polling the jobs
             if (jobsCompleted === 4) {
-                setTimeout(() => {
-                    if (imageUrls.length > 0) {
-                        // Create carousel cards for the generated images
-                        const cards = imageUrls.map(url => ({
-                            header: {
-                                imageMessage: url,  // Use the generated image URL
-                                hasMediaAttachment: true,
-                            },
-                            body: {
-                                text: "Generated Image",
-                            },
-                            nativeFlowMessage: {
-                                buttons: []  // Add buttons if necessary
-                            }
-                        }));
-
-                        // Send carousel with the images
-                        client.sendCarousel(m.chat, cards, m, { content: 'Here are your generated images:' });
-                    } else {
-                        client.reply(m.chat, 'Sorry, no images were generated.', m);
-                    }
-                }, 8000); // Add a 8-second delay before sending the carousel
+                pollJobs(jobIds, imageUrls, client, m);
             }
         });
     });
+};
 
-    // Timeout after 1 minute 20 seconds and send the completed images
-    setTimeout(() => {
-        if (jobsCompleted < 4) {
-            client.reply(m.chat, 'Some jobs are still processing. Sending the ones completed so far...', m);
-            const incompleteImages = imageUrls.slice(0, jobsCompleted); // Only send the completed ones
-            if (incompleteImages.length > 0) {
-                const cards = incompleteImages.map(url => ({
-                    header: {
-                        imageMessage: url,  // Use the generated image URL
-                        hasMediaAttachment: true,
-                    },
-                    body: {
-                        text: "Generated Image",
-                    },
-                    nativeFlowMessage: {
-                        buttons: []  // Add buttons if necessary
+// Polling function to check job status
+const pollJobs = (jobIds, imageUrls, client, m) => {
+    let pollInterval = setInterval(() => {
+        jobIds.forEach((jobId, index) => {
+            const statusCheckCommand = `curl --request GET \
+                --url https://api.prodia.com/v1/sdxl/status/${jobId} \
+                --header 'X-Prodia-Key: 501eba46-a956-4649-96aa-2d9cc0f048bf' \
+                --header 'accept: application/json'`;
+
+            exec(statusCheckCommand, (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`exec error: ${error}`);
+                    return;
+                }
+
+                try {
+                    const statusResponse = JSON.parse(stdout);
+                    if (statusResponse.status === "completed" && statusResponse.data && statusResponse.data.url) {
+                        imageUrls.push(statusResponse.data.url); // Store the image URL
                     }
-                }));
+                } catch (parseError) {
+                    console.error(`Error parsing status response: ${parseError}`);
+                }
 
-                // Send carousel with the images
-                client.sendCarousel(m.chat, cards, m, { content: 'Here are the images that were generated:' });
-            } else {
-                client.reply(m.chat, 'No images were generated successfully.', m);
-            }
+                // If all jobs are completed, stop polling and send the images
+                if (imageUrls.length === jobIds.length) {
+                    clearInterval(pollInterval);
+                    sendImages(imageUrls, client, m);
+                }
+            });
+        });
+    }, 5000); // Poll every 5 seconds
+};
+
+// Function to send the images once all jobs are completed
+const sendImages = (imageUrls, client, m) => {
+    setTimeout(() => {
+        if (imageUrls.length > 0) {
+            const cards = imageUrls.map(url => ({
+                header: {
+                    imageMessage: url,  // Use the generated image URL
+                    hasMediaAttachment: true,
+                },
+                body: {
+                    text: "Generated Image",
+                },
+                nativeFlowMessage: {
+                    buttons: []  // Add buttons if necessary
+                }
+            }));
+
+            // Send carousel with the images
+            client.sendCarousel(m.chat, cards, m, { content: 'Here are your generated images:' });
+        } else {
+            client.reply(m.chat, 'Sorry, no images were generated.', m);
         }
-    }, 80000); // 80 seconds timeout (1 minute 20 seconds)
+    }, 8000); // Add a delay before sending images
 };
 
 exports.run = {
