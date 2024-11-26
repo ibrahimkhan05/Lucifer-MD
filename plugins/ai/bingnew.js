@@ -7,7 +7,7 @@ exports.run = {
   async: async (m, { client, text, args, isPrefix, command, Func }) => {
     try {
       // Get the user ID
-      const userId = `${m.sender}`; 
+      const userId = `${m.sender}`;
 
       // Load the conversation history from the file
       const historyFile = 'bing_history.json';
@@ -24,8 +24,17 @@ exports.run = {
       // Save the updated history back to the file
       fs.writeFileSync(historyFile, JSON.stringify(userHistories, null, 2), 'utf8');
 
+      // Also remove the user's response data (If there is any)
+      const responseFile = 'bing_responses.json';
+      let userResponses = JSON.parse(fs.readFileSync(responseFile, 'utf8'));
+      
+      if (userResponses[userId]) {
+        delete userResponses[userId];
+        fs.writeFileSync(responseFile, JSON.stringify(userResponses, null, 2), 'utf8');
+      }
+
       // Respond to the user
-      client.reply(m.chat, "Your conversation history has been cleared.", m);
+      client.reply(m.chat, "Your conversation history and responses have been cleared.", m);
 
     } catch (e) {
       return client.reply(m.chat, global.status.error, m);
