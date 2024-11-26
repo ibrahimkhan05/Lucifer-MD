@@ -12,23 +12,37 @@ exports.run = {
       Func
    }) => {
       try {
+         // Validate if URL is provided and matches Pinterest URL format
          if (!args || !args[0]) return client.reply(m.chat, Func.example(isPrefix, command, 'https://pin.it/5fXaAWE'), m);
          if (!args[0].match(/pin(?:terest)?(?:\.it|\.com)/)) return client.reply(m.chat, global.status.invalid, m);
          
+         // Indicate that the bot is processing the request
          client.sendReact(m.chat, '🕒', m.key);
          
+         // Fetch media details from the provided Pinterest URL
          const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/pinterest?url=${encodeURIComponent(args[0])}&apikey=beta-Ibrahim1209`);
+         
+         // Check if the API response was successful
          if (!json.result.success) return client.reply(m.chat, Func.jsonFormat(json), m);
          
          const { data } = json.result;
          let mediaUrl = data.image;
-
-         if (/image/.test(data.media_type)) {
+         
+         // Handle different media types
+         if (data.media_type === 'image') {
+            // If the media is an image, send the image file
+            client.sendFile(m.chat, mediaUrl, '', '', m);
+         } else if (data.media_type === 'video') {
+            // If the media is a video, use the video URL (ensure the URL is video type)
+            mediaUrl = data.video || mediaUrl; // Fallback to image URL if no video URL is provided
             client.sendFile(m.chat, mediaUrl, '', '', m);
          } else {
-            return client.reply(m.chat, global.status.invalid, m);
+            // If the media type is not recognized, return an invalid media response
+            return client.reply(m.chat, '⚠️ Unsupported media type. Only image and video types are supported.', m);
          }
-      } catch {
+      } catch (e) {
+         // Handle any errors and send the error response
+         console.log(e);
          return client.reply(m.chat, global.status.error, m);
       }
    },
@@ -37,4 +51,4 @@ exports.run = {
    cache: true,
    verified: true,
    location: __filename
-}
+};
