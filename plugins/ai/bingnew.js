@@ -1,43 +1,46 @@
 const fs = require('fs');
 
+// Define the shared file for storing all user histories
+const historyFile = 'bing_history.json';
+
+// Ensure the history file exists
+if (!fs.existsSync(historyFile)) {
+    fs.writeFileSync(historyFile, '{}', 'utf8');
+}
+
+// Load the existing histories from the file
+let userHistories = JSON.parse(fs.readFileSync(historyFile, 'utf8'));
+
+// Save updated histories to the file
+function saveHistories() {
+    fs.writeFileSync(historyFile, JSON.stringify(userHistories, null, 2), 'utf8');
+}
+
 exports.run = {
   usage: ['bingnew'],
-  use: 'clear',
+  use: 'newchat',
   category: 'ai',
-  async: async (m, { client, text, args, isPrefix, command, Func }) => {
+  async: async (m, { client, isPrefix, command, Func }) => {
     try {
-      // Get the user ID
       const userId = `${m.sender}`;
 
-      // Load the conversation history from the file
-      const historyFile = 'bing_history.json';
-      let userHistories = JSON.parse(fs.readFileSync(historyFile, 'utf8'));
+      // Check if the user exists in the history file
+      if (userHistories[userId]) {
+        // Remove the user's history
+        delete userHistories[userId];
 
-      // Check if the user has history in the file
-      if (!userHistories[userId] || userHistories[userId].length === 0) {
-        return client.reply(m.chat, "You don't have any conversation history to clear.", m);
+        // Save the updated histories
+        saveHistories();
+
+        // Reply to the user confirming the history has been cleared
+        client.reply(m.chat, 'Your conversation history has been cleared. Feel free to start a new chat!', m);
+      } else {
+        // If no history exists for the user, inform them
+        client.reply(m.chat, 'You don\'t have any conversation history to clear.', m);
       }
-
-      // Remove the user's history
-      delete userHistories[userId];
-
-      // Save the updated history back to the file
-      fs.writeFileSync(historyFile, JSON.stringify(userHistories, null, 2), 'utf8');
-
-      // Also remove the user's response data (If there is any)
-      const responseFile = 'bing_responses.json';
-      let userResponses = JSON.parse(fs.readFileSync(responseFile, 'utf8'));
-      
-      if (userResponses[userId]) {
-        delete userResponses[userId];
-        fs.writeFileSync(responseFile, JSON.stringify(userResponses, null, 2), 'utf8');
-      }
-
-      // Respond to the user
-      client.reply(m.chat, "Your conversation history and responses have been cleared.", m);
-
     } catch (e) {
-      return client.reply(m.chat, global.status.error, m);
+      console.error('Error in /bingnew command:', e);
+      client.reply(m.chat, global.status.error || 'An error occurred while clearing the history.', m);
     }
   },
   error: false,
