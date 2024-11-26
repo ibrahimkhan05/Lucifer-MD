@@ -12,7 +12,6 @@ let data = await gpt.web({
 
 console.log(data);
 
-console.log(data);
     },
     error: false
 };
