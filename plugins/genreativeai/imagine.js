@@ -1,5 +1,6 @@
 const { exec } = require('child_process');
 
+// List of models
 const models = {
     'dreamshaperXL': 'dreamshaperXL10_alpha2.safetensors [c8afe2ef]',
     'dynavisionXL': 'dynavisionXL_0411.safetensors [c39cc051]',
@@ -22,10 +23,27 @@ exports.run = {
             let generatedImages = [];
             let completedJobs = 0;
             let failedJobs = 0;
-            const totalJobs = Object.keys(models).length;
+            const totalJobs = 4; // We will generate images from only 4 random models
 
             // Notify the user that the generation process has started
-            client.reply(m.chat, 'Please wait, generating images from all models...', m);
+            client.reply(m.chat, 'Please wait, generating images from 4 random models...', m);
+
+            // Function to select 4 random models
+            const getRandomModels = () => {
+                const keys = Object.keys(models);
+                const randomModels = [];
+                while (randomModels.length < totalJobs) {
+                    const randomIndex = Math.floor(Math.random() * keys.length);
+                    const model = keys[randomIndex];
+                    if (!randomModels.includes(model)) {
+                        randomModels.push(model);
+                    }
+                }
+                return randomModels;
+            };
+
+            // Get 4 random models from the models list
+            const randomModels = getRandomModels();
 
             const handleModelGeneration = async (modelKey, promptText) => {
                 const model = models[modelKey];
@@ -124,8 +142,8 @@ exports.run = {
                 });
             };
 
-            // Generate images for all models
-            for (let modelKey in models) {
+            // Generate images for 4 random models
+            for (let modelKey of randomModels) {
                 handleModelGeneration(modelKey, text);
             }
 
@@ -135,7 +153,7 @@ exports.run = {
                     if (generatedImages.length > 0) {
                         // Send the carousel with only successful images
                         client.sendCarousel(m.chat, generatedImages, m, {
-                            content: 'Here are the generated images from all models.'
+                            content: 'Here are the generated images from the selected models.'
                         });
                     } else {
                         client.reply(m.chat, 'All image generation attempts have failed. Please try again.', m);
