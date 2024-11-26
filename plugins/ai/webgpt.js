@@ -1,4 +1,4 @@
-const { gpt   } = require("gpti");
+const { gpt } = require("gpti");
 
 exports.run = {
    usage: ['webgpt'],
