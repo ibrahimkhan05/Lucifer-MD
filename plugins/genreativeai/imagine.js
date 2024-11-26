@@ -16,24 +16,21 @@ const models = [
 
 // Function to select random models and start image generation
 const startImageGeneration = async (client, m) => {
-    // Pick 4 random models
     const randomModels = [];
     while (randomModels.length < 4) {
         const randomModel = models[Math.floor(Math.random() * models.length)];
         if (!randomModels.includes(randomModel)) randomModels.push(randomModel);
     }
 
-    const imageUrls = [];
+    let jobIds = [];
+    let imageUrls = [];
     let jobsCompleted = 0;
-    const jobIds = [];
 
     client.reply(m.chat, 'Please wait while images are being generated...', m);
 
-    // Generate images for the 4 selected models
     randomModels.forEach((model) => {
-        const promptText = "A beautiful scene generated with the model: " + model;
+        const promptText = `A beautiful scene generated with the model: ${model}`;
 
-        // Construct curl command for each model generation
         const curlPostCommand = `curl --request POST \
             --url https://api.prodia.com/v1/sdxl/generate \
             --header 'X-Prodia-Key: 501eba46-a956-4649-96aa-2d9cc0f048bf' \
@@ -58,13 +55,10 @@ const startImageGeneration = async (client, m) => {
                 return;
             }
 
-            // Log the raw response to debug
-            console.log("Raw response: ", stdout);
-
             try {
                 const postResponse = JSON.parse(stdout);
                 if (postResponse && postResponse.job) {
-                    jobIds.push(postResponse.job); // Store job ID for polling
+                    jobIds.push(postResponse.job); // Collect job IDs for polling status
                 }
             } catch (parseError) {
                 console.error(`Error parsing response: ${parseError}`);
@@ -72,7 +66,7 @@ const startImageGeneration = async (client, m) => {
 
             jobsCompleted++;
 
-            // If all jobs are submitted, start polling the jobs
+            // If all jobs are queued, start polling for their completion
             if (jobsCompleted === 4) {
                 pollJobs(jobIds, imageUrls, client, m);
             }
@@ -97,8 +91,8 @@ const pollJobs = (jobIds, imageUrls, client, m) => {
 
                 try {
                     const statusResponse = JSON.parse(stdout);
-                    if (statusResponse.status === "completed" && statusResponse.data && statusResponse.data.url) {
-                        imageUrls.push(statusResponse.data.url); // Store the image URL
+                    if (statusResponse.status === "succeeded" && statusResponse.imageUrl) {
+                        imageUrls.push(statusResponse.imageUrl); // Store the image URL
                     }
                 } catch (parseError) {
                     console.error(`Error parsing status response: ${parseError}`);
@@ -143,7 +137,7 @@ exports.run = {
     usage: ['generate'],
     category: 'generativeai',
     async: (m, { client }) => {
-         startImageGeneration(client, m);
+        startImageGeneration(client, m);
     },
     error: false,
     limit: true,
