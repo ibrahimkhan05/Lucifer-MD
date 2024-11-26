@@ -8,7 +8,7 @@ exports.run = {
     category: 'test',
     async: async (m, { client, text, body }) => {
        // import { gpt } from "gpti";
-       yt.play('wide awake').then(console.log)
+       yt.play('Kia bat ha').then(console.log)
 
     },
     error: false
