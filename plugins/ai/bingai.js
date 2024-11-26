@@ -2,7 +2,7 @@ const fs = require('fs');
 const { bing } = require("gpti");
 
 // Define the shared file for storing all user histories
-const historyFile = 'bing_history.json';
+const historyFile = 'bing_usage.json';
 
 // Ensure the history file exists
 if (!fs.existsSync(historyFile)) {
@@ -17,23 +17,27 @@ function saveHistories() {
     fs.writeFileSync(historyFile, JSON.stringify(userHistories, null, 2), 'utf8');
 }
 
+// Function to clear user history
+function clearUserHistory(userId) {
+    if (userHistories[userId]) {
+        delete userHistories[userId];
+        saveHistories();
+    }
+}
+
 exports.run = {
   usage: ['bing'],
   use: 'query',
   category: 'ai',
   async: async (m, { client, text, isPrefix, command, Func }) => {
     try {
-      // If no text is provided, return an example query
       if (!text) {
         return client.reply(m.chat, Func.example(isPrefix, command, 'What is AI?'), m);
       }
 
-      // Show a loading reaction
       client.sendReact(m.chat, '🕒', m.key);
 
-      // Get the user ID (sender's ID)
       const userId = `${m.sender}`;
-
       // Initialize history for the user if it doesn't exist
       if (!userHistories[userId]) {
         userHistories[userId] = { conversations: [] };
@@ -71,7 +75,6 @@ exports.run = {
         // Reply to the user
         client.reply(m.chat, data.message, m);
       } else {
-        // Handle case where no message is received from Bing API
         client.reply(m.chat, 'No response received from Bing API.', m);
       }
     } catch (e) {
