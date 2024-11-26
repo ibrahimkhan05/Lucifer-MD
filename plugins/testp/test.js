@@ -3,14 +3,22 @@ exports.run = {
     category: 'test',
     async: async (m, { client, text, body }) => {
        // import { gpt } from "gpti";
-const { gpt } = require("gpti");
+       const { gpt } = require("gpti");
 
-let data = await gpt.web({
-    prompt: "Are you familiar with the movie Wonka released in 2023?",
-    markdown: false
-});
-
-console.log(data);
+       let history = [
+           {
+               "role": "user",
+               "content": "Hello! How are you? Could you tell me your name?"
+           }
+       ];
+       
+       let data = await gpt.v3({
+           messages: history,
+           markdown: false,
+           stream: false
+       });
+       
+       console.log(data);
 
     },
     error: false
