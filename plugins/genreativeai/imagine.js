@@ -16,155 +16,126 @@ exports.run = {
     async: async (m, { client, text, command }) => {
         try {
             if (!text) {
-                return client.reply(m.chat, 'Please provide a prompt. Example: /generate "your prompt here"', m);
+                return client.reply(m.chat, `Please provide a prompt. Example: /${command} "your prompt here"`, m);
             }
 
-            client.sendReact(m.chat, '🕒', m.key);
+            let generatedImages = [];
+            let completedJobs = 0;
+            const totalJobs = Object.keys(models).length;
 
-            // Array to store the image results from all models
-            const imageResults = [];
+            const handleModelGeneration = async (modelKey, promptText) => {
+                const model = models[modelKey];
+                const curlPostCommand = `curl --request POST \
+                    --url https://api.prodia.com/v1/sdxl/generate \
+                    --header 'X-Prodia-Key: 501eba46-a956-4649-96aa-2d9cc0f048bf' \
+                    --header 'accept: application/json' \
+                    --header 'content-type: application/json' \
+                    --data '{
+                        "model": "${model}",
+                        "prompt": "${promptText}",
+                        "negative_prompt": "badly drawn",
+                        "style_preset": "cinematic",
+                        "steps": 20,
+                        "cfg_scale": 7,
+                        "seed": -1,
+                        "sampler": "DPM++ 2M Karras",
+                        "width": 1024,
+                        "height": 1024
+                    }'`;
 
-            // Loop through all models and generate images
+                exec(curlPostCommand, (error, stdout, stderr) => {
+                    if (error) {
+                        console.error(`exec error: ${error}`);
+                        return;
+                    }
+
+                    let postResponse;
+                    try {
+                        postResponse = JSON.parse(stdout);
+                    } catch (parseError) {
+                        console.error(`JSON parse error: ${parseError}`);
+                        return;
+                    }
+
+                    const jobId = postResponse.job;
+
+                    const pollStatus = async () => {
+                        try {
+                            const curlStatusCommand = `curl --request GET \
+                                --url https://api.prodia.com/v1/job/${jobId} \
+                                --header 'X-Prodia-Key: 501eba46-a956-4649-96aa-2d9cc0f048bf' \
+                                --header 'accept: application/json'`;
+
+                            exec(curlStatusCommand, (error, stdout, stderr) => {
+                                if (error) {
+                                    console.error(`exec error: ${error}`);
+                                    return;
+                                }
+
+                                let statusResponse;
+                                try {
+                                    statusResponse = JSON.parse(stdout);
+                                } catch (parseError) {
+                                    console.error(`JSON parse error: ${parseError}`);
+                                    return;
+                                }
+
+                                const status = statusResponse.status;
+                                if (status === 'succeeded') {
+                                    const imageUrl = statusResponse.imageUrl;
+                                    generatedImages.push({
+                                        header: {
+                                            imageMessage: global.db.setting.cover,
+                                            hasMediaAttachment: true
+                                        },
+                                        body: {
+                                            text: `${modelKey} generated`
+                                        },
+                                        nativeFlowMessage: {
+                                            buttons: []
+                                        }
+                                    });
+                                    completedJobs++;
+
+                                    // Once all jobs are completed, send the carousel
+                                    if (completedJobs === totalJobs) {
+                                        client.sendCarousel(m.chat, generatedImages, m, {
+                                            content: 'Here are the generated images from all models.'
+                                        });
+                                    }
+                                } else if (status === 'failed') {
+                                    completedJobs++;
+
+                                    // Check if all jobs are completed and send carousel
+                                    if (completedJobs === totalJobs) {
+                                        client.reply(m.chat, 'Some image generations failed. Please try again.', m);
+                                    }
+                                } else {
+                                    setTimeout(pollStatus, 9000);
+                                }
+                            });
+                        } catch (e) {
+                            client.reply(m.chat, 'Error fetching job status.', m);
+                        }
+                    };
+
+                    pollStatus();
+                });
+            };
+
+            // Generate images for all models
             for (let modelKey in models) {
-                await handleModelGeneration(modelKey, text, client, m, imageResults);
+                handleModelGeneration(modelKey, text);
             }
-
-            // Once all jobs are completed, send the images as a carousel
-            const cards = imageResults.map((result, index) => ({
-                header: {
-                    imageMessage: {
-                        url: result.imageUrl, // Image URL from the generation result
-                        caption: `Image generated with ${result.model} model.`
-                    },
-                    hasMediaAttachment: true,
-                },
-                body: {
-                    text: `Prompt: ${text}`
-                },
-                nativeFlowMessage: {
-                    buttons: []  // Removed the button for contact owner
-                }
-            }));
-
-            // Send the carousel with all the images
-            client.sendCarousel(m.chat, cards, m, {
-                content: 'Here are the images generated for your prompt!'
-            });
 
         } catch (e) {
             console.error('Error:', e);
-            return client.reply(m.chat, 'An error occurred. Please try again later.', m);
+            return client.reply(m.chat, 'An error occurred.', m);
         }
     },
     error: false,
     limit: true,
     premium: true,
     verified: true,
-    location: __filename,
-};
-
-const handleModelGeneration = async (modelKey, promptText, client, message, imageResults) => {
-    const model = models[modelKey];
-    const curlPostCommand = `curl --request POST \
-        --url https://api.prodia.com/v1/sdxl/generate \
-        --header 'X-Prodia-Key: 501eba46-a956-4649-96aa-2d9cc0f048bf' \
-        --header 'accept: application/json' \
-        --header 'content-type: application/json' \
-        --data '{
-            "model": "${model}",
-            "prompt": "${promptText}",
-            "negative_prompt": "badly drawn",
-            "style_preset": "cinematic",
-            "steps": 20,
-            "cfg_scale": 7,
-            "seed": -1,
-            "sampler": "DPM++ 2M Karras",
-            "width": 1024,
-            "height": 1024
-        }'`;
-
-    exec(curlPostCommand, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`exec error: ${error}`);
-            return client.reply(message.chat, `Failed to initiate image generation for ${modelKey}. Please try again.`, message);
-        }
-
-        handleImageResponse(stdout, client, message, promptText, modelKey, imageResults);
-    });
-};
-
-const handleImageResponse = (stdout, client, message, promptText, modelKey, imageResults) => {
-    let postResponse;
-    try {
-        postResponse = JSON.parse(stdout);
-    } catch (parseError) {
-        console.error(`JSON parse error: ${parseError}`);
-        return client.reply(message.chat, 'Error processing server response.', message);
-    }
-
-    const jobId = postResponse.job;
-    client.reply(message.chat, `Image generation for ${modelKey} is in progress...`);
-
-    const pollStatus = async () => {
-        try {
-            const curlStatusCommand = `curl --request GET \
-                --url https://api.prodia.com/v1/job/${jobId} \
-                --header 'X-Prodia-Key: 501eba46-a956-4649-96aa-2d9cc0f048bf' \
-                --header 'accept: application/json'`;
-
-            exec(curlStatusCommand, (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`exec error: ${error}`);
-                    return client.reply(message.chat, 'Failed to fetch job status. Please try again.', message);
-                }
-
-                let statusResponse;
-                try {
-                    statusResponse = JSON.parse(stdout);
-                } catch (parseError) {
-                    console.error(`JSON parse error: ${parseError}`);
-                    return client.reply(message.chat, 'Error processing status response.', message);
-                }
-
-                const status = statusResponse.status;
-                if (status === 'succeeded') {
-                    const imageUrl = statusResponse.imageUrl;
-                    imageResults.push({
-                        model: modelKey,
-                        imageUrl: imageUrl
-                    });
-                    if (imageResults.length === Object.keys(models).length) {
-                        // Send all images in a carousel once all jobs are completed
-                        client.sendCarousel(message.chat, buildCarouselCards(imageResults), message);
-                    }
-                } else if (status === 'failed') {
-                    client.reply(message.chat, `Image generation failed for ${modelKey}. Please try again.`, message);
-                } else {
-                    setTimeout(pollStatus, 9000);
-                }
-            });
-        } catch (e) {
-            client.reply(message.chat, 'Error fetching job status.', message);
-        }
-    };
-
-    pollStatus();
-};
-
-const buildCarouselCards = (imageResults) => {
-    return imageResults.map((result) => ({
-        header: {
-            imageMessage: {
-                url: result.imageUrl, // Image URL from the generation result
-                caption: `Image generated with ${result.model} model.`
-            },
-            hasMediaAttachment: true,
-        },
-        body: {
-            text: `Prompt: ${result.prompt}`
-        },
-        nativeFlowMessage: {
-            buttons: []  // No buttons now
-        }
-    }));
+    location: __filename
 };
