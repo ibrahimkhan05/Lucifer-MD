@@ -85,11 +85,11 @@ exports.run = {
                                     const imageUrl = statusResponse.imageUrl;
                                     generatedImages.push({
                                         header: {
-                                            imageMessage: global.db.setting.cover,
+                                            imageMessage: global.db.setting.cover, // The cover image link
                                             hasMediaAttachment: true
                                         },
                                         body: {
-                                            text: `${modelKey} generated`
+                                            text: `${modelKey} generated` // You can modify this text if needed
                                         },
                                         nativeFlowMessage: {
                                             buttons: []
