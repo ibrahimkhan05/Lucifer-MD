@@ -33,12 +33,12 @@ const startImageGeneration = async (client, m) => {
         const promptText = "A beautiful scene generated with the model: " + model;
 
         // Construct curl command for each model generation
-        const curlPostCommand = `curl --request POST ^
-            --url https://api.prodia.com/v1/sd/generate ^
-            --header "X-Prodia-Key: 501eba46-a956-4649-96aa-2d9cc0f048bf" ^
-            --header "accept: application/json" ^
-            --header "content-type: application/json" ^
-            --data "{\"model\": \"${model}\", \"prompt\": \"${promptText}\", \"negative_prompt\": \"badly drawn\", \"style_preset\": \"cinematic\", \"steps\": 20, \"cfg_scale\": 7, \"seed\": -1, \"sampler\": \"DPM++ 2M Karras\", \"width\": 1024, \"height\": 1024}"`;
+        const curlPostCommand = `curl --request POST \
+            --url https://api.prodia.com/v1/sd/generate \
+            --header "X-Prodia-Key: 501eba46-a956-4649-96aa-2d9cc0f048bf" \
+            --header "accept: application/json" \
+            --header "content-type: application/json" \
+            --data '{"model": "${model}", "prompt": "${promptText}", "negative_prompt": "badly drawn", "style_preset": "cinematic", "steps": 20, "cfg_scale": 7, "seed": -1, "sampler": "DPM++ 2M Karras", "width": 1024, "height": 1024}'`;
 
         exec(curlPostCommand, (error, stdout, stderr) => {
             if (error) {
