@@ -11,8 +11,10 @@ exports.run = {
          if (!text) {
             return client.reply(m.chat, Func.example(isPrefix, command, 'https://drive.google.com/file/d/1sCMC4pXfPBdRvLhH0QCrg8dypKkI_i0y/view?usp=drive_link'), m);
          }
-         const json = await Func.fetchJson(`https://widipe.com/download/gdrive?url=${text}`);
-         
+
+         // Use the new API to fetch the download link
+         const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/gdrive?url=${text}&apikey=beta-Ibrahim1209`);
+
          if (!json.status) {
             return client.reply(m.chat, 'Failed to retrieve the download link from Google Drive.', m);
          }
