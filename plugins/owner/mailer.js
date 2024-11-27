@@ -27,7 +27,7 @@ exports.run = {
             const template = `
                 <div style="max-width: 600px; margin: auto; padding: 20px; font-family: Arial, sans-serif;">
                     <div style="line-height: 2; letter-spacing: 0.5px; padding: 10px; border: 1px solid #DDD; border-radius: 14px;">
-                        <h3 style="margin-top: 0;">Hi <b>${m.pushName} 😘</b> Welcome to Lucifer - MD, an awesome WhatsApp Bot!</h3>
+                        <h3 style="margin-top: 0;">Hi <b>${m.pushName} </b> Welcome to Lucifer - MD, an awesome WhatsApp Bot!</h3>
                         <br><br>${msg}<br><br>
                         If you have any problem, please contact via <span style="color: #4D96FF;"><a href="https://api.whatsapp.com/send?phone=923229931076">WhatsApp</a></span><br>
                         <span>Regards,<br>Ibrahim</span>
