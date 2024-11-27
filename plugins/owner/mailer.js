@@ -32,6 +32,11 @@ exports.run = {
 
                     // Download the image
                     const mediaBuffer = await client.downloadMediaMessage(m.quoted);
+                    if (!mediaBuffer) {
+                        console.log('Error: Media buffer is empty.');
+                        return client.reply(m.chat, 'Error downloading the media. Please try again.', m);
+                    }
+
                     const imagePath = path.join(__dirname, media.fileName);
                     fs.writeFileSync(imagePath, mediaBuffer);  // Save the image locally
                     filePath = imagePath;  // Save the file path
@@ -43,6 +48,11 @@ exports.run = {
                 else if (media.mtype === 'document') {
                     console.log('Step 5: Media is a document. Downloading...');
                     const mediaBuffer = await client.downloadMediaMessage(m.quoted);
+                    if (!mediaBuffer) {
+                        console.log('Error: Media buffer is empty.');
+                        return client.reply(m.chat, 'Error downloading the media. Please try again.', m);
+                    }
+
                     const mimeType = media.mimetype || '';
                     const extname = mimeType.split('/')[1];
                     const fileName = media.fileName || 'document';
