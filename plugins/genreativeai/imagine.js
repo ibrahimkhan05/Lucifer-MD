@@ -6,7 +6,7 @@ const models = {
 };
 
 exports.run = {
-    usage: [BEST_MODEL],
+    usage: ['genreate'],
     category: 'generativeai',
     async: async (m, { client, text, command }) => {
         try {
