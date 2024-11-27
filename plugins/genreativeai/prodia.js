@@ -27,7 +27,6 @@ exports.run = {
     category: 'generativeai',
     async: async (m, { client, text, isPrefix, command, Func }) => {
         try {
-            // Step 1: If no text is provided, prompt for text
             if (!text) {
                 return client.reply(m.chat, Func.example(isPrefix, command, 'cat,fish'), m);
             }
@@ -41,7 +40,6 @@ exports.run = {
                 }
             }
 
-            // Step 3: Automatically use the selected models to generate images
             client.sendReact(m.chat, '🕒', m.key);
             console.log('Generating images for models:', selectedModels);
 
@@ -66,8 +64,6 @@ exports.run = {
                     }'`;
 
                 try {
-                    // Step 4: Execute cURL request to generate the image
-                    console.log(`Sending generation request for model: ${model}`);
                     const jobResponse = await new Promise((resolve, reject) => {
                         exec(curlCommand, (error, stdout, stderr) => {
                             if (error) {
@@ -78,12 +74,14 @@ exports.run = {
                         });
                     });
 
-                    // Get the job ID to track status
                     const jobId = jobResponse.job;
                     console.log(`Generation started, job ID: ${jobId}`);
 
-                    // Poll for the job status
                     let jobStatus = 'queued';
+                    let attempts = 0;
+                    const maxAttempts = 5; // Retry up to 5 times if necessary
+                    const pollInterval = 5000; // 5 seconds polling interval
+
                     while (jobStatus === 'queued' || jobStatus === 'processing') {
                         console.log(`Polling job status for job ID: ${jobId}`);
                         const statusCurlCommand = `curl --request GET \
@@ -116,7 +114,13 @@ exports.run = {
                         }
 
                         // Wait a bit before polling again
-                        await new Promise(resolve => setTimeout(resolve, 5000)); // Poll every 5 seconds
+                        attempts++;
+                        if (attempts >= maxAttempts) {
+                            console.log(`Maximum retry attempts reached for job ID: ${jobId}`);
+                            return { error: true };
+                        }
+
+                        await new Promise(resolve => setTimeout(resolve, pollInterval)); // Poll every 5 seconds
                     }
                 } catch (e) {
                     console.error(`Error generating image for model: ${model}`, e);
@@ -131,11 +135,10 @@ exports.run = {
             const validImages = images.filter(img => img && !img.error);
 
             if (validImages.length > 0) {
-                // Send the valid images as a carousel
                 const carousel = validImages.map((img) => ({
                     header: { imageMessage: { url: img.image }, hasMediaAttachment: true },
                     body: { text: img.text },
-                    nativeFlowMessage: { buttons: [] }, // Remove buttons as requested
+                    nativeFlowMessage: { buttons: [] },
                     image: img.image
                 }));
 
