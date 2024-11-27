@@ -88,19 +88,38 @@ exports.run = {
             // Step 5: Wait for 20 seconds (assuming the images will be ready by then)
             setTimeout(async () => {
                 // Generate image URLs after 20 seconds
-                const imageUrls = jobIds.map(jobId => `https://images.prodia.xyz/${jobId}.png`);
-                
-                // Send image URLs as a carousel
-                const carousel = imageUrls.map((url, index) => ({
-                    header: { imageMessage: { url: url }, hasMediaAttachment: true },
-                    body: { text: `Model: ${selectedModels[index]}` },
-                    nativeFlowMessage: { buttons: [] },
-                    image: url
+                const img1 = `https://images.prodia.xyz/${jobIds[0]}.png`;
+                const img2 = `https://images.prodia.xyz/${jobIds[1]}.png`;
+                const img3 = `https://images.prodia.xyz/${jobIds[2]}.png`;
+                const img4 = `https://images.prodia.xyz/${jobIds[3]}.png`;
+                const img5 = `https://images.prodia.xyz/${jobIds[4]}.png`;
+                const img6 = `https://images.prodia.xyz/${jobIds[5]}.png`;
+
+                // Create cards for each image
+                const cards = jobIds.map((jobId, index) => ({
+                    header: {
+                        imageMessage: { url: `https://images.prodia.xyz/${jobId}.png` },
+                        hasMediaAttachment: true,
+                    },
+                    body: {
+                        text: `Model: ${selectedModels[index]}`,
+                    },
+                    nativeFlowMessage: {
+                        buttons: [{
+                            name: "cta_url",
+                            buttonParamsJson: JSON.stringify({
+                                display_text: 'View Image',
+                                url: `https://images.prodia.xyz/${jobId}.png`,
+                                webview_presentation: null
+                            })
+                        }]
+                    }
                 }));
 
+                // Send carousel of generated images
                 console.log('Sending carousel of generated images');
-                if (carousel.length > 0) {
-                    client.sendCarousel(m.chat, carousel, m, { content: 'Here are the generated images!' });
+                if (cards.length > 0) {
+                    client.sendCarousel(m.chat, cards, m, { content: 'Here are the generated images!' });
                 } else {
                     client.reply(m.chat, 'Error generating images', m);
                 }
