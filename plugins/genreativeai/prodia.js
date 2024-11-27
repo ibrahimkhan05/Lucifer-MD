@@ -1,4 +1,4 @@
-const axios = require('axios');
+const { exec } = require('child_process');
 
 // List of 16 best models
 const models = [
@@ -19,64 +19,6 @@ const models = [
     "childrensStories_v1SemiReal.safetensors [a1c56dbb]",
     "childrensStories_v1ToonAnime.safetensors [2ec7b88b]"
 ];
-
-const Scraper = {
-    text2img: async (text, eff, upscale, sampler, ratio, XprodiaKey) => {
-        return new Promise(async (resolve) => {
-            try {
-                const options = {
-                    method: 'POST',
-                    url: 'https://api.prodia.com/v1/sd/generate',
-                    headers: {
-                        accept: 'application/json',
-                        'content-type': 'application/json',
-                        'X-Prodia-Key': XprodiaKey
-                    },
-                    data: {
-                        model: eff,
-                        prompt: text,
-                        negative_prompt: 'canvas frame, cartoon, 3d, ((disfigured)), ((bad art)), ((deformed)),((extra limbs)),((close up)),((b&w)), weird colors, blurry, (((duplicate))), ((morbid)), ((mutilated)), [out of frame], extra fingers, mutated hands, ((poorly drawn hands)), ((poorly drawn face)), (((mutation))), (((deformed))), ((ugly)), blurry, ((bad anatomy)), (((bad proportions))), ((extra limbs)), cloned face, (((disfigured))), out of frame, ugly, extra limbs, (bad anatomy), gross proportions, (malformed limbs), ((missing arms)), ((missing legs)), (((extra arms))), (((extra legs))), mutated hands, (fused fingers), (too many fingers), (((long neck))), Photoshop, video game, ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, mutation, mutated, extra limbs, extra legs, extra arms, disfigured, deformed, cross-eye, body out of frame, blurry, bad art, bad anatomy, 3d render',
-                        steps: 25,
-                        cfg_scale: 7,
-                        seed: -1,
-                        upscale: upscale,
-                        sampler: sampler,
-                        aspect_ratio: ratio
-                    }
-                };
-
-                axios
-                    .request(options)
-                    .then(function (response) {
-                        console.log(response.data);
-                        resolve({
-                            status: true,
-                            model: eff,
-                            steps: 25,
-                            cfg_scale: 7,
-                            seed: -1,
-                            upscale: upscale,
-                            sampler: sampler,
-                            aspect_ratio: ratio,
-                            msg: `https://images.prodia.xyz/${response.data.job}.png` // Image URL from Prodia
-                        });
-                    })
-                    .catch(function (error) {
-                        console.error(error);
-                        resolve({
-                            status: false
-                        });
-                    });
-
-            } catch (e) {
-                console.log(e);
-                return resolve({
-                    status: false
-                });
-            }
-        });
-    }
-};
 
 exports.run = {
     usage: ['txt2img'],
@@ -104,26 +46,80 @@ exports.run = {
             console.log('Generating images for models:', selectedModels);
 
             const imagePromises = selectedModels.map(async (model) => {
-                const eff = model; // Model is passed as 'eff'
-                const upscale = true; // Assuming upscale is true
-                const sampler = "DPM++ 2M Karras"; // Use default sampler
-                const ratio = "16:9"; // Aspect ratio can be set as per requirement
-                const XprodiaKey = "501eba46-a956-4649-96aa-2d9cc0f048bf"; // Prodia API Key
+                const curlCommand = `curl --request POST \
+                    --url https://api.prodia.com/v1/sd/generate \
+                    --header 'X-Prodia-Key: 501eba46-a956-4649-96aa-2d9cc0f048bf' \
+                    --header 'accept: application/json' \
+                    --header 'content-type: application/json' \
+                    --data '{
+                        "model": "${model}",
+                        "prompt": "${text}",
+                        "negative_prompt": "badly drawn",
+                        "steps": 25,
+                        "style_preset": "cinematic",
+                        "cfg_scale": 7,
+                        "seed": -1,
+                        "upscale": true,
+                        "sampler": "DPM++ 2M Karras",
+                        "width": 512,
+                        "height": 512
+                    }'`;
 
                 try {
-                    const imgData = await Scraper.text2img(text, eff, upscale, sampler, ratio, XprodiaKey);
+                    // Step 4: Execute cURL request to generate the image
+                    console.log(`Sending generation request for model: ${model}`);
+                    const jobResponse = await new Promise((resolve, reject) => {
+                        exec(curlCommand, (error, stdout, stderr) => {
+                            if (error) {
+                                reject(error);
+                            } else {
+                                resolve(JSON.parse(stdout));
+                            }
+                        });
+                    });
 
-                    if (imgData.status) {
-                        return {
-                            image: imgData.msg, // The URL to the generated image
-                            text: `*Prompt*: ${text} - Model: ${eff}`
-                        };
-                    } else {
-                        console.error(`Error generating image for model: ${eff}`);
-                        return { error: true };
+                    // Get the job ID to track status
+                    const jobId = jobResponse.job;
+                    console.log(`Generation started, job ID: ${jobId}`);
+
+                    // Poll for the job status
+                    let jobStatus = 'queued';
+                    while (jobStatus === 'queued' || jobStatus === 'processing') {
+                        console.log(`Polling job status for job ID: ${jobId}`);
+                        const statusCurlCommand = `curl --request GET \
+                            --url https://api.prodia.com/v1/job/${jobId} \
+                            --header 'X-Prodia-Key: 501eba46-a956-4649-96aa-2d9cc0f048bf' \
+                            --header 'accept: application/json'`;
+
+                        const statusResponse = await new Promise((resolve, reject) => {
+                            exec(statusCurlCommand, (error, stdout, stderr) => {
+                                if (error) {
+                                    reject(error);
+                                } else {
+                                    resolve(JSON.parse(stdout));
+                                }
+                            });
+                        });
+
+                        jobStatus = statusResponse.status;
+
+                        if (jobStatus === 'succeeded') {
+                            const imageUrl = statusResponse.imageUrl;
+                            console.log(`Image generation successful for model: ${model}`);
+                            return {
+                                image: imageUrl,
+                                text: `*Prompt*: ${text} - Model: ${model}`
+                            };
+                        } else if (jobStatus === 'failed') {
+                            console.log(`Image generation failed for model: ${model}`);
+                            return { error: true };
+                        }
+
+                        // Wait a bit before polling again
+                        await new Promise(resolve => setTimeout(resolve, 5000)); // Poll every 5 seconds
                     }
                 } catch (e) {
-                    console.error(`Error generating image for model: ${eff}`, e);
+                    console.error(`Error generating image for model: ${model}`, e);
                     return { error: true };
                 }
             });
@@ -137,7 +133,7 @@ exports.run = {
             if (validImages.length > 0) {
                 // Send the valid images as a carousel
                 const carousel = validImages.map((img) => ({
-                    header: { imageMessage: { url: img.image }, hasMediaAttachment: true }, // Here we set the image URL
+                    header: { imageMessage: { url: img.image }, hasMediaAttachment: true },
                     body: { text: img.text },
                     nativeFlowMessage: { buttons: [] }, // Remove buttons as requested
                     image: img.image
