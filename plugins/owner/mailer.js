@@ -1,6 +1,5 @@
 const nodemailer = require('nodemailer');
 const fs = require('fs');
-const axios = require('axios');
 const path = require('path');
 
 exports.run = {
@@ -22,13 +21,13 @@ exports.run = {
             if (m.quoted) {
                 const media = m.quoted;
                 if (media.mtype === 'imageMessage' || media.mtype === 'videoMessage' || media.mtype === 'document' || media.mtype === 'audioMessage') {
-                    const fileUrl = media.download;
-
-                    // Download the media file (image, video, document, audio, etc.)
-                    const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
-                    const fileName = media.fileName || 'media';
+                    // Download the media message (image, video, document, etc.)
+                    const mediaBuffer = await client.downloadMediaMessage(m.quoted);
+                    const fileName = media.fileName || 'media.' + media.mtype.split('Message')[0].toLowerCase();  // Set a default file extension
                     filePath = path.join(__dirname, fileName);
-                    fs.writeFileSync(filePath, response.data);
+
+                    // Save the media to a file
+                    fs.writeFileSync(filePath, mediaBuffer);
                     console.log('Media downloaded:', filePath);
                 }
             }
