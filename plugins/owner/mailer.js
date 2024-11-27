@@ -23,78 +23,12 @@ exports.run = {
                 const media = m.quoted;
                 console.log('Step 2: Message is a reply. Checking media type...');
 
-                // Handle image files
-                if (media.mtype === 'imageMessage') {
-                    console.log('Step 3: Media is an image. Proceeding to handle image...');
-                    randomFileName = crypto.randomBytes(8).toString('hex') + '.jpg';
-                    email = text.trim();
-                    subject = 'Your image from WhatsApp';
-                    msg = `Here is the image: **${randomFileName}**`;
-
-                    const mediaBuffer = await client.downloadMediaMessage(m.quoted);
-                    if (!mediaBuffer) {
-                        console.log('Error: Media not found or could not be downloaded.');
-                        return client.reply(m.chat, '❌ Failed to download the image.', m);
-                    }
-
-                    filePath = path.join(__dirname, randomFileName);
-                    fs.writeFileSync(filePath, mediaBuffer);
-                }
-                // Handle video files
-                else if (media.mtype === 'videoMessage') {
-                    console.log('Step 4: Media is a video. Proceeding to handle video...');
-                    randomFileName = crypto.randomBytes(8).toString('hex') + '.mp4';
-                    email = text.trim();
-                    subject = 'Your video from WhatsApp';
-                    msg = `Here is the video: **${randomFileName}**`;
-
-                    const mediaBuffer = await client.downloadMediaMessage(m.quoted);
-                    if (!mediaBuffer) {
-                        console.log('Error: Media not found or could not be downloaded.');
-                        return client.reply(m.chat, '❌ Failed to download the video.', m);
-                    }
-
-                    filePath = path.join(__dirname, randomFileName);
-                    fs.writeFileSync(filePath, mediaBuffer);
-                }
-                // Handle audio files
-                else if (media.mtype === 'audioMessage') {
-                    console.log('Step 5: Media is an audio. Proceeding to handle audio...');
-                    randomFileName = crypto.randomBytes(8).toString('hex') + '.mp3';
-                    email = text.trim();
-                    subject = 'Your audio from WhatsApp';
-                    msg = `Here is the audio: **${randomFileName}**`;
-
-                    const mediaBuffer = await client.downloadMediaMessage(m.quoted);
-                    if (!mediaBuffer) {
-                        console.log('Error: Media not found or could not be downloaded.');
-                        return client.reply(m.chat, '❌ Failed to download the audio.', m);
-                    }
-
-                    filePath = path.join(__dirname, randomFileName);
-                    fs.writeFileSync(filePath, mediaBuffer);
-                }
-                // Handle voice messages
-                else if (media.mtype === 'voiceMessage') {
-                    console.log('Step 6: Media is a voice message. Proceeding to handle voice message...');
-                    randomFileName = crypto.randomBytes(8).toString('hex') + '.opus';
-                    email = text.trim();
-                    subject = 'Your voice message from WhatsApp';
-                    msg = `Here is the voice message: **${randomFileName}**`;
-
-                    const mediaBuffer = await client.downloadMediaMessage(m.quoted);
-                    if (!mediaBuffer) {
-                        console.log('Error: Media not found or could not be downloaded.');
-                        return client.reply(m.chat, '❌ Failed to download the voice message.', m);
-                    }
-
-                    filePath = path.join(__dirname, randomFileName);
-                    fs.writeFileSync(filePath, mediaBuffer);
-                }
                 // Handle document files
-                else if (media.mtype === 'documentMessage') {
+                if (media.mtype === 'documentMessage') {
                     console.log('Step 7: Media is a document. Proceeding to handle document...');
-                    randomFileName = media.filename;  // Use the document's name
+                    
+                    // Ensure file name is set properly, use media.filename or generate a random name if undefined
+                    randomFileName = media.filename ? media.filename : crypto.randomBytes(8).toString('hex') + path.extname(media.url);
                     email = text.trim();
                     subject = `Your document from WhatsApp`;
                     msg = `Here is the document: **${randomFileName}**`;
@@ -105,8 +39,10 @@ exports.run = {
                         return client.reply(m.chat, '❌ Failed to download the document.', m);
                     }
 
+                    // Save document to local path
                     filePath = path.join(__dirname, randomFileName);
                     fs.writeFileSync(filePath, mediaBuffer);
+                    console.log(`Document saved at ${filePath}`);
                 }
 
                 // If file was downloaded, proceed to send email
@@ -142,7 +78,7 @@ exports.run = {
                             client.reply(m.chat, '❌ Error sending email.', m);
                         } else {
                             console.log('Email sent successfully:', data.response);
-                            client.reply(m.chat, `✅ Your ${media.mtype === 'documentMessage' ? 'document' : media.mtype} has been sent to your email.`, m);
+                            client.reply(m.chat, `✅ Your document has been sent to your email.`, m);
                         }
 
                         // Clean up: remove the temporary file
