@@ -1,22 +1,4 @@
 const nodemailer = require('nodemailer');
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto'); // For generating random filenames
-
-// List of supported file extensions for various document types, images, audio, and video
-const supportedExtensions = [
-    '.pdf', '.doc', '.docx', '.xlsx', '.pptx', '.txt', '.odt', '.csv', '.zip', '.rar', 
-    '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.ico', '.webp', 
-    '.mp3', '.wav', '.flac', '.ogg', '.m4a', '.aiff', '.wma', 
-    '.mp4', '.avi', '.mov', '.wmv', '.mkv', '.flv', '.webm', '.3gp', 
-    '.svg', '.json', '.xml', '.html', '.css', '.js', '.php', 
-    '.exe', '.apk', '.jar', '.bat', '.sh', '.psd', '.ai', '.eps', 
-    '.indd', '.epub', '.chm', '.pdb', '.fb2', '.mobi', '.azw3', 
-    '.rar', '.7z', '.tar', '.gzip', '.bz2', '.xz', '.iso', '.img', 
-    '.dmg', '.bin', '.vmdk', '.vhd', '.cue', '.torrent', '.md', 
-    '.rtf', '.sql', '.yaml', '.csv', '.vcf', '.ics', '.vcard', '.bak', 
-    '.log', '.dat', '.torrent', '.cue', '.ccd', '.nrg'
-];
 
 exports.run = {
     usage: ['mail'],
@@ -25,97 +7,57 @@ exports.run = {
     owner: true,
     async: async (m, { client, args, isPrefix, text, command, Func }) => {
         try {
-            let filePath = null;
-            let email = '';
-            let subject = '';
-            let msg = '';
-            let randomFileName = '';  // Ensure randomFileName is declared outside of the conditional blocks.
+            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
 
-            console.log('Step 1: Checking if the message is a reply to any media.');
+            client.sendReact(m.chat, '🕒', m.key);
 
-            // Check if the message is a reply to any media (image, video, document, etc.)
-            if (m.quoted) {
-                const media = m.quoted;
-                console.log('Step 2: Message is a reply. Checking media type...');
+            const [email, subject, msg] = text.split('|').map(str => str.trim());
+            if (!email || !subject || !msg) return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
 
-                // Handle document files
-                if (media.mtype === 'documentMessage') {
-                    console.log('Step 7: Media is a document. Proceeding to handle document...');
-                    
-                    // Get the file name with extension or generate random name
-                    randomFileName = media.filename || crypto.randomBytes(8).toString('hex') + path.extname(media.url);
-                    const fileExtension = path.extname(randomFileName).toLowerCase();
-
-                    // Ensure that the extension is supported
-                    if (supportedExtensions.includes(fileExtension)) {
-                        console.log(`Step 8: Supported document extension detected: ${fileExtension}`);
-                        
-                        // Prepare the email body and subject
-                        email = text.trim();
-                        subject = `Your document from WhatsApp`;
-                        msg = `File name: **${randomFileName}**`;
-
-                        // Check if the file is available and handle accordingly
-                        filePath = media.url;
-                    } else {
-                        console.log(`Step 9: Unsupported file extension detected: ${fileExtension}`);
-                        return client.reply(m.chat, '❌ Unsupported file extension. Please send a supported document type.', m);
-                    }
-                } else if (media.mtype === 'imageMessage' || media.mtype === 'videoMessage' || media.mtype === 'audioMessage') {
-                    // Handle image, video, and audio files (use a random name for media files)
-                    randomFileName = crypto.randomBytes(8).toString('hex') + path.extname(media.url);
-                    const mediaType = media.mtype === 'imageMessage' ? 'Image' : media.mtype === 'videoMessage' ? 'Video' : 'Audio';
-                    
-                    console.log(`Step 10: Media type is ${mediaType}. Proceeding to handle ${mediaType.toLowerCase()}...`);
-                    email = text.trim();
-                    subject = `${mediaType} from WhatsApp`;
-                    msg = `Your ${mediaType} has been sent as an attachment.`;
-                    filePath = media.url;
-                } else {
-                    console.log(`Step 11: Unsupported media type detected: ${media.mtype}`);
-                    return client.reply(m.chat, '❌ Unsupported media type. Please send a valid file.', m);
-                }
-            } else {
-                console.log('Step 4: No media found in the reply.');
-                return client.reply(m.chat, '❌ No media file found in the reply.', m);
-            }
-
-            // Step 12: Sending email
-            console.log('Step 12: Sending email...');
             const transporter = nodemailer.createTransport({
-                service: 'gmail',
+                host: 'smtp.zoho.com',
+                port: 587,
+                secure: false,
                 auth: {
-                    user: 'notifications@lucifercloud.app',  // Replace with your email
-                    pass: 'Hiba@marijan09'          // Replace with your email password or use OAuth
+                    user: 'notifications@lucifercloud.app',
+                    pass: 'Hiba@marijan09'
                 }
             });
+
+            const template = `
+                <div style="max-width: 600px; margin: auto; padding: 20px; font-family: Arial, sans-serif;">
+                    <div style="line-height: 2; letter-spacing: 0.5px; padding: 10px; border: 1px solid #DDD; border-radius: 14px;">
+                        <h3 style="margin-top: 0;">Hi <b>${m.pushName} 😘</b> Welcome to Lucifer - MD, an awesome WhatsApp Bot!</h3>
+                        <br><br>${msg}<br><br>
+                        If you have any problem, please contact via <span style="color: #4D96FF;"><a href="https://api.whatsapp.com/send?phone=923229931076">WhatsApp</a></span><br>
+                        <span>Regards,<br>Ibrahim</span>
+                    </div>
+                </div>
+            `;
 
             const mailOptions = {
-                from: 'notifications@lucifercloud.app',
+                from: {
+                    name: 'Lucifer - MD (WhatsApp Bot)',
+                    address: 'notifications@lucifercloud.app'
+                },
                 to: email,
                 subject: subject,
-                text: msg,
-                attachments: [
-                    {
-                        filename: randomFileName,
-                        path: filePath
-                    }
-                ]
+                html: template
             };
 
-            transporter.sendMail(mailOptions, (error, info) => {
-                if (error) {
-                    console.log(`❌ Error while sending email: ${error}`);
-                    client.reply(m.chat, '❌ Error while sending email.', m);
+            transporter.sendMail(mailOptions, function(err, data) {
+                if (err) {
+                    console.error(err);
+                    client.reply(m.chat, Func.texted('bold', `❌ Error sending email to ${email}`), m);
                 } else {
-                    console.log(`✅ Email sent successfully: ${info.response}`);
-                    client.reply(m.chat, '✅ Your file has been sent to the specified email address.', m);
+                    console.log('Email sent:', data.response);
+                    client.reply(m.chat, `✅ Successfully sent email`, m);
                 }
             });
-
-        } catch (error) {
-            console.log(`❌ An error occurred: ${error}`);
-            client.reply(m.chat, '❌ An error occurred while processing your request.', m);
+        } catch (e) {
+            console.error(e);
+            client.reply(m.chat, Func.jsonFormat(e), m);
         }
-    }
+    },
+    __filename
 };
