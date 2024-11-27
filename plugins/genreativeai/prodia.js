@@ -103,7 +103,7 @@ exports.run = {
                 // Create cards for each image
                 const cards = [{
                     header: {
-                       imageMessage: img1,
+                       imageMessage: buffer1,
                        hasMediaAttachment: true,
                     },
                     body: {
@@ -114,7 +114,7 @@ exports.run = {
                     }
                  }, {
                     header: {
-                       imageMessage: img2,
+                       imageMessage: buffer2,
                        hasMediaAttachment: true,
                     },
                     body: {
@@ -125,7 +125,7 @@ exports.run = {
                     }
                  }, {
                     header: {
-                       imageMessage: img3,
+                       imageMessage: buffer3,
                        hasMediaAttachment: true,
                     },
                     body: {
@@ -136,7 +136,7 @@ exports.run = {
                     }
                  }, {
                     header: {
-                       imageMessage: img4,
+                       imageMessage: buffer4,
                        hasMediaAttachment: true,
                     },
                     body: {
@@ -148,7 +148,7 @@ exports.run = {
                  },
                  {
                     header: {
-                       imageMessage: img5,
+                       imageMessage: buffer5,
                        hasMediaAttachment: true,
                     },
                     body: {
@@ -160,7 +160,7 @@ exports.run = {
                  },
                  {
                     header: {
-                       imageMessage: img6,
+                       imageMessage: buffer6,
                        hasMediaAttachment: true,
                     },
                     body: {
