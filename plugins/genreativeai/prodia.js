@@ -94,7 +94,12 @@ exports.run = {
                 const img4 = `https://images.prodia.xyz/${jobIds[3]}.png`;
                 const img5 = `https://images.prodia.xyz/${jobIds[4]}.png`;
                 const img6 = `https://images.prodia.xyz/${jobIds[5]}.png`;
-
+                buffer1 = Func.fetchBuffer(`https://images.prodia.xyz/${jobIds[0]}.png`);
+                buffer2 = Func.fetchBuffer(`https://images.prodia.xyz/${jobIds[1]}.png`);
+                buffer3 = Func.fetchBuffer(`https://images.prodia.xyz/${jobIds[2]}.png`);
+                buffer4 = Func.fetchBuffer(`https://images.prodia.xyz/${jobIds[3]}.png`);
+                buffer5 = Func.fetchBuffer(`https://images.prodia.xyz/${jobIds[4]}.png`);
+                buffer6 = Func.fetchBuffer(`https://images.prodia.xyz/${jobIds[5]}.png`);
                 // Create cards for each image
                 const cards = [{
                     header: {
