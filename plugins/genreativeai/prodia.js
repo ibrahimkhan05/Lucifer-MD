@@ -20,9 +20,11 @@ const models = [
     "childrensStories_v1ToonAnime.safetensors [2ec7b88b]"
 ];
 
+const PRODIA_API_KEY = '501eba46-a956-4649-96aa-2d9cc0f048bf';
+
 exports.run = {
     usage: ['txt2img'],
-    hidden: [],  // No need to hide models as we are using a fixed model list
+    hidden: [],
     use: 'prompt',
     category: 'generativeai',
     async: async (m, { client, text, isPrefix, command, Func }) => {
@@ -45,52 +47,69 @@ exports.run = {
             client.sendReact(m.chat, '🕒', m.key);
             const imagePromises = selectedModels.map(async (model) => {
                 const requestData = {
-                    prompt: text,
                     model: model,
-                    steps: 25,
+                    prompt: text,
+                    negative_prompt: "blurry, bad quality",
+                    steps: 20,
+                    style_preset: "cinematic",
                     cfg_scale: 7,
+                    seed: -1,
+                    upscale: true,
                     sampler: "DPM++ 2M Karras",
-                    negative_prompt: "blurry, bad quality"
+                    width: 512,
+                    height: 512
                 };
 
-                // Make API request to start image generation for each model
+                // Make API request to start image generation for each model (Prodia API)
                 try {
-                    const response = await axios.post('https://nexra.aryahcr.cc/api/image/complements', {
-                        prompt: text,
-                        model: "prodia",
-                        data: requestData
-                    }, {
-                        headers: { 'Content-Type': 'application/json' }
+                    const response = await axios.post('https://api.prodia.com/v1/sd/generate', requestData, {
+                        headers: {
+                            'X-Prodia-Key': PRODIA_API_KEY,
+                            'accept': 'application/json',
+                            'content-type': 'application/json'
+                        }
                     });
 
                     // Get the job ID to track status
-                    const jobId = response.data.id;
+                    const jobId = response.data.job;
 
                     // Poll for the job status
-                    let jobStatus = 'pending';
-                    while (jobStatus === 'pending') {
-                        const statusResponse = await axios.get(`http://nexra.aryahcr.cc/api/image/complements/${encodeURIComponent(jobId)}`);
-                        jobStatus = statusResponse.data.status;
+                    let jobStatus = 'queued';
+                    let imageUrl = null;
 
-                        if (jobStatus === 'completed' || jobStatus === 'error') {
-                            if (jobStatus === 'completed') {
-                                const imageUrl = statusResponse.data.images[0]; // Get image URL
-                                if (imageUrl) {
-                                    const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-                                    const imageBuffer = Buffer.from(imageResponse.data);
-
-                                    return {
-                                        image: imageBuffer,
-                                        text: `*Prompt*: ${text} - Model: ${model}`
-                                    };
-                                }
+                    while (jobStatus !== 'succeeded' && jobStatus !== 'error') {
+                        const statusResponse = await axios.get(`https://api.prodia.com/v1/job/${jobId}`, {
+                            headers: {
+                                'X-Prodia-Key': PRODIA_API_KEY,
+                                'accept': 'application/json'
                             }
+                        });
+                        jobStatus = statusResponse.data.status;
+                        if (jobStatus === 'succeeded') {
+                            imageUrl = statusResponse.data.imageUrl; // Get the image URL
+                            break;
+                        }
+                        if (jobStatus === 'error') {
                             break;
                         }
 
-                        // Wait a bit before polling again
+                        // Wait before polling again
                         await new Promise(resolve => setTimeout(resolve, 5000)); // Poll every 5 seconds
                     }
+
+                    if (imageUrl) {
+                        // Fetch the image
+                        const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+                        const imageBuffer = Buffer.from(imageResponse.data);
+
+                        return {
+                            image: imageBuffer,
+                            text: `*Prompt*: ${text} - Model: ${model}`
+                        };
+                    } else {
+                        return { error: true };
+                    }
+
                 } catch (e) {
                     console.error('Error generating image for model', model, e);
                     return { error: true };
