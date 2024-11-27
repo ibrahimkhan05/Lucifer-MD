@@ -7,35 +7,56 @@ exports.run = {
        Func
     }) => {
        try {
-          const buttons = [{
-             name: 'quick_reply',
-             buttonParamsJson: JSON.stringify({
-                display_text: 'Runtime',
-                id: `${isPrefix}run`
-             })
-          }, {
-             name: 'single_select',
-             buttonParamsJson: JSON.stringify({
-                title: 'Tap Here!',
-                sections: [{
-                   rows: [{
-                      title: 'Dummy 1',
-                      // description: `X`,
-                      id: `${isPrefix}run`
-                   }, {
-                      title: 'Dummy 2',
-                      // description: `Y`,
-                      id: `${isPrefix}run`
-                   }]
-                }]
-             })
-          }]
-          client.sendIAMessage(m.chat, buttons, m, {
-             header: '',
-             content: 'Hi!',
-             footer: global.footer,
-             media: global.db.setting.cover
-          })
+         var buttons = [{
+            name: "quick_reply",
+            buttonParamsJson: JSON.stringify({
+               display_text: "OWNER",
+               id: '.owner'
+            }),
+         }, {
+            name: "cta_url",
+            buttonParamsJson: JSON.stringify({
+               display_text: "Rest API",
+               url: "https://api.neoxr.my.id",
+               merchant_url: "https://api.neoxr.my.id"
+            })
+         }, {
+            name: "cta_copy",
+            buttonParamsJson: JSON.stringify({
+               display_text: "Copy",
+               copy_code: "123456"
+            })
+         }, {
+            name: "cta_call",
+            buttonParamsJson: JSON.stringify({
+               display_text: "Call",
+               phone_number: "6285887776722"
+            })
+         }, {
+            name: "single_select",
+            buttonParamsJson: JSON.stringify({
+               title: "Tap!",
+               sections: [{
+                  rows: [{
+                     title: "Owner",
+                     description: `X`,
+                     id: `.owner`
+                  }, {
+                     title: "Runtime",
+                     description: `Y`,
+                     id: `.run`
+                  }]
+               }]
+            })
+         }]
+         
+         // button & list
+         client.sendIAMessage(m.chat, buttons, m, {
+            header: '',
+            content: 'Hi!',
+            footer: '',
+            media: global.db.setting.cover // video or image link
+         })
        } catch (e) {
           client.reply(m.chat, Func.jsonFormat(e), m)
        }
