@@ -60,14 +60,18 @@ exports.run = {
                 // Check the status and break if completed or errored
                 if (jobStatus === 'completed' || jobStatus === 'error') {
                     if (jobStatus === 'completed') {
-                        const base64Image = statusResponse.data.images[0]; // Get Base64 image data
+                        const imageUrl = statusResponse.data.images[0]; // Get image URL
 
-                        // Check if the image data exists
-                        if (base64Image) {
-                            const imageBuffer = Buffer.from(base64Image.split(",")[1], 'base64'); // Extract image data from Base64 string
+                        // Check if the image URL exists
+                        if (imageUrl) {
+                            // Download the image from the URL
+                            const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+                            const imageBuffer = Buffer.from(imageResponse.data);
+
+                            // Send the image to the user
                             client.sendFile(m.chat, imageBuffer, 'image.jpg', `*Prompt*: ${text}`, m);
                         } else {
-                            client.reply(m.chat, 'Image data not found or invalid', m);
+                            client.reply(m.chat, 'Image URL not found or invalid', m);
                         }
                     } else {
                         client.reply(m.chat, 'Error generating image', m);
