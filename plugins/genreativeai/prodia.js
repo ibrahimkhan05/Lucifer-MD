@@ -1,4 +1,4 @@
-const axios = require('axios');
+const { exec } = require('child_process');
 
 // List of 16 best models
 const models = [
@@ -19,8 +19,6 @@ const models = [
     "childrensStories_v1SemiReal.safetensors [a1c56dbb]",
     "childrensStories_v1ToonAnime.safetensors [2ec7b88b]"
 ];
-
-const PRODIA_API_KEY = '501eba46-a956-4649-96aa-2d9cc0f048bf';
 
 exports.run = {
     usage: ['txt2img'],
@@ -45,73 +43,83 @@ exports.run = {
 
             // Step 3: Automatically use the selected models to generate images
             client.sendReact(m.chat, '🕒', m.key);
-            const imagePromises = selectedModels.map(async (model) => {
-                const requestData = {
-                    model: model,
-                    prompt: text,
-                    negative_prompt: "blurry, bad quality",
-                    steps: 20,
-                    style_preset: "cinematic",
-                    cfg_scale: 7,
-                    seed: -1,
-                    upscale: true,
-                    sampler: "DPM++ 2M Karras",
-                    width: 512,
-                    height: 512
-                };
+            console.log('Generating images for models:', selectedModels);
 
-                // Make API request to start image generation for each model (Prodia API)
+            const imagePromises = selectedModels.map(async (model) => {
+                const curlCommand = `curl --request POST \
+                    --url https://api.prodia.com/v1/sd/generate \
+                    --header 'X-Prodia-Key: 501eba46-a956-4649-96aa-2d9cc0f048bf' \
+                    --header 'accept: application/json' \
+                    --header 'content-type: application/json' \
+                    --data '{
+                        "model": "${model}",
+                        "prompt": "${text}",
+                        "negative_prompt": "badly drawn",
+                        "steps": 25,
+                        "style_preset": "cinematic",
+                        "cfg_scale": 7,
+                        "seed": -1,
+                        "upscale": true,
+                        "sampler": "DPM++ 2M Karras",
+                        "width": 512,
+                        "height": 512
+                    }'`;
+
                 try {
-                    const response = await axios.post('https://api.prodia.com/v1/sd/generate', requestData, {
-                        headers: {
-                            'X-Prodia-Key': PRODIA_API_KEY,
-                            'accept': 'application/json',
-                            'content-type': 'application/json'
-                        }
+                    // Step 4: Execute cURL request to generate the image
+                    console.log(`Sending generation request for model: ${model}`);
+                    const jobResponse = await new Promise((resolve, reject) => {
+                        exec(curlCommand, (error, stdout, stderr) => {
+                            if (error) {
+                                reject(error);
+                            } else {
+                                resolve(JSON.parse(stdout));
+                            }
+                        });
                     });
 
                     // Get the job ID to track status
-                    const jobId = response.data.job;
+                    const jobId = jobResponse.job;
+                    console.log(`Generation started, job ID: ${jobId}`);
 
                     // Poll for the job status
                     let jobStatus = 'queued';
-                    let imageUrl = null;
+                    while (jobStatus === 'queued' || jobStatus === 'processing') {
+                        console.log(`Polling job status for job ID: ${jobId}`);
+                        const statusCurlCommand = `curl --request GET \
+                            --url https://api.prodia.com/v1/job/${jobId} \
+                            --header 'X-Prodia-Key: 501eba46-a956-4649-96aa-2d9cc0f048bf' \
+                            --header 'accept: application/json'`;
 
-                    while (jobStatus !== 'succeeded' && jobStatus !== 'error') {
-                        const statusResponse = await axios.get(`https://api.prodia.com/v1/job/${jobId}`, {
-                            headers: {
-                                'X-Prodia-Key': PRODIA_API_KEY,
-                                'accept': 'application/json'
-                            }
+                        const statusResponse = await new Promise((resolve, reject) => {
+                            exec(statusCurlCommand, (error, stdout, stderr) => {
+                                if (error) {
+                                    reject(error);
+                                } else {
+                                    resolve(JSON.parse(stdout));
+                                }
+                            });
                         });
-                        jobStatus = statusResponse.data.status;
+
+                        jobStatus = statusResponse.status;
+
                         if (jobStatus === 'succeeded') {
-                            imageUrl = statusResponse.data.imageUrl; // Get the image URL
-                            break;
-                        }
-                        if (jobStatus === 'error') {
-                            break;
+                            const imageUrl = statusResponse.imageUrl;
+                            console.log(`Image generation successful for model: ${model}`);
+                            return {
+                                image: imageUrl,
+                                text: `*Prompt*: ${text} - Model: ${model}`
+                            };
+                        } else if (jobStatus === 'failed') {
+                            console.log(`Image generation failed for model: ${model}`);
+                            return { error: true };
                         }
 
-                        // Wait before polling again
+                        // Wait a bit before polling again
                         await new Promise(resolve => setTimeout(resolve, 5000)); // Poll every 5 seconds
                     }
-
-                    if (imageUrl) {
-                        // Fetch the image
-                        const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-                        const imageBuffer = Buffer.from(imageResponse.data);
-
-                        return {
-                            image: imageBuffer,
-                            text: `*Prompt*: ${text} - Model: ${model}`
-                        };
-                    } else {
-                        return { error: true };
-                    }
-
                 } catch (e) {
-                    console.error('Error generating image for model', model, e);
+                    console.error(`Error generating image for model: ${model}`, e);
                     return { error: true };
                 }
             });
@@ -125,14 +133,16 @@ exports.run = {
             if (validImages.length > 0) {
                 // Send the valid images as a carousel
                 const carousel = validImages.map((img) => ({
-                    header: { imageMessage: global.db.setting.cover, hasMediaAttachment: true },
+                    header: { imageMessage: { url: img.image }, hasMediaAttachment: true },
                     body: { text: img.text },
                     nativeFlowMessage: { buttons: [] }, // Remove buttons as requested
                     image: img.image
                 }));
 
+                console.log('Sending carousel of generated images');
                 client.sendCarousel(m.chat, carousel, m, { content: 'Here are the generated images!' });
             } else {
+                console.log('Error: No valid images were generated');
                 client.reply(m.chat, 'Error generating images', m);
             }
         } catch (e) {
