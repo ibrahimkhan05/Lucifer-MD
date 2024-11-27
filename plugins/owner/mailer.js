@@ -9,19 +9,16 @@ exports.run = {
     owner: true,
     async: async (m, { client, args, isPrefix, text, command, Func }) => {
         try {
-            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
-
-            client.sendReact(m.chat, '🕒', m.key);
-
-            const [email, subject, msg] = text.split('|').map(str => str.trim());
-            if (!email || !subject || !msg) return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
-
             let filePath = null;
-            // Check if the user is replying to any media (image, video, document, etc.)
+            let isReplyToMedia = false;
+            let subject = '';
+            let msg = '';
+
+            // Check if the message is a reply to any media (image, video, document, etc.)
             if (m.quoted) {
                 const media = m.quoted;
                 if (media.mtype === 'imageMessage' || media.mtype === 'videoMessage' || media.mtype === 'document' || media.mtype === 'audioMessage') {
-                    // Download the media message (image, video, document, etc.)
+                    // Download the media message
                     const mediaBuffer = await client.downloadMediaMessage(m.quoted);
                     const fileName = media.fileName || 'media.' + media.mtype.split('Message')[0].toLowerCase();  // Set a default file extension
                     filePath = path.join(__dirname, fileName);
@@ -29,7 +26,30 @@ exports.run = {
                     // Save the media to a file
                     fs.writeFileSync(filePath, mediaBuffer);
                     console.log('Media downloaded:', filePath);
+
+                    // If it's a media reply, set `isReplyToMedia` to true and only require email
+                    isReplyToMedia = true;
                 }
+            }
+
+            if (!isReplyToMedia) {
+                // If not replying to media, we require the user to provide email | subject | message
+                if (!text) {
+                    return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
+                }
+
+                // Extract email, subject, and message from the command input
+                const [email, inputSubject, inputMsg] = text.split('|').map(str => str.trim());
+                if (!email || !inputSubject || !inputMsg) {
+                    return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
+                }
+
+                subject = inputSubject;
+                msg = inputMsg;
+            } else {
+                // If it's a reply to media, use the default subject and message
+                subject = 'Your document from WhatsApp';  // Default subject for documents
+                msg = `Here is the document: <b>${path.basename(filePath)}</b>`;
             }
 
             const transporter = nodemailer.createTransport({
@@ -42,16 +62,27 @@ exports.run = {
                 }
             });
 
-            const template = `
-                <div style="max-width: 600px; margin: auto; padding: 20px; font-family: Arial, sans-serif;">
-                    <div style="line-height: 2; letter-spacing: 0.5px; padding: 10px; border: 1px solid #DDD; border-radius: 14px;">
-                        <h3 style="margin-top: 0;">Hi <b>${m.pushName}</b>, Welcome to Lucifer - MD, an awesome WhatsApp Bot!</h3>
-                        <br><br>${msg}<br><br>
-                        If you have any problem, please contact via <span style="color: #4D96FF;"><a href="https://api.whatsapp.com/send?phone=923229931076">WhatsApp</a></span><br>
-                        <span>Regards,<br>Ibrahim</span>
-                    </div>
-                </div>
-            `;
+            // Check if the file is a document and adjust the body formatting
+            let body = msg;
+            let attachments = [];
+
+            if (filePath) {
+                const extname = path.extname(filePath).toLowerCase();
+                // For document files, send the file with a bold name in the body, no HTML design
+                if (extname === '.pdf' || extname === '.docx' || extname === '.txt') {
+                    body = `Your document from WhatsApp\n\nFile: **${path.basename(filePath)}**`;
+                    attachments = [{
+                        filename: path.basename(filePath),
+                        path: filePath,
+                    }];
+                } else {
+                    // For other media types (e.g., image, video), include them as attachments
+                    attachments = [{
+                        filename: path.basename(filePath),
+                        path: filePath,
+                    }];
+                }
+            }
 
             const mailOptions = {
                 from: {
@@ -60,14 +91,11 @@ exports.run = {
                 },
                 to: email,
                 subject: subject,
-                html: template,
-                attachments: filePath ? [{
-                    filename: path.basename(filePath),
-                    path: filePath,
-                }] : [] // Attach media only if available
+                html: isReplyToMedia ? body : body,  // Send HTML formatted message for media
+                attachments: attachments
             };
 
-            transporter.sendMail(mailOptions, function(err, data) {
+            transporter.sendMail(mailOptions, function (err, data) {
                 if (err) {
                     console.error(err);
                     client.reply(m.chat, Func.texted('bold', `❌ Error sending email to ${email}`), m);
