@@ -19,8 +19,8 @@ exports.run = {
                 port: 587,
                 secure: false,
                 auth: {
-                    user: 'no-reply@verify.lucifercloud.me',
-                    pass: 'Ibrahim@109'
+                    user: 'notifications@lucifercloud.app',
+                    pass: 'Hiba@marijan09'
                 }
             });
 
