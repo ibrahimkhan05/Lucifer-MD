@@ -96,8 +96,80 @@ exports.run = {
                 const img6 = `https://images.prodia.xyz/${jobIds[5]}.png`;
 
                 // Create cards for each image
-                client.sendFile(m.chat, img6, 'image.jpg', `◦  *Prompt* : ${text}`, m)
-
+                const cards = [{
+                    header: {
+                       imageMessage: img1,
+                       hasMediaAttachment: true,
+                    },
+                    body: {
+                       text: "P"
+                    },
+                    nativeFlowMessage: {
+                       // Removed buttons field
+                    }
+                 }, {
+                    header: {
+                       imageMessage: img2,
+                       hasMediaAttachment: true,
+                    },
+                    body: {
+                       text: "P"
+                    },
+                    nativeFlowMessage: {
+                       // Removed buttons field
+                    }
+                 }, {
+                    header: {
+                       imageMessage: img3,
+                       hasMediaAttachment: true,
+                    },
+                    body: {
+                       text: "P"
+                    },
+                    nativeFlowMessage: {
+                       // Removed buttons field
+                    }
+                 }, {
+                    header: {
+                       imageMessage: img4,
+                       hasMediaAttachment: true,
+                    },
+                    body: {
+                       text: "P"
+                    },
+                    nativeFlowMessage: {
+                       // Removed buttons field
+                    }
+                 }
+                 {
+                    header: {
+                       imageMessage: img5,
+                       hasMediaAttachment: true,
+                    },
+                    body: {
+                       text: "P"
+                    },
+                    nativeFlowMessage: {
+                       // Removed buttons field
+                    }
+                 },
+                 {
+                    header: {
+                       imageMessage: img6,
+                       hasMediaAttachment: true,
+                    },
+                    body: {
+                       text: "P"
+                    },
+                    nativeFlowMessage: {
+                       // Removed buttons field
+                    }
+                 }];
+                 
+                 client.sendCarousel(m.chat, cards, m, {
+                    content: 'Hi!'
+                 });
+                 
                 // Send carousel of generated images
                 
             }, 20000); // Wait for 20 seconds before fetching the images
