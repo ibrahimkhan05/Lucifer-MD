@@ -6,7 +6,7 @@ const models = {
 };
 
 exports.run = {
-    usage: ['genreate'],
+    usage: ['generate'],
     category: 'generativeai',
     async: async (m, { client, text, command }) => {
         try {
@@ -35,7 +35,7 @@ const handleModelGeneration = async (modelKey, promptText, client, message) => {
         --header 'accept: application/json' \
         --header 'content-type: application/json' \
         --data '{
-            "model": "${model}",
+            "model": "${models}",
             "prompt": "${promptText}",
             "negative_prompt": "badly drawn",
             "style_preset": "cinematic",
