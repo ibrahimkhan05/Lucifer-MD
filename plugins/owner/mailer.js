@@ -11,10 +11,10 @@ exports.run = {
     async: async (m, { client, args, isPrefix, text, command, Func }) => {
         try {
             let filePath = null;
-            let isReplyToMedia = false;
             let email = '';
             let subject = '';
             let msg = '';
+            let randomFileName = '';  // Ensure randomFileName is declared outside of the conditional blocks.
 
             console.log('Step 1: Checking if the message is a reply to any media.');
 
@@ -27,7 +27,7 @@ exports.run = {
                 if (media.mtype === 'imageMessage') {
                     console.log('Step 3: Media is an image. Proceeding to handle image...');
                     // Generate random file name for image
-                    const randomFileName = crypto.randomBytes(8).toString('hex') + '.jpg';
+                    randomFileName = crypto.randomBytes(8).toString('hex') + '.jpg';
                     email = text.trim();  // Take the email provided in the text
                     subject = 'Your image from WhatsApp';  // Default subject for images
                     msg = `Here is the image: **${randomFileName}**`;  // File name as the message body
@@ -47,7 +47,7 @@ exports.run = {
                 else if (media.mtype === 'videoMessage') {
                     console.log('Step 4: Media is a video. Proceeding to handle video...');
                     // Generate random file name for video
-                    const randomFileName = crypto.randomBytes(8).toString('hex') + '.mp4';
+                    randomFileName = crypto.randomBytes(8).toString('hex') + '.mp4';
                     email = text.trim();  // Take the email provided in the text
                     subject = 'Your video from WhatsApp';  // Default subject for videos
                     msg = `Here is the video: **${randomFileName}**`;  // File name as the message body
