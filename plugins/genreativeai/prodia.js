@@ -140,7 +140,7 @@ exports.run = {
                     nativeFlowMessage: {
                        // Removed buttons field
                     }
-                 }
+                 },
                  {
                     header: {
                        imageMessage: img5,
