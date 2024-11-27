@@ -27,6 +27,7 @@ exports.run = {
     category: 'generativeai',
     async: async (m, { client, text, isPrefix, command, Func }) => {
         try {
+            // Step 1: If no text is provided, prompt for text
             if (!text) {
                 return client.reply(m.chat, Func.example(isPrefix, command, 'cat,fish'), m);
             }
@@ -40,10 +41,13 @@ exports.run = {
                 }
             }
 
+            // Step 3: Automatically use the selected models to generate images
             client.sendReact(m.chat, '🕒', m.key);
             console.log('Generating images for models:', selectedModels);
 
-            const imagePromises = selectedModels.map(async (model) => {
+            const jobIds = []; // Store job IDs for each model
+
+            selectedModels.forEach((model) => {
                 const curlCommand = `curl --request POST \
                     --url https://api.prodia.com/v1/sd/generate \
                     --header 'X-Prodia-Key: 501eba46-a956-4649-96aa-2d9cc0f048bf' \
@@ -64,90 +68,43 @@ exports.run = {
                     }'`;
 
                 try {
-                    const jobResponse = await new Promise((resolve, reject) => {
-                        exec(curlCommand, (error, stdout, stderr) => {
-                            if (error) {
-                                reject(error);
-                            } else {
-                                resolve(JSON.parse(stdout));
-                            }
-                        });
+                    // Step 4: Execute cURL request to generate the image and get job ID
+                    console.log(`Sending generation request for model: ${model}`);
+                    exec(curlCommand, (error, stdout, stderr) => {
+                        if (error) {
+                            console.error(`Error generating image for model: ${model}`, error);
+                        } else {
+                            const response = JSON.parse(stdout);
+                            const jobId = response.job;
+                            console.log(`Generation started for model: ${model}, Job ID: ${jobId}`);
+                            jobIds.push(jobId); // Store the job ID
+                        }
                     });
-
-                    const jobId = jobResponse.job;
-                    console.log(`Generation started, job ID: ${jobId}`);
-
-                    let jobStatus = 'queued';
-                    let attempts = 0;
-                    const maxAttempts = 5; // Retry up to 5 times if necessary
-                    const pollInterval = 5000; // 5 seconds polling interval
-
-                    while (jobStatus === 'queued' || jobStatus === 'processing') {
-                        console.log(`Polling job status for job ID: ${jobId}`);
-                        const statusCurlCommand = `curl --request GET \
-                            --url https://api.prodia.com/v1/job/${jobId} \
-                            --header 'X-Prodia-Key: 501eba46-a956-4649-96aa-2d9cc0f048bf' \
-                            --header 'accept: application/json'`;
-
-                        const statusResponse = await new Promise((resolve, reject) => {
-                            exec(statusCurlCommand, (error, stdout, stderr) => {
-                                if (error) {
-                                    reject(error);
-                                } else {
-                                    resolve(JSON.parse(stdout));
-                                }
-                            });
-                        });
-
-                        jobStatus = statusResponse.status;
-
-                        if (jobStatus === 'succeeded') {
-                            const imageUrl = statusResponse.imageUrl;
-                            console.log(`Image generation successful for model: ${model}`);
-                            return {
-                                image: imageUrl,
-                                text: `*Prompt*: ${text} - Model: ${model}`
-                            };
-                        } else if (jobStatus === 'failed') {
-                            console.log(`Image generation failed for model: ${model}`);
-                            return { error: true };
-                        }
-
-                        // Wait a bit before polling again
-                        attempts++;
-                        if (attempts >= maxAttempts) {
-                            console.log(`Maximum retry attempts reached for job ID: ${jobId}`);
-                            return { error: true };
-                        }
-
-                        await new Promise(resolve => setTimeout(resolve, pollInterval)); // Poll every 5 seconds
-                    }
                 } catch (e) {
                     console.error(`Error generating image for model: ${model}`, e);
-                    return { error: true };
                 }
             });
 
-            // Wait for all image generation promises to complete
-            const images = await Promise.all(imagePromises);
-
-            // Filter out any errors and ensure valid data
-            const validImages = images.filter(img => img && !img.error);
-
-            if (validImages.length > 0) {
-                const carousel = validImages.map((img) => ({
-                    header: { imageMessage: { url: img.image }, hasMediaAttachment: true },
-                    body: { text: img.text },
+            // Step 5: Wait for 20 seconds (assuming the images will be ready by then)
+            setTimeout(async () => {
+                // Generate image URLs after 20 seconds
+                const imageUrls = jobIds.map(jobId => `https://images.prodia.xyz/${jobId}.png`);
+                
+                // Send image URLs as a carousel
+                const carousel = imageUrls.map((url, index) => ({
+                    header: { imageMessage: { url: url }, hasMediaAttachment: true },
+                    body: { text: `Model: ${selectedModels[index]}` },
                     nativeFlowMessage: { buttons: [] },
-                    image: img.image
+                    image: url
                 }));
 
                 console.log('Sending carousel of generated images');
-                client.sendCarousel(m.chat, carousel, m, { content: 'Here are the generated images!' });
-            } else {
-                console.log('Error: No valid images were generated');
-                client.reply(m.chat, 'Error generating images', m);
-            }
+                if (carousel.length > 0) {
+                    client.sendCarousel(m.chat, carousel, m, { content: 'Here are the generated images!' });
+                } else {
+                    client.reply(m.chat, 'Error generating images', m);
+                }
+            }, 20000); // Wait for 20 seconds before fetching the images
         } catch (e) {
             console.error('Error:', e);
             client.reply(m.chat, 'An error occurred while generating the image', m);
