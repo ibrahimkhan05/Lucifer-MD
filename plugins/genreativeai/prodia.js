@@ -54,12 +54,21 @@ exports.run = {
                 const statusResponse = await axios.get(`http://nexra.aryahcr.cc/api/image/complements/${encodeURIComponent(jobId)}`);
                 jobStatus = statusResponse.data.status;
 
+                // Log the status response for debugging
+                console.log('Job status response:', statusResponse.data);
+
                 // Check the status and break if completed or errored
                 if (jobStatus === 'completed' || jobStatus === 'error') {
                     if (jobStatus === 'completed') {
-                        const imageUrl = statusResponse.data.image_url;
-                        const imageBuffer = Buffer.from(imageUrl.split(",")[1], 'base64');
-                        client.sendFile(m.chat, imageBuffer, 'image.jpg', `*Prompt*: ${text}`, m);
+                        const base64Image = statusResponse.data.images[0]; // Get Base64 image data
+
+                        // Check if the image data exists
+                        if (base64Image) {
+                            const imageBuffer = Buffer.from(base64Image.split(",")[1], 'base64'); // Extract image data from Base64 string
+                            client.sendFile(m.chat, imageBuffer, 'image.jpg', `*Prompt*: ${text}`, m);
+                        } else {
+                            client.reply(m.chat, 'Image data not found or invalid', m);
+                        }
                     } else {
                         client.reply(m.chat, 'Error generating image', m);
                     }
