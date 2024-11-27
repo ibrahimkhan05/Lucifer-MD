@@ -88,94 +88,30 @@ exports.run = {
             // Step 5: Wait for 20 seconds (assuming the images will be ready by then)
             setTimeout(async () => {
                 // Generate image URLs after 20 seconds
-                const img1 = `https://images.prodia.xyz/${jobIds[0]}.png`;
-                const img2 = `https://images.prodia.xyz/${jobIds[1]}.png`;
-                const img3 = `https://images.prodia.xyz/${jobIds[2]}.png`;
-                const img4 = `https://images.prodia.xyz/${jobIds[3]}.png`;
-                const img5 = `https://images.prodia.xyz/${jobIds[4]}.png`;
-                const img6 = `https://images.prodia.xyz/${jobIds[5]}.png`;
-                buffer1 = Func.fetchBuffer(`https://images.prodia.xyz/${jobIds[0]}.png`);
-                buffer2 = Func.fetchBuffer(`https://images.prodia.xyz/${jobIds[1]}.png`);
-                buffer3 = Func.fetchBuffer(`https://images.prodia.xyz/${jobIds[2]}.png`);
-                buffer4 = Func.fetchBuffer(`https://images.prodia.xyz/${jobIds[3]}.png`);
-                buffer5 = Func.fetchBuffer(`https://images.prodia.xyz/${jobIds[4]}.png`);
-                buffer6 = Func.fetchBuffer(`https://images.prodia.xyz/${jobIds[5]}.png`);
+                const imageUrls = jobIds.map(jobId => `https://images.prodia.xyz/${jobId}.png`);
+                
+                // Fetch buffers for each image URL
+                const buffers = await Promise.all(imageUrls.map(url => Func.fetchBuffer(url)));
+
                 // Create cards for each image
-                const cards = [{
+                const cards = buffers.map((buffer, index) => ({
                     header: {
-                       imageMessage: buffer1,
-                       hasMediaAttachment: true,
+                        imageMessage: buffer,
+                        hasMediaAttachment: true,
                     },
                     body: {
-                       text: "P"
+                        text: "P"
                     },
                     nativeFlowMessage: {
-                       // Removed buttons field
+                        // Removed buttons field
                     }
-                 }, {
-                    header: {
-                       imageMessage: buffer2,
-                       hasMediaAttachment: true,
-                    },
-                    body: {
-                       text: "P"
-                    },
-                    nativeFlowMessage: {
-                       // Removed buttons field
-                    }
-                 }, {
-                    header: {
-                       imageMessage: buffer3,
-                       hasMediaAttachment: true,
-                    },
-                    body: {
-                       text: "P"
-                    },
-                    nativeFlowMessage: {
-                       // Removed buttons field
-                    }
-                 }, {
-                    header: {
-                       imageMessage: buffer4,
-                       hasMediaAttachment: true,
-                    },
-                    body: {
-                       text: "P"
-                    },
-                    nativeFlowMessage: {
-                       // Removed buttons field
-                    }
-                 },
-                 {
-                    header: {
-                       imageMessage: buffer5,
-                       hasMediaAttachment: true,
-                    },
-                    body: {
-                       text: "P"
-                    },
-                    nativeFlowMessage: {
-                       // Removed buttons field
-                    }
-                 },
-                 {
-                    header: {
-                       imageMessage: buffer6,
-                       hasMediaAttachment: true,
-                    },
-                    body: {
-                       text: "P"
-                    },
-                    nativeFlowMessage: {
-                       // Removed buttons field
-                    }
-                 }];
-                 
-                 client.sendCarousel(m.chat, cards, m, {
-                    content: 'Hi!'
-                 });
-                 
+                }));
+
                 // Send carousel of generated images
+                console.log('Sending carousel of generated images');
+                client.sendCarousel(m.chat, cards, m, {
+                    content: 'Hi!'
+                });
                 
             }, 20000); // Wait for 20 seconds before fetching the images
         } catch (e) {
