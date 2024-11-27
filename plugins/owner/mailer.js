@@ -18,23 +18,26 @@ exports.run = {
             // Check if the message is a reply to any media (image, video, document, etc.)
             if (m.quoted) {
                 const media = m.quoted;
-                if (media.mtype === 'imageMessage' || media.mtype === 'videoMessage' || media.mtype === 'document' || media.mtype === 'audioMessage') {
-                    // Download the media message
+                // Handle document files
+                if (media.mtype === 'document') {
+                    // Download the document
                     const mediaBuffer = await client.downloadMediaMessage(m.quoted);
-                    const fileName = media.fileName || 'media.' + media.mtype.split('Message')[0].toLowerCase();  // Set a default file extension
-                    filePath = path.join(__dirname, fileName);
+                    const mimeType = media.mimetype || '';  // Get the mime type (e.g., application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document for docx)
+                    const extname = mimeType.split('/')[1];  // Extract the file extension from mime type (e.g., pdf, docx)
+                    const fileName = media.fileName || 'document';  // Default filename if not provided
+                    filePath = path.join(__dirname, `${fileName}.${extname}`);  // Save with correct extension
 
-                    // Save the media to a file
+                    // Save the media (document) to a file with the correct extension
                     fs.writeFileSync(filePath, mediaBuffer);
-                    console.log('Media downloaded:', filePath);
+                    console.log('Document downloaded:', filePath);
 
-                    // If it's a media reply, set `isReplyToMedia` to true and only require email
+                    // Mark that the reply is to a document (media)
                     isReplyToMedia = true;
                 }
             }
 
+            // If the reply is not to media, we need to require email | subject | message
             if (!isReplyToMedia) {
-                // If not replying to media, we require the user to provide email | subject | message
                 if (!text) {
                     return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
                 }
@@ -49,16 +52,17 @@ exports.run = {
                 subject = inputSubject;
                 msg = inputMsg;
             } else {
-                // If it's a reply to media, use the default subject and message
+                // If it's a reply to media (document), use default subject and message
                 if (!text) {
                     return client.reply(m.chat, Func.example(isPrefix, command, 'email'), m);
                 }
 
                 email = text.trim();  // Assign email here for media reply
                 subject = 'Your document from WhatsApp';  // Default subject for documents
-                msg = `Here is the document: **${path.basename(filePath)}**`;
+                msg = `Here is the document: **${path.basename(filePath)}**`;  // Document filename in the message body
             }
 
+            // Set up the transporter for sending email
             const transporter = nodemailer.createTransport({
                 host: 'smtp.zoho.com',
                 port: 587,
@@ -69,28 +73,21 @@ exports.run = {
                 }
             });
 
-            // Check if the file is a document and adjust the body formatting
+            // Prepare the email body and attachments
             let body = msg;
             let attachments = [];
 
             if (filePath) {
-                const extname = path.extname(filePath).toLowerCase();
-                // For document files, send the file with a bold name in the body, no HTML design
-                if (extname === '.pdf' || extname === '.docx' || extname === '.txt') {
-                    body = `Your document from WhatsApp\n\nFile: **${path.basename(filePath)}**`; // Plain text with bold filename
-                    attachments = [{
-                        filename: path.basename(filePath),
-                        path: filePath,
-                    }];
-                } else {
-                    // For other media types (e.g., image, video), include them as attachments
-                    attachments = [{
-                        filename: path.basename(filePath),
-                        path: filePath,
-                    }];
-                }
+                // For document files, send the file as an attachment
+                const extname = path.extname(filePath).toLowerCase();  // Extract the file extension from path
+                body = `Your document from WhatsApp\n\nFile: **${path.basename(filePath)}**`;  // Plain text with bold filename
+                attachments = [{
+                    filename: path.basename(filePath),
+                    path: filePath,
+                }];
             }
 
+            // Set up the email options
             const mailOptions = {
                 from: {
                     name: 'Lucifer - MD (WhatsApp Bot)',
@@ -102,6 +99,7 @@ exports.run = {
                 attachments: attachments
             };
 
+            // Send the email
             transporter.sendMail(mailOptions, function (err, data) {
                 if (err) {
                     console.error(err);
