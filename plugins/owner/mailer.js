@@ -11,72 +11,88 @@ exports.run = {
         try {
             let filePath = null;
             let isReplyToMedia = false;
-            let email = '';  // Initialize email variable here
+            let email = '';
             let subject = '';
             let msg = '';
 
             console.log('Step 1: Checking if the message is a reply to any media.');
-            
+
             // Check if the message is a reply to any media (image, video, document, etc.)
             if (m.quoted) {
                 const media = m.quoted;
                 console.log('Step 2: Message is a reply. Checking media type...');
 
-                // Handle document files
-                if (media.mtype === 'document') {
-                    console.log('Step 3: Media is a document. Downloading...');
-                    // Download the document
+                // Handle image files
+                if (media.mtype === 'imageMessage') {
+                    console.log('Step 3: Media is an image. Proceeding to handle image...');
+                    // Prepare email content for image
+                    email = text.trim();  // Take the email provided in the text
+                    subject = 'Your image from WhatsApp';  // Default subject for images
+                    msg = `Here is the image: **${media.fileName}**`;  // File name as the message body
+
+                    // Download the image
                     const mediaBuffer = await client.downloadMediaMessage(m.quoted);
-                    const mimeType = media.mimetype || '';  // Get the mime type (e.g., application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document for docx)
-                    const extname = mimeType.split('/')[1];  // Extract the file extension from mime type (e.g., pdf, docx)
-                    const fileName = media.fileName || 'document';  // Default filename if not provided
-                    filePath = path.join(__dirname, `${fileName}.${extname}`);  // Save with correct extension
+                    const imagePath = path.join(__dirname, media.fileName);
+                    fs.writeFileSync(imagePath, mediaBuffer);  // Save the image locally
+                    filePath = imagePath;  // Save the file path
 
-                    // Save the media (document) to a file with the correct extension
+                    isReplyToMedia = true;
+                    console.log(`Step 4: Image downloaded and saved as ${filePath}`);
+                }
+                // Handle document files (same approach for documents as before)
+                else if (media.mtype === 'document') {
+                    console.log('Step 5: Media is a document. Downloading...');
+                    const mediaBuffer = await client.downloadMediaMessage(m.quoted);
+                    const mimeType = media.mimetype || '';
+                    const extname = mimeType.split('/')[1];
+                    const fileName = media.fileName || 'document';
+                    filePath = path.join(__dirname, `${fileName}.${extname}`);
                     fs.writeFileSync(filePath, mediaBuffer);
-                    console.log(`Step 4: Document downloaded and saved as ${filePath}`);
+                    console.log(`Step 6: Document downloaded and saved as ${filePath}`);
 
-                    // Mark that the reply is to a document (media)
                     isReplyToMedia = true;
                 }
             }
 
-            console.log('Step 5: Checking if the message is not a reply to media and processing text...');
-            // If the reply is not to media, we need to require email | subject | message
-            if (!isReplyToMedia) {
+            // If it's a media reply, skip asking for email | subject | message
+            if (isReplyToMedia) {
+                console.log('Step 7: Reply to media detected. Preparing to send email...');
+
+                // If no text input is provided, prompt user for email
                 if (!text) {
-                    console.log('Step 6: No text input provided. Prompting user for email, subject, and message...');
-                    return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
-                }
-
-                // Extract email, subject, and message from the command input
-                const [providedEmail, inputSubject, inputMsg] = text.split('|').map(str => str.trim());
-                if (!providedEmail || !inputSubject || !inputMsg) {
-                    console.log('Step 7: Missing email, subject, or message in input. Prompting user...');
-                    return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
-                }
-
-                email = providedEmail;  // Assign email here
-                subject = inputSubject;
-                msg = inputMsg;
-
-                console.log(`Step 8: Email: ${email}, Subject: ${subject}, Message: ${msg}`);
-            } else {
-                console.log('Step 9: Reply is to a document. Preparing email with default subject and message...');
-                // If it's a reply to media (document), use default subject and message
-                if (!text) {
-                    console.log('Step 10: No text input for email. Prompting user...');
+                    console.log('Step 8: No email input for media reply. Prompting user...');
                     return client.reply(m.chat, Func.example(isPrefix, command, 'email'), m);
                 }
 
-                email = text.trim();  // Assign email here for media reply
-                subject = 'Your document from WhatsApp';  // Default subject for documents
-                msg = `Here is the document: **${path.basename(filePath)}**`;  // Document filename in the message body
-                console.log(`Step 11: Email: ${email}, Subject: ${subject}, Message: ${msg}`);
+                email = text.trim();
+                subject = 'Your media from WhatsApp';
+                msg = `Here is the media: **${path.basename(filePath)}**`;  // Include the file name in the message body
+
+                console.log(`Step 9: Email: ${email}, Subject: ${subject}, Message: ${msg}`);
+            } else {
+                // This is where we handle text inputs (not media replies)
+                console.log(`Step 10: Received text: ${text}`);
+                if (!text) {
+                    console.log('Step 11: No text input provided. Prompting user for email, subject, and message...');
+                    return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
+                }
+
+                // Process text input for email | subject | message
+                const [providedEmail, inputSubject, inputMsg] = text.split('|').map(str => str.trim());
+                if (!providedEmail || !inputSubject || !inputMsg) {
+                    console.log('Step 12: Missing email, subject, or message in input. Prompting user...');
+                    return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
+                }
+
+                email = providedEmail;
+                subject = inputSubject;
+                msg = inputMsg;
+
+                console.log(`Step 13: Email: ${email}, Subject: ${subject}, Message: ${msg}`);
             }
 
             // Set up the transporter for sending email
-            console.log('Step 12: Setting up transporter for email...');
+            console.log('Step 14: Setting up transporter for email...');
             const transporter = nodemailer.createTransport({
                 host: 'smtp.zoho.com',
                 port: 587,
@@ -87,22 +103,19 @@ exports.run = {
                 }
             });
 
-            // Prepare the email body and attachments
-            let body = msg;
             let attachments = [];
-
             if (filePath) {
-                // For document files, send the file as an attachment
-                const extname = path.extname(filePath).toLowerCase();  // Extract the file extension from path
-                body = `Your document from WhatsApp\n\nFile: **${path.basename(filePath)}**`;  // Plain text with bold filename
+                // For media (image or document) files, attach the file to the email
+                const extname = path.extname(filePath).toLowerCase();
+                body = `Your media from WhatsApp\n\nFile: **${path.basename(filePath)}**`;
                 attachments = [{
                     filename: path.basename(filePath),
                     path: filePath,
                 }];
-                console.log('Step 13: Document attached to email:', filePath);
+                console.log('Step 15: Media attached to email:', filePath);
             }
 
-            console.log('Step 14: Sending email...');
+            console.log('Step 16: Sending email...');
             // Set up the email options
             const mailOptions = {
                 from: {
@@ -111,28 +124,28 @@ exports.run = {
                 },
                 to: email,
                 subject: subject,
-                text: body,  // Send plain text for document files
+                text: msg,
                 attachments: attachments
             };
 
             // Send the email
             transporter.sendMail(mailOptions, function (err, data) {
                 if (err) {
-                    console.error('Step 15: Error sending email:', err);
+                    console.error('Step 17: Error sending email:', err);
                     client.reply(m.chat, Func.texted('bold', `❌ Error sending email to ${email}`), m);
                 } else {
-                    console.log('Step 16: Email sent:', data.response);
+                    console.log('Step 18: Email sent:', data.response);
                     client.reply(m.chat, `✅ Successfully sent email`, m);
                 }
 
                 // Clean up the temporary file if one was downloaded
                 if (filePath) {
                     fs.unlinkSync(filePath);
-                    console.log('Step 17: Temporary file deleted:', filePath);
+                    console.log('Step 19: Temporary file deleted:', filePath);
                 }
             });
         } catch (e) {
-            console.error('Error during processing:', e);
+            console.error('Step 20: Error during processing:', e);
             client.reply(m.chat, Func.jsonFormat(e), m);
         }
     },
