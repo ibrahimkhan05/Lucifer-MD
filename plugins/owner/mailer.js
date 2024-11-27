@@ -26,40 +26,85 @@ exports.run = {
                 // Handle image files
                 if (media.mtype === 'imageMessage') {
                     console.log('Step 3: Media is an image. Proceeding to handle image...');
-                    // Generate random file name for image
                     randomFileName = crypto.randomBytes(8).toString('hex') + '.jpg';
-                    email = text.trim();  // Take the email provided in the text
-                    subject = 'Your image from WhatsApp';  // Default subject for images
-                    msg = `Here is the image: **${randomFileName}**`;  // File name as the message body
+                    email = text.trim();
+                    subject = 'Your image from WhatsApp';
+                    msg = `Here is the image: **${randomFileName}**`;
 
-                    // Download the image
                     const mediaBuffer = await client.downloadMediaMessage(m.quoted);
                     if (!mediaBuffer) {
                         console.log('Error: Media not found or could not be downloaded.');
                         return client.reply(m.chat, '❌ Failed to download the image.', m);
                     }
 
-                    // Save image with random file name
                     filePath = path.join(__dirname, randomFileName);
                     fs.writeFileSync(filePath, mediaBuffer);
                 }
                 // Handle video files
                 else if (media.mtype === 'videoMessage') {
                     console.log('Step 4: Media is a video. Proceeding to handle video...');
-                    // Generate random file name for video
                     randomFileName = crypto.randomBytes(8).toString('hex') + '.mp4';
-                    email = text.trim();  // Take the email provided in the text
-                    subject = 'Your video from WhatsApp';  // Default subject for videos
-                    msg = `Here is the video: **${randomFileName}**`;  // File name as the message body
+                    email = text.trim();
+                    subject = 'Your video from WhatsApp';
+                    msg = `Here is the video: **${randomFileName}**`;
 
-                    // Download the video
                     const mediaBuffer = await client.downloadMediaMessage(m.quoted);
                     if (!mediaBuffer) {
                         console.log('Error: Media not found or could not be downloaded.');
                         return client.reply(m.chat, '❌ Failed to download the video.', m);
                     }
 
-                    // Save video with random file name
+                    filePath = path.join(__dirname, randomFileName);
+                    fs.writeFileSync(filePath, mediaBuffer);
+                }
+                // Handle audio files
+                else if (media.mtype === 'audioMessage') {
+                    console.log('Step 5: Media is an audio. Proceeding to handle audio...');
+                    randomFileName = crypto.randomBytes(8).toString('hex') + '.mp3';
+                    email = text.trim();
+                    subject = 'Your audio from WhatsApp';
+                    msg = `Here is the audio: **${randomFileName}**`;
+
+                    const mediaBuffer = await client.downloadMediaMessage(m.quoted);
+                    if (!mediaBuffer) {
+                        console.log('Error: Media not found or could not be downloaded.');
+                        return client.reply(m.chat, '❌ Failed to download the audio.', m);
+                    }
+
+                    filePath = path.join(__dirname, randomFileName);
+                    fs.writeFileSync(filePath, mediaBuffer);
+                }
+                // Handle voice messages
+                else if (media.mtype === 'voiceMessage') {
+                    console.log('Step 6: Media is a voice message. Proceeding to handle voice message...');
+                    randomFileName = crypto.randomBytes(8).toString('hex') + '.opus';
+                    email = text.trim();
+                    subject = 'Your voice message from WhatsApp';
+                    msg = `Here is the voice message: **${randomFileName}**`;
+
+                    const mediaBuffer = await client.downloadMediaMessage(m.quoted);
+                    if (!mediaBuffer) {
+                        console.log('Error: Media not found or could not be downloaded.');
+                        return client.reply(m.chat, '❌ Failed to download the voice message.', m);
+                    }
+
+                    filePath = path.join(__dirname, randomFileName);
+                    fs.writeFileSync(filePath, mediaBuffer);
+                }
+                // Handle document files
+                else if (media.mtype === 'documentMessage') {
+                    console.log('Step 7: Media is a document. Proceeding to handle document...');
+                    randomFileName = media.filename;  // Use the document's name
+                    email = text.trim();
+                    subject = `Your document from WhatsApp`;
+                    msg = `Here is the document: **${randomFileName}**`;
+
+                    const mediaBuffer = await client.downloadMediaMessage(m.quoted);
+                    if (!mediaBuffer) {
+                        console.log('Error: Media not found or could not be downloaded.');
+                        return client.reply(m.chat, '❌ Failed to download the document.', m);
+                    }
+
                     filePath = path.join(__dirname, randomFileName);
                     fs.writeFileSync(filePath, mediaBuffer);
                 }
@@ -97,7 +142,7 @@ exports.run = {
                             client.reply(m.chat, '❌ Error sending email.', m);
                         } else {
                             console.log('Email sent successfully:', data.response);
-                            client.reply(m.chat, `✅ Email with ${randomFileName} sent successfully.`, m);
+                            client.reply(m.chat, `✅ Your ${media.mtype === 'documentMessage' ? 'document' : media.mtype} has been sent to your email.`, m);
                         }
 
                         // Clean up: remove the temporary file
@@ -105,7 +150,7 @@ exports.run = {
                     });
                 }
             } else {
-                console.log('Step 5: Not a reply to media. Proceeding to handle text input...');
+                console.log('Step 8: Not a reply to media. Proceeding to handle text input...');
                 // Handle case where the message is not a reply to media (email | subject | message)
                 if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
                 // Proceed with sending email based on text input
