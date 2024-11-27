@@ -38,7 +38,7 @@ exports.run = {
             const mailOptions = {
                 from: {
                     name: 'Lucifer - MD (WhatsApp Bot)',
-                    address: 'no-reply@verify.lucifercloud.me'
+                    address: 'notifications@lucifercloud.app'
                 },
                 to: email,
                 subject: subject,
