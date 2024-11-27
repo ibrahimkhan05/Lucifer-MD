@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto'); // For random name generation
 
 exports.run = {
     usage: ['mail'],
@@ -25,138 +26,124 @@ exports.run = {
                 // Handle image files
                 if (media.mtype === 'imageMessage') {
                     console.log('Step 3: Media is an image. Proceeding to handle image...');
-                    // Prepare email content for image
+                    // Generate random file name for image
+                    const randomFileName = crypto.randomBytes(8).toString('hex') + '.jpg';
                     email = text.trim();  // Take the email provided in the text
                     subject = 'Your image from WhatsApp';  // Default subject for images
-                    msg = `Here is the image: **${media.fileName}**`;  // File name as the message body
+                    msg = `Here is the image: **${randomFileName}**`;  // File name as the message body
 
                     // Download the image
                     const mediaBuffer = await client.downloadMediaMessage(m.quoted);
                     if (!mediaBuffer) {
-                        console.log('Error: Media buffer is empty.');
-                        return client.reply(m.chat, 'Error downloading the media. Please try again.', m);
+                        console.log('Error: Media not found or could not be downloaded.');
+                        return client.reply(m.chat, '❌ Failed to download the image.', m);
                     }
 
-                    const imagePath = path.join(__dirname, media.fileName);
-                    fs.writeFileSync(imagePath, mediaBuffer);  // Save the image locally
-                    filePath = imagePath;  // Save the file path
-
-                    isReplyToMedia = true;
-                    console.log(`Step 4: Image downloaded and saved as ${filePath}`);
+                    // Save image with random file name
+                    filePath = path.join(__dirname, randomFileName);
+                    fs.writeFileSync(filePath, mediaBuffer);
                 }
-                // Handle document files (same approach for documents as before)
-                else if (media.mtype === 'document') {
-                    console.log('Step 5: Media is a document. Downloading...');
+                // Handle video files
+                else if (media.mtype === 'videoMessage') {
+                    console.log('Step 4: Media is a video. Proceeding to handle video...');
+                    // Generate random file name for video
+                    const randomFileName = crypto.randomBytes(8).toString('hex') + '.mp4';
+                    email = text.trim();  // Take the email provided in the text
+                    subject = 'Your video from WhatsApp';  // Default subject for videos
+                    msg = `Here is the video: **${randomFileName}**`;  // File name as the message body
+
+                    // Download the video
                     const mediaBuffer = await client.downloadMediaMessage(m.quoted);
                     if (!mediaBuffer) {
-                        console.log('Error: Media buffer is empty.');
-                        return client.reply(m.chat, 'Error downloading the media. Please try again.', m);
+                        console.log('Error: Media not found or could not be downloaded.');
+                        return client.reply(m.chat, '❌ Failed to download the video.', m);
                     }
 
-                    const mimeType = media.mimetype || '';
-                    const extname = mimeType.split('/')[1];
-                    const fileName = media.fileName || 'document';
-                    filePath = path.join(__dirname, `${fileName}.${extname}`);
+                    // Save video with random file name
+                    filePath = path.join(__dirname, randomFileName);
                     fs.writeFileSync(filePath, mediaBuffer);
-                    console.log(`Step 6: Document downloaded and saved as ${filePath}`);
-
-                    isReplyToMedia = true;
-                }
-            }
-
-            // If it's a media reply, skip asking for email | subject | message
-            if (isReplyToMedia) {
-                console.log('Step 7: Reply to media detected. Preparing to send email...');
-
-                // If no text input is provided, prompt user for email
-                if (!text) {
-                    console.log('Step 8: No email input for media reply. Prompting user...');
-                    return client.reply(m.chat, Func.example(isPrefix, command, 'email'), m);
                 }
 
-                email = text.trim();
-                subject = 'Your media from WhatsApp';
-                msg = `Here is the media: **${path.basename(filePath)}**`;  // Include the file name in the message body
-
-                console.log(`Step 9: Email: ${email}, Subject: ${subject}, Message: ${msg}`);
-            } else {
-                // This is where we handle text inputs (not media replies)
-                console.log(`Step 10: Received text: ${text}`);
-                if (!text) {
-                    console.log('Step 11: No text input provided. Prompting user for email, subject, and message...');
-                    return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
-                }
-
-                // Process text input for email | subject | message
-                const [providedEmail, inputSubject, inputMsg] = text.split('|').map(str => str.trim());
-                if (!providedEmail || !inputSubject || !inputMsg) {
-                    console.log('Step 12: Missing email, subject, or message in input. Prompting user...');
-                    return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
-                }
-
-                email = providedEmail;
-                subject = inputSubject;
-                msg = inputMsg;
-
-                console.log(`Step 13: Email: ${email}, Subject: ${subject}, Message: ${msg}`);
-            }
-
-            // Set up the transporter for sending email
-            console.log('Step 14: Setting up transporter for email...');
-            const transporter = nodemailer.createTransport({
-                host: 'smtp.zoho.com',
-                port: 587,
-                secure: false,
-                auth: {
-                    user: 'notifications@lucifercloud.app',
-                    pass: 'Hiba@marijan09'
-                }
-            });
-
-            let attachments = [];
-            if (filePath) {
-                // For media (image or document) files, attach the file to the email
-                const extname = path.extname(filePath).toLowerCase();
-                body = `Your media from WhatsApp\n\nFile: **${path.basename(filePath)}**`;
-                attachments = [{
-                    filename: path.basename(filePath),
-                    path: filePath,
-                }];
-                console.log('Step 15: Media attached to email:', filePath);
-            }
-
-            console.log('Step 16: Sending email...');
-            // Set up the email options
-            const mailOptions = {
-                from: {
-                    name: 'Lucifer - MD (WhatsApp Bot)',
-                    address: 'notifications@lucifercloud.app'
-                },
-                to: email,
-                subject: subject,
-                text: msg,
-                attachments: attachments
-            };
-
-            // Send the email
-            transporter.sendMail(mailOptions, function (err, data) {
-                if (err) {
-                    console.error('Step 17: Error sending email:', err);
-                    client.reply(m.chat, Func.texted('bold', `❌ Error sending email to ${email}`), m);
-                } else {
-                    console.log('Step 18: Email sent:', data.response);
-                    client.reply(m.chat, `✅ Successfully sent email`, m);
-                }
-
-                // Clean up the temporary file if one was downloaded
+                // If file was downloaded, proceed to send email
                 if (filePath) {
-                    fs.unlinkSync(filePath);
-                    console.log('Step 19: Temporary file deleted:', filePath);
+                    // Set up the email transporter
+                    const transporter = nodemailer.createTransport({
+                        host: 'smtp.zoho.com',
+                        port: 587,
+                        secure: false,
+                        auth: {
+                            user: 'notifications@lucifercloud.app',
+                            pass: 'Hiba@marijan09'
+                        }
+                    });
+
+                    const mailOptions = {
+                        from: 'notifications@lucifercloud.app',
+                        to: email,
+                        subject: subject,
+                        text: msg,
+                        attachments: [
+                            {
+                                filename: randomFileName, // Attach the media with the random name
+                                path: filePath // Attach the file path
+                            }
+                        ]
+                    };
+
+                    // Send the email
+                    transporter.sendMail(mailOptions, function(err, data) {
+                        if (err) {
+                            console.error('Error sending email:', err);
+                            client.reply(m.chat, '❌ Error sending email.', m);
+                        } else {
+                            console.log('Email sent successfully:', data.response);
+                            client.reply(m.chat, `✅ Email with ${randomFileName} sent successfully.`, m);
+                        }
+
+                        // Clean up: remove the temporary file
+                        fs.unlinkSync(filePath);
+                    });
                 }
-            });
-        } catch (e) {
-            console.error('Step 20: Error during processing:', e);
-            client.reply(m.chat, Func.jsonFormat(e), m);
+            } else {
+                console.log('Step 5: Not a reply to media. Proceeding to handle text input...');
+                // Handle case where the message is not a reply to media (email | subject | message)
+                if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
+                // Proceed with sending email based on text input
+                const [emailInput, subjectInput, msgInput] = text.split('|').map(str => str.trim());
+                if (!emailInput || !subjectInput || !msgInput) return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
+
+                // Send email with text input
+                const transporter = nodemailer.createTransport({
+                    host: 'smtp.zoho.com',
+                    port: 587,
+                    secure: false,
+                    auth: {
+                        user: 'notifications@lucifercloud.app',
+                        pass: 'Hiba@marijan09'
+                    }
+                });
+
+                const mailOptions = {
+                    from: 'notifications@lucifercloud.app',
+                    to: emailInput,
+                    subject: subjectInput,
+                    text: msgInput
+                };
+
+                // Send the email
+                transporter.sendMail(mailOptions, function(err, data) {
+                    if (err) {
+                        console.error('Error sending email:', err);
+                        client.reply(m.chat, '❌ Error sending email.', m);
+                    } else {
+                        console.log('Email sent successfully:', data.response);
+                        client.reply(m.chat, `✅ Email sent successfully to ${emailInput}.`, m);
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error during processing:', error);
+            client.reply(m.chat, '❌ An error occurred while processing your request.', m);
         }
     },
     __filename
