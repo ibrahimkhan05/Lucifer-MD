@@ -96,33 +96,10 @@ exports.run = {
                 const img6 = `https://images.prodia.xyz/${jobIds[5]}.png`;
 
                 // Create cards for each image
-                const cards = jobIds.map((jobId, index) => ({
-                    header: {
-                        imageMessage: { url: `https://images.prodia.xyz/${jobId}.png` },
-                        hasMediaAttachment: true,
-                    },
-                    body: {
-                        text: `Model: ${selectedModels[index]}`,
-                    },
-                    nativeFlowMessage: {
-                        buttons: [{
-                            name: "cta_url",
-                            buttonParamsJson: JSON.stringify({
-                                display_text: 'View Image',
-                                url: `https://images.prodia.xyz/${jobId}.png`,
-                                webview_presentation: null
-                            })
-                        }]
-                    }
-                }));
+                client.sendFile(m.chat, img6, 'image.jpg', `◦  *Prompt* : ${text}`, m)
 
                 // Send carousel of generated images
-                console.log('Sending carousel of generated images');
-                if (cards.length > 0) {
-                    client.sendCarousel(m.chat, cards, m, { content: 'Here are the generated images!' });
-                } else {
-                    client.reply(m.chat, 'Error generating images', m);
-                }
+                
             }, 20000); // Wait for 20 seconds before fetching the images
         } catch (e) {
             console.error('Error:', e);
