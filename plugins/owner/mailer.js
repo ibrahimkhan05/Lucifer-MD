@@ -11,6 +11,7 @@ exports.run = {
         try {
             let filePath = null;
             let isReplyToMedia = false;
+            let email = '';  // Initialize email variable here
             let subject = '';
             let msg = '';
 
@@ -39,17 +40,23 @@ exports.run = {
                 }
 
                 // Extract email, subject, and message from the command input
-                const [email, inputSubject, inputMsg] = text.split('|').map(str => str.trim());
-                if (!email || !inputSubject || !inputMsg) {
+                const [providedEmail, inputSubject, inputMsg] = text.split('|').map(str => str.trim());
+                if (!providedEmail || !inputSubject || !inputMsg) {
                     return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
                 }
 
+                email = providedEmail;  // Assign email here
                 subject = inputSubject;
                 msg = inputMsg;
             } else {
                 // If it's a reply to media, use the default subject and message
+                if (!text) {
+                    return client.reply(m.chat, Func.example(isPrefix, command, 'email'), m);
+                }
+
+                email = text.trim();  // Assign email here for media reply
                 subject = 'Your document from WhatsApp';  // Default subject for documents
-                msg = `Here is the document: <b>${path.basename(filePath)}</b>`;
+                msg = `Here is the document: **${path.basename(filePath)}**`;
             }
 
             const transporter = nodemailer.createTransport({
@@ -70,7 +77,7 @@ exports.run = {
                 const extname = path.extname(filePath).toLowerCase();
                 // For document files, send the file with a bold name in the body, no HTML design
                 if (extname === '.pdf' || extname === '.docx' || extname === '.txt') {
-                    body = `Your document from WhatsApp\n\nFile: **${path.basename(filePath)}**`;
+                    body = `Your document from WhatsApp\n\nFile: **${path.basename(filePath)}**`; // Plain text with bold filename
                     attachments = [{
                         filename: path.basename(filePath),
                         path: filePath,
@@ -91,7 +98,7 @@ exports.run = {
                 },
                 to: email,
                 subject: subject,
-                html: isReplyToMedia ? body : body,  // Send HTML formatted message for media
+                text: body,  // Send plain text for document files
                 attachments: attachments
             };
 
