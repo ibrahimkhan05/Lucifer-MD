@@ -113,7 +113,7 @@ exports.run = {
                 // Send carousel of generated images
                 console.log('Sending carousel of generated images');
                 client.sendCarousel(m.chat, cards, m, {
-                    content: ''
+                   content: 'Here are the images generated from best models:'
                 });
                 
             }, 20000); // Wait for 20 seconds before fetching the images
