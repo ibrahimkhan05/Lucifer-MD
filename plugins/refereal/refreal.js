@@ -14,7 +14,7 @@ exports.run = {
        Func
     }) => {
        try {
-        const redeemLink;
+        let redeemLink;
           const isNumber = x => typeof x === 'number' && !isNaN(x);
           // Check if the user already has a referral code
           let user = global.db.users.find(v => v.jid === m.sender);
