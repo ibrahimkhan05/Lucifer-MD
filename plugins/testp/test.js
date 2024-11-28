@@ -1,5 +1,4 @@
-const fs = require('fs');  // Ensure fs is imported
-const path = require('path');
+const fs = require('fs');
 const { execFile } = require('child_process');
 
 exports.run = {
@@ -9,58 +8,58 @@ exports.run = {
     category: 'utility',
     async: async (m, { client }) => {
         try {
-            // Check if the replied message is NOT a text (i.e., it is a media message)
-            if (m.quoted && !m.quoted.text) {
-                // Download the media file (could be document, image, video, etc.)
-                const media = await m.quoted.download();
-                if (!media) {
-                    return client.reply(m.chat, '❌ Failed to download the media.', m);
-                }
+            // Check if the replied message is a document or media
+            const isDocument = m.quoted?.message?.documentMessage;
+            const isImage = m.quoted?.message?.imageMessage;
+            const isVideo = m.quoted?.message?.videoMessage;
 
-                // Determine the file name (or set a default name)
-                const fileName = m.quoted?.message?.documentMessage?.fileName || 'unknown';
-                const filePath = path.join(__dirname, 'downloads', fileName);
-
-                // Ensure the 'downloads' folder exists
-                if (!fs.existsSync(path.dirname(filePath))) {
-                    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-                }
-
-                // Save the media to the file
-                fs.writeFileSync(filePath, media, 'base64');
-                console.log(`File saved at: ${filePath}`);
-
-                // Correct path to the Python script
-                const pythonScriptPath = path.join(__dirname, 'get_extension.py');  // Correct the path here
-
-                // Call Python script to get file extension
-                execFile('python3', [pythonScriptPath, filePath], (error, stdout, stderr) => {
-                    if (error) {
-                        console.error(`Error: ${error.message}`);
-                        return client.reply(m.chat, '❌ Error occurred while processing the file.', m);
-                    }
-                    if (stderr) {
-                        console.error(`stderr: ${stderr}`);
-                        return;
-                    }
-
-                    // Log and send the extension to the user
-                    const extension = stdout.trim();
-                    console.log(`File extension: ${extension}`);
-
-                    // Send the result back to the user
-                    client.reply(m.chat, `📄 The file extension is: ${extension}`, m);
-
-                    // After processing, delete the file
-                    fs.unlinkSync(filePath);
-                    console.log('File deleted after logging.');
-                });
-
-            } else {
-                // If it's a text message or no media, send an error message
-                client.reply(m.chat, '❌ Please reply to a media file (document, image, video, etc.) to get its extension.', m);
+            if (!isDocument && !isImage && !isVideo) {
+                return client.reply(m.chat, '❌ Please reply to a media file (document, image, video, etc.) to get its extension.', m);
             }
 
+            const file = m.quoted.message.documentMessage || m.quoted.message.imageMessage || m.quoted.message.videoMessage;
+            const fileName = file.fileName || 'unknown';
+
+            // Save the file (this part should be implemented properly depending on how the file is received)
+            // For now, assume you have the file path saved to `filePath`
+
+            // Assuming `filePath` is the path to the saved file
+            const filePath = '/root/Lucifer-MD/plugins/testp/downloads/unknown'; // Example path
+
+            // Run Python script to process the file extension
+            execFile('python3', ['get_extension.py', filePath], (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`Error: ${error.message}`);
+                    return client.reply(m.chat, '❌ Error occurred while processing the file.', m);
+                }
+                if (stderr) {
+                    console.error(`stderr: ${stderr}`);
+                    return;
+                }
+
+                // Log the extension and file details
+                const fileExtension = stdout.trim();
+                client.reply(m.chat, `📄 The file extension is: ${fileExtension}`, m);
+
+                // Now rename the file with the extension
+                const newFileName = filePath + fileExtension;
+                fs.rename(filePath, newFileName, (renameError) => {
+                    if (renameError) {
+                        console.error('Error renaming file:', renameError);
+                    } else {
+                        console.log(`File saved as: ${newFileName}`);
+                    }
+
+                    // Delete the file after logging its extension
+                    fs.unlink(newFileName, (deleteError) => {
+                        if (deleteError) {
+                            console.error('Error deleting file:', deleteError);
+                        } else {
+                            console.log(`File deleted after logging.`);
+                        }
+                    });
+                });
+            });
         } catch (e) {
             console.log(e);
             client.reply(m.chat, '❌ Error processing the file. Please try again.', m);
