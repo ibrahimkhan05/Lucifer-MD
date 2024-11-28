@@ -1,16 +1,6 @@
-const fs = require('fs');  // Ensure fs is imported
+const fs = require('fs');
 const path = require('path');
 const { execFile } = require('child_process');
-
-// Function to generate a random 6-letter alphabetic string
-function generateRandomFilename() {
-    const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    let result = '';
-    for (let i = 0; i < 6; i++) {
-        result += letters.charAt(Math.floor(Math.random() * letters.length));
-    }
-    return result;
-}
 
 exports.run = {
     usage: ['getext'],
@@ -27,8 +17,8 @@ exports.run = {
                     return client.reply(m.chat, '❌ Failed to download the media.', m);
                 }
 
-                // Generate a random 6-letter file name
-                const randomFileName = generateRandomFilename();
+                // Generate a random file name
+                const randomFileName = Math.random().toString(36).substring(2, 8); // generates a 6-character random string
                 const filePath = path.join(__dirname, 'downloads', randomFileName);
 
                 // Ensure the 'downloads' folder exists
@@ -59,16 +49,11 @@ exports.run = {
                     console.log(`File extension: ${extension}`);
 
                     // Send the result back to the user
-                    client.reply(m.chat, `📄 The file extension is: ${extension}`, m);
+                    client.reply(m.chat, `Your file extension is: ${extension}`, m);
 
-                    // Ensure the file exists before attempting to delete it
-                    if (fs.existsSync(filePath)) {
-                        // After processing, delete the file
-                        fs.unlinkSync(filePath);
-                        console.log('File deleted after logging.');
-                    } else {
-                        console.log('File does not exist. Skipping deletion.');
-                    }
+                    // After processing, delete the file
+                    fs.unlinkSync(filePath);
+                    console.log('File deleted after logging.');
                 });
 
             } else {
