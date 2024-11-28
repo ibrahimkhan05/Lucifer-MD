@@ -7,7 +7,10 @@ exports.run = {
     category: 'utility',
     async: async (m, { client }) => {
         try {
-            if (!m.quoted || !m.quoted.message || !m.quoted.message.documentMessage) {
+            // Check if the replied message is a document or media
+            const isDocument = m.quoted?.message?.documentMessage;
+
+            if (!isDocument) {
                 return client.reply(m.chat, '❌ Please reply to a media file (document, image, video, etc.) to get its extension.', m);
             }
 
