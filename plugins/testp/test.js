@@ -1,32 +1,30 @@
 const fs = require('fs');
 const path = require('path');
-const axios = require('axios');
+const mime = require('mime-types');
 
 exports.run = {
     usage: ['getext'],
     hidden: [''],
     use: 'Downloads the file and returns its extension.',
     category: 'utility',
-    async: async (m, { client, args, text, env }) => {
+    async: async (m, { client }) => {
         try {
-            // Check if the message has a document attached
-            if (!m.quoted || !m.quoted.documentMessage) {
-                return client.reply(m.chat, '❌ Please reply to a document to get its extension.', m);
+            // Check if the message has any media (document, image, video, audio)
+            if (!m.quoted || !m.quoted.mediaMessage) {
+                return client.reply(m.chat, '❌ Please reply to a media file (document, image, video, etc.) to get its extension.', m);
             }
 
-            const documentUrl = await client.downloadMediaMessage(m.quoted); // Download the file
-            const filePath = `./temp/${m.quoted.fileName}`; // Save it temporarily
+            // Download the media file
+            const mediaBuffer = await client.downloadMediaMessage(m.quoted);
 
-            // Write the file to disk
-            fs.writeFileSync(filePath, documentUrl);
+            // Get the original file name and mime type
+            const fileName = m.quoted.fileName || 'unknown';
+            const mimeType = m.quoted.mimetype || mime.lookup(fileName);
 
-            // Extract the file extension
-            const fileExtension = path.extname(filePath).slice(1); // Remove the dot
+            // Extract the file extension from either the MIME type or the file name
+            const fileExtension = mime.extension(mimeType) || path.extname(fileName).slice(1);
 
-            // Clean up (delete the file after processing)
-            fs.unlinkSync(filePath);
-
-            // Reply with the file extension
+            // Respond with the file extension
             client.reply(m.chat, `📄 The file extension is: *${fileExtension}*`, m);
 
         } catch (e) {
@@ -39,4 +37,4 @@ exports.run = {
     restrict: true,
     cache: true,
     location: __filename
-}
+};
