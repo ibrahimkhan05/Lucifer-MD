@@ -30,11 +30,11 @@ exports.run = {
                 redeemLink = `https://api.whatsapp.com/send?phone=447375237255&text=/redeem%20${user.referralCode}`;
                 
                 // Send a stylish message with emojis
-                client.reply(m.chat, `🎉 **Welcome to Lucifer BOT Referral System!** 🎉\n\n🔑 **Your Referral Code**: ${user.referralCode}\n💎 **Earn an Extra 10 Limit** for every successful referral! 💰\n\n📝 **Redeem your code here**: [Click to Redeem](${redeemLink})\n\n💬 **Share it with your friends and start earning extra limit!** 💥`, m);
+                client.reply(m.chat, `🎉 *Welcome to Lucifer BOT Referral System!* 🎉\n\n🔑 *Your Referral Code*: ${user.referralCode}\n💎 *Earn an Extra 10 Limit* for every successful referral! 💰\n\n📝 *Redeem your code here*: [Click to Redeem](${redeemLink})\n\n💬 *Share it with your friends and start earning extra limit!* 💥`, m);
              } else {
                 // If the user already has a referral code, show it
                 redeemLink = `https://api.whatsapp.com/send?phone=447375237255&text=/redeem%20${user.referralCode}`;
-                client.reply(m.chat, `🔄 **You already have a Referral Code!**\n\n🔑 **Your Referral Code**: ${user.referralCode}\n💎 **Earn an Extra 10 Limit** for every successful referral! 💰\n\n📝 **Redeem your code here**: [Click to Redeem](${redeemLink})\n\n💬 **Share it with your friends and start earning extra limit!** 💥`, m);
+                client.reply(m.chat, `🔄 *You already have a Referral Code!*\n\n🔑 *Your Referral Code*: ${user.referralCode}\n💎 *Earn an Extra 10 Limit* for every successful referral! 💰\n\n📝 **Redeem your code here**: [Click to Redeem](${redeemLink})\n\n💬 *Share it with your friends and start earning extra limit!* 💥`, m);
              }
           } else {
              client.reply(m.chat, '🚫 **User not found. Please try again later.** 🚫', m);
