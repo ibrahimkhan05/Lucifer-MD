@@ -51,9 +51,22 @@ exports.run = {
                     // Send the result back to the user
                     client.reply(m.chat, `Your file extension is: ${extension}`, m);
 
-                    // After processing, delete the file
-                    fs.unlinkSync(filePath);
-                    console.log('File deleted after logging.');
+                    // After processing, rename the file with the extension
+                    const newFileName = filePath + extension;
+
+                    // Check if file exists before renaming and deleting
+                    if (fs.existsSync(filePath)) {
+                        fs.renameSync(filePath, newFileName);
+                        console.log(`File saved as: ${newFileName}`);
+                    }
+
+                    // Delete the file after processing (if exists)
+                    if (fs.existsSync(newFileName)) {
+                        fs.unlinkSync(newFileName);
+                        console.log('File deleted after logging.');
+                    } else {
+                        console.log('File does not exist. Skipping deletion.');
+                    }
                 });
 
             } else {
