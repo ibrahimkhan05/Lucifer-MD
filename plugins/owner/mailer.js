@@ -21,7 +21,7 @@ exports.run = {
             // Case: Replying to text (only email is provided)
             if (m.quoted && m.quoted.text) {
                 if (!email) return client.reply(m.chat, Func.example(isPrefix, command, 'email'), m);
-                
+
                 const transporter = nodemailer.createTransport({
                     host: 'smtp.zoho.com',
                     port: 587,
