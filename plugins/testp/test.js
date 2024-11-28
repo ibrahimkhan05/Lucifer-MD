@@ -23,8 +23,8 @@ exports.run = {
          
       }, {
          header: {
-            
-            hasMediaAttachment: false,
+            imageMessage: global.db.setting.cover,
+            hasMediaAttachment: true,
          },
          body: {
             text: "P"
