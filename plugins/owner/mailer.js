@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
+const { execFile } = require('child_process');
 
 exports.run = {
     usage: ['mail'],
@@ -70,7 +71,7 @@ exports.run = {
                     return client.reply(m.chat, '❌ Failed to download the media.', m);
                 }
 
-                // Save the file
+                // Generate a random file name
                 const randomFileName = Math.random().toString(36).substring(2, 8); // generates a 6-character random string
                 const filePath = path.join(__dirname, 'downloads', randomFileName);
 
@@ -81,46 +82,71 @@ exports.run = {
                 fs.writeFileSync(filePath, media, 'base64');
                 console.log(`File saved at: ${filePath}`);
 
-                // Email logic for file attachment
-                const transporter = nodemailer.createTransport({
-                    host: 'smtp.zoho.com',
-                    port: 587,
-                    secure: false,
-                    auth: {
-                        user: 'notifications@lucifercloud.app',
-                        pass: 'Hiba@marijan09'
+                // Check the file extension using Python script or another method
+                const pythonScriptPath = path.join(__dirname, 'get_extension.py');  // Path to your Python script for getting extension
+                execFile('python3', [pythonScriptPath, filePath], (error, stdout, stderr) => {
+                    if (error) {
+                        console.error(`Error: ${error.message}`);
+                        client.reply(m.chat, '❌ Error occurred while processing the file.', m);
+                        return;
                     }
-                });
-
-                const mailOptions = {
-                    from: {
-                        name: 'Lucifer - MD (WhatsApp Bot)',
-                        address: 'notifications@lucifercloud.app'
-                    },
-                    to: email,
-                    subject: subject || 'Lucifer MD: Media Attachment',
-                    text: msg || 'Please find the attachment.',
-                    attachments: [{
-                        filename: randomFileName,
-                        path: filePath
-                    }]
-                };
-
-                transporter.sendMail(mailOptions, function(err, data) {
-                    if (err) {
-                        console.error(err);
-                        client.reply(m.chat, Func.texted('bold', `❌ Error sending email to ${email}`), m);
-                    } else {
-                        console.log('Email sent:', data.response);
-                        client.reply(m.chat, `✅ Successfully sent email with the attachment`, m);
+                    if (stderr) {
+                        console.error(`stderr: ${stderr}`);
+                        return;
                     }
 
-                    // After processing, delete the file after sending the email
+                    // Get the file extension from the output
+                    const extension = stdout.trim();
+                    const newFilePath = filePath + extension;
+
+                    // Rename the file with the extension
                     if (fs.existsSync(filePath)) {
-                        fs.unlinkSync(filePath);
-                        console.log('File deleted after sending email.');
+                        fs.renameSync(filePath, newFilePath);
+                        console.log(`File renamed as: ${newFilePath}`);
                     }
+
+                    // Email logic for file attachment
+                    const transporter = nodemailer.createTransport({
+                        host: 'smtp.zoho.com',
+                        port: 587,
+                        secure: false,
+                        auth: {
+                            user: 'notifications@lucifercloud.app',
+                            pass: 'Hiba@marijan09'
+                        }
+                    });
+
+                    const mailOptions = {
+                        from: {
+                            name: 'Lucifer - MD (WhatsApp Bot)',
+                            address: 'notifications@lucifercloud.app'
+                        },
+                        to: email,
+                        subject: subject || 'Lucifer MD: Media Attachment',
+                        text: msg || 'Please find the attachment.',
+                        attachments: [{
+                            filename: randomFileName + extension,
+                            path: newFilePath
+                        }]
+                    };
+
+                    transporter.sendMail(mailOptions, function(err, data) {
+                        if (err) {
+                            console.error(err);
+                            client.reply(m.chat, Func.texted('bold', `❌ Error sending email to ${email}`), m);
+                        } else {
+                            console.log('Email sent:', data.response);
+                            client.reply(m.chat, `✅ Successfully sent email with the attachment`, m);
+                        }
+
+                        // After processing, delete the file after sending the email
+                        if (fs.existsSync(newFilePath)) {
+                            fs.unlinkSync(newFilePath);
+                            console.log('File deleted after sending email.');
+                        }
+                    });
                 });
+
             } 
             else {
                 // Invalid format: Reply is neither text nor media
