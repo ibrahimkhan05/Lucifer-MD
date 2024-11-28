@@ -1,5 +1,4 @@
 const { execFile } = require('child_process');
-const fs = require('fs');
 const path = require('path');
 
 exports.run = {
@@ -31,7 +30,7 @@ exports.run = {
                 console.log(`File saved at: ${filePath}`);
 
                 // Call Python script to get file extension
-                execFile('python3', ['get_extension.py', filePath], (error, stdout, stderr) => {
+                execFile('python3', [path.join(__dirname, 'Lucifer-MD/plugins/testp/get_extension.py'), filePath], (error, stdout, stderr) => {
                     if (error) {
                         console.error(`Error: ${error.message}`);
                         return client.reply(m.chat, '❌ Error occurred while processing the file.', m);
