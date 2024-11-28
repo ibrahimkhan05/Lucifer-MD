@@ -1,5 +1,6 @@
 const { PornHub } = require('pornhub.js'); // Import the PornHub class
 const pornhub = new PornHub(); // Create an instance of the PornHub class
+const axios = require('axios'); // Import axios to handle image buffering
 
 exports.run = {
    usage: ['pornhub'],
@@ -17,32 +18,48 @@ exports.run = {
             return client.reply(m.chat, global.status.fail, m);
          }
 
-         // Prepare carousel for all results
-         const carousel = result.data.map((v) => ({
+         // Prepare the video data as a response
+         const videoData = result.data[0]; // Use the first video for simplicity, or handle based on your needs
+         const { title, url, views, duration, hd, premium, preview } = videoData;
+
+         // Buffer the thumbnail
+         const thumbnailBuffer = await axios.get(preview, { responseType: 'arraybuffer' })
+            .then(res => Buffer.from(res.data))
+            .catch(err => {
+                console.error("Error buffering image:", err);
+                return null;
+            });
+
+         if (!thumbnailBuffer) {
+            return client.reply(m.chat, "Failed to fetch thumbnail image.", m);
+         }
+
+         // Prepare the carousel with video data
+         const carousel = [{
             header: {
                imageMessage: {
-                  url: v.thumbnail, // Display video thumbnail as the header image
-                  caption: v.title,  // Video title as the caption
+                  buffer: thumbnailBuffer, // Buffer the thumbnail image
+                  caption: title, // Video title as the caption
                },
                hasMediaAttachment: true,
             },
             body: {
-               text: `${v.title} (${v.duration})\nViews: ${v.views}, HD: ${v.hd}, Premium: ${v.premium}`,
+               text: `${title}\nDuration: ${duration}\nViews: ${views}\nHD: ${hd ? "Yes" : "No"}\nPremium: ${premium ? "Yes" : "No"}`,
             },
             nativeFlowMessage: {
                buttons: [{
                   name: "quick_reply",
                   buttonParamsJson: JSON.stringify({
                      display_text: "Select Quality",
-                     id: `${isPrefix}selectquality ${v.url}` // ID for quality selection
+                     id: `${isPrefix}selectquality ${url}` // ID for quality selection
                   })
                }]
             }
-         }));
+         }];
 
-         // Send the carousel with the videos
+         // Send the carousel with the video data
          await client.sendCarousel(m.chat, carousel, m, {
-            content: "*P O R N H U B   S E A R C H*\n\nHere are the results for your search: " + text + ".\n\nPlease select a video to proceed."
+            content: `*P O R N H U B   S E A R C H*\n\nHere is the result for your search: ${text}. Please select a video quality.`
          });
 
       } catch (e) {
