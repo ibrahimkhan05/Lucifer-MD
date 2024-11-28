@@ -12,14 +12,17 @@ exports.run = {
             text: "P"
          },
          nativeFlowMessage: {
-            buttons: [{
-               name: "quick_reply",
-               buttonParamsJson: JSON.stringify({
-                  display_text: "OWNER",
-                  id: ".owner"
-               })
-            }]
+            buttons: [
+               {
+                  name: "cta_call",
+                  buttonParamsJson: JSON.stringify({
+                     display_text: "Call",
+                     phone_number: "6285887776722"
+                  })
+               }
+            ]
          }
+         
          
       }, {
          header: {
