@@ -1,5 +1,5 @@
 exports.run = {
-    usage: ['generateReferralCode'],
+    usage: ['referral'],
     hidden: ['gencode'],
     use: 'Generates a referral code for the user.',
     category: 'referral',
