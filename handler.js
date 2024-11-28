@@ -98,10 +98,31 @@ module.exports = async (client, ctx) => {
          users.afk = -1
          users.afkReason = ''
       }
-      cron.schedule('00 00 * * *', () => {
-         setting.lastReset = new Date * 1
-         global.db.users.filter(v => v.limit < env.limit && !v.premium).map(v => v.limit = env.limit)
-         Object.entries(global.db.statistic).map(([_, prop]) => prop.today = 0)
+      cron.schedule('00 00 1 * *', () => { // Run at midnight on the first day of each month
+         setting.lastReset = new Date * 1;
+      
+         // Iterate through all users
+         global.db.users.forEach(user => {
+            // Reset the user's limit if they are not premium
+            if (user.limit < env.limit && !user.premium) {
+               // Check if the user used a referral code
+               if (user.referralUsed) {
+                  user.limit = env.limit + 5; // Add 5 if they used a referral code
+               } else {
+                  user.limit = env.limit; // Otherwise just set to the default limit
+               }
+      
+               // Multiply the user's limit by 10 for each referral
+               if (user.referrals && Array.isArray(user.referrals)) {
+                  user.limit += user.referrals.length * 10; // Add 10 for each referral
+               }
+            }
+      
+            // Reset daily statistics
+            Object.entries(global.db.statistic).forEach(([_, prop]) => {
+               prop.today = 0;
+            });
+         });
       }, {
          scheduled: true,
          timezone: process.env.TZ

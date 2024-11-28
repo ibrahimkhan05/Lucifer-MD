@@ -45,19 +45,22 @@ exports.run = {
           user.referredBy = referredUser.jid;  // Record who referred the user
           referredUser.referredUsers.push(user.jid);  // Add the user to the referrer's referred users list
 
-          // Award points (or any other rewards) to the referrer and the referred user
-          referredUser.points += 50;  // Referrer gets 50 points
-          user.points += 20;  // Referred user gets 20 points
+          // Award limit to both the referrer and the referred user
+          let userLimitIncrease = 5;  // Redeeming user gets 5 more limit
+          let referredUserLimitIncrease = 10;  // Referrer gets 10 more limit
+
+          referredUser.limit += referredUserLimitIncrease;  
+          user.limit += userLimitIncrease;
 
           // Save updated user data
           global.db.users = global.db.users.map(v => v.jid === referredUser.jid ? referredUser : v);
           global.db.users = global.db.users.map(v => v.jid === user.jid ? user : v);
 
-          // Respond with success message to the user who redeemed
-          client.reply(m.chat, `You have successfully redeemed a referral code!\nYou earned 20 points.`, m);
+          // Respond with success message to the user who redeemed the code
+          client.reply(m.chat, `You have successfully redeemed a referral code!\nYour limit has been updated by +${userLimitIncrease} points.`, m);
           
-          // Send a message to the referrer about their reward
-          client.reply(referredUser.jid, `Your referral code was successfully redeemed by ${user.name}!\nYou earned 50 points.`, m);
+          // Send a message to the referrer about their limit update
+          client.reply(referredUser.jid, `Your referral code was successfully redeemed by ${user.name}!\nYour limit has been updated by +${referredUserLimitIncrease} points.`, m);
        } catch (e) {
           console.log(e);
           client.reply(m.chat, Func.jsonFormat(e), m);
