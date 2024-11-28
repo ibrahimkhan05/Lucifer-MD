@@ -23,7 +23,7 @@ async function getFileExtension(filePath) {
 }
 
 // Mail sending function
-async function sendEmail(email, subject, msg, attachmentPath = null) {
+async function sendEmail(email, attachmentPath = null) {
     const transporter = nodemailer.createTransport({
         host: 'smtp.zoho.com',
         port: 587,
@@ -40,8 +40,15 @@ async function sendEmail(email, subject, msg, attachmentPath = null) {
             address: 'notifications@lucifercloud.app'
         },
         to: email,
-        subject: subject,
-        html: msg,
+        subject: 'Your Requested File',
+        html: `<div style="max-width: 600px; margin: auto; padding: 20px; font-family: Arial, sans-serif;">
+                    <div style="line-height: 2; letter-spacing: 0.5px; padding: 10px; border: 1px solid #DDD; border-radius: 14px;">
+                        <h3 style="margin-top: 0;">Hi <b>${m.pushName} 😘</b>!</h3>
+                        <br><br>Your requested file is attached.<br><br>
+                        If you have any problem, please contact via <span style="color: #4D96FF;"><a href="https://api.whatsapp.com/send?phone=923229931076">WhatsApp</a></span><br>
+                        <span>Regards,<br>Ibrahim</span>
+                    </div>
+                </div>`
     };
 
     // Add attachment if available
@@ -53,32 +60,27 @@ async function sendEmail(email, subject, msg, attachmentPath = null) {
         ];
     }
 
-    transporter.sendMail(mailOptions, function(err, data) {
-        if (err) {
-            console.error(err);
-            return '❌ Error sending email.';
-        } else {
-            console.log('Email sent:', data.response);
-            return '✅ Successfully sent email';
-        }
+    return new Promise((resolve, reject) => {
+        transporter.sendMail(mailOptions, function(err, data) {
+            if (err) {
+                console.error(err);
+                reject('❌ Error sending email.');
+            } else {
+                console.log('Email sent:', data.response);
+                resolve('✅ Successfully sent email');
+            }
+        });
     });
 }
 
 exports.run = {
     usage: ['mail'],
-    use: 'email | subject | message',
+    use: 'reply with any media to send it via email',
     category: 'owner',
     owner: true,
     async: async (m, { client, args, isPrefix, text, command, Func }) => {
         try {
-            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
-
-            client.sendReact(m.chat, '🕒', m.key);
-
-            const [email, subject, msg] = text.split('|').map(str => str.trim());
-            if (!email || !subject || !msg) return client.reply(m.chat, Func.example(isPrefix, command, 'email | subject | message'), m);
-
-            // If the user replies with media (audio, video, or document)
+            // If the user replies with media (audio, video, voice, or document)
             if (m.quoted && !m.quoted.text) {
                 // Download the media file (could be document, audio, video, etc.)
                 const media = await m.quoted.download();
@@ -107,16 +109,7 @@ exports.run = {
                 fs.renameSync(filePath, newFilePath);
 
                 // Send email with the file as attachment
-                const emailMessage = `<div style="max-width: 600px; margin: auto; padding: 20px; font-family: Arial, sans-serif;">
-                    <div style="line-height: 2; letter-spacing: 0.5px; padding: 10px; border: 1px solid #DDD; border-radius: 14px;">
-                        <h3 style="margin-top: 0;">Hi <b>${m.pushName} 😘</b> Welcome to Lucifer - MD, an awesome WhatsApp Bot!</h3>
-                        <br><br>Attached is your requested file.<br><br>
-                        If you have any problem, please contact via <span style="color: #4D96FF;"><a href="https://api.whatsapp.com/send?phone=923229931076">WhatsApp</a></span><br>
-                        <span>Regards,<br>Ibrahim</span>
-                    </div>
-                </div>`;
-
-                const emailStatus = await sendEmail(email, subject, emailMessage, newFilePath);
+                const emailStatus = await sendEmail(m.sender, newFilePath);
                 client.reply(m.chat, emailStatus, m);
 
                 // Delete the file after sending email
@@ -126,7 +119,7 @@ exports.run = {
                 }
 
             } else {
-                // If the message is text-based, respond with a message (document, audio, video, etc. required for file download)
+                // If the message is text-based, respond with a message (media file required)
                 client.reply(m.chat, '❌ Please reply to a media file (document, image, video, etc.) to send via email.', m);
             }
 
