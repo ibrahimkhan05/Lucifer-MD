@@ -23,7 +23,7 @@ exports.run = {
          
       }, {
          header: {
-            imageMessage: global.db.setting.cover,
+            
             hasMediaAttachment: false,
          },
          body: {
