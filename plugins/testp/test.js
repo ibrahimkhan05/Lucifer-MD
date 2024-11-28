@@ -12,33 +12,19 @@ exports.run = {
             text: "P"
          },
          nativeFlowMessage: {
-            buttons: [
-               {
-                  name: "single_select",
-                  buttonParamsJson: JSON.stringify({
-                     title: "Tap!",
-                     sections: [
-                        {
-                           rows: [
-                              {
-                                 title: "Owner",
-                                 description: `X`,
-                                 id: `.owner`
-                              }
-                           ]
-                        }
-                     ]
-                  })
-               }
-            ]
+            buttons: [{
+               name: "quick_reply",
+               buttonParamsJson: JSON.stringify({
+                  display_text: "OWNER",
+                  id: ".owner"
+               })
+            }]
          }
-         
-         
          
       }, {
          header: {
             imageMessage: global.db.setting.cover,
-            hasMediaAttachment: true,
+            hasMediaAttachment: false,
          },
          body: {
             text: "P"
