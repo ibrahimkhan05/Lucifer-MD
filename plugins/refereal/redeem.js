@@ -50,8 +50,11 @@ exports.run = {
           global.db.users = global.db.users.map(v => v.jid === referredUser.jid ? referredUser : v);
           global.db.users = global.db.users.map(v => v.jid === user.jid ? user : v);
  
-          // Respond with a success message
-          client.reply(m.chat, `You have successfully redeemed a referral code!\nYou earned 20 points. The referrer earned 50 points.`, m);
+          // Respond with success message to the user who redeemed
+          client.reply(m.chat, `You have successfully redeemed a referral code!\nYou earned 20 points.`, m);
+          
+          // Send a message to the referrer about their reward
+          client.reply(referredUser.jid, `Your referral code was successfully redeemed by ${user.name}!\nYou earned 50 points.`, m);
        } catch (e) {
           console.log(e);
           client.reply(m.chat, Func.jsonFormat(e), m);
@@ -62,5 +65,4 @@ exports.run = {
     restrict: true,
     cache: true,
     location: __filename
- }
- 
+}
