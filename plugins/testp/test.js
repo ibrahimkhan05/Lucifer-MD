@@ -14,14 +14,25 @@ exports.run = {
          nativeFlowMessage: {
             buttons: [
                {
-                  name: "cta_call",
+                  name: "single_select",
                   buttonParamsJson: JSON.stringify({
-                     display_text: "Call",
-                     phone_number: "6285887776722"
+                     title: "Tap!",
+                     sections: [
+                        {
+                           rows: [
+                              {
+                                 title: "Owner",
+                                 description: `X`,
+                                 id: `.owner`
+                              }
+                           ]
+                        }
+                     ]
                   })
                }
             ]
          }
+         
          
          
       }, {
