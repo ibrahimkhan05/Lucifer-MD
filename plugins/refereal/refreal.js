@@ -14,19 +14,26 @@ exports.run = {
        Func
     }) => {
        try {
-        let redeemLink;
+          let redeemLink;
           const isNumber = x => typeof x === 'number' && !isNaN(x);
+          
           // Check if the user already has a referral code
           let user = global.db.users.find(v => v.jid === m.sender);
+          
           if (user) {
              if (!user.referralCode) {
                 // Generate a new referral code if not present
                 user.referralCode = Math.random().toString(36).substring(2, 8); // Generates a 6-char referral code
                 global.db.users = global.db.users.map(v => v.jid === user.jid ? user : v);
-                 redeemLink = `https://api.whatsapp.com/send?phone=${env.botNumber}&text=/redeem ${user.referralCode}`;
+                
+                // Create a redeem link for the referral code
+                redeemLink = `https://api.whatsapp.com/send?phone=${env.botNumber}&text=/redeem ${user.referralCode}`;
+                
                 client.reply(m.chat, `Your referral code is: ${user.referralCode}\nRedeem it here: ${redeemLink}`, m);
              } else {
-                client.reply(m.chat, `Your referral code is already: {user.referralCode}\nRedeem it here: ${redeemLink}`, m);
+                // If the user already has a referral code, show it
+                redeemLink = `https://api.whatsapp.com/send?phone=${env.botNumber}&text=/redeem ${user.referralCode}`;
+                client.reply(m.chat, `Your referral code is already: ${user.referralCode}\nRedeem it here: ${redeemLink}`, m);
              }
           } else {
              client.reply(m.chat, 'User not found, please try again later.', m);
