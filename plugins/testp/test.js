@@ -13,11 +13,16 @@ exports.run = {
          },
          nativeFlowMessage: {
             buttons: [{
-               name: "cta_url",
+               name: "single_select",
                buttonParamsJson: JSON.stringify({
-                  display_text: 'Contact Owner',
-                  url: 'https://api.neoxr.eu',
-                  webview_presentation: null
+                  title: "Tap!",
+                  sections: [{
+                     rows: [{
+                        title: "Owner",
+                        description: `X`,
+                        id: `.owner`
+                     }, ]
+                  }]
                })
             }]
          }
