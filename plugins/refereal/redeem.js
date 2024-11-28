@@ -1,7 +1,7 @@
 exports.run = {
     usage: ['redeem'],
     hidden: [''],
-    use: 'Redeems a referral code and gives rewards.',
+    use: 'Redeems a referral code.',
     category: 'referral',
     async: async (m, {
        client,

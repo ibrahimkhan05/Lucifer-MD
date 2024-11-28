@@ -1,7 +1,7 @@
 exports.run = {
     usage: ['referral'],
     hidden: ['gencode'],
-    use: 'Generates a referral code for the user.',
+    use: 'Generates a referral code',
     category: 'referral',
     async: async (m, {
        client,

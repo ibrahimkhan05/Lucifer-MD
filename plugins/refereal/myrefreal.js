@@ -1,7 +1,7 @@
 exports.run = {
     usage: ['myreferral'],
     hidden: [''],
-    use: 'Shows how many users you have referred and how much limit you have.',
+    use: 'Shows users referred',
     category: 'referral',
     async: async (m, {
        client,
