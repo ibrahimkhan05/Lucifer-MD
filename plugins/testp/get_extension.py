@@ -17,33 +17,44 @@ if not os.path.exists(file_path):
     print("❌ File does not exist.")
     sys.exit(1)
 
-# Get file extension from the MIME type
+# Get file extension
 file_extension = os.path.splitext(file_path)[1]
 
-# If there is no extension, try to identify it using MIME type
+# If there is no extension, try to identify it (simple fallback mechanism)
 if not file_extension:
     print("❌ No extension found.")
     
-    # Using mimetypes to get MIME type
-    mime_type, encoding = mimetypes.guess_type(file_path)
-    
-    if mime_type:
+    # Try to guess extension using file signature (magic bytes)
+    try:
+        import magic
+        mime_type = magic.Magic(mime=True).from_file(file_path)
         print(f"Debug: MIME Type: {mime_type}")
         
-        # Guess the extension from the MIME type
+        # Try to guess the file extension from MIME type
         file_extension = mimetypes.guess_extension(mime_type)
         if file_extension:
             print(f"Debug: Extracted extension: {file_extension}")
         else:
-            print("❌ Unknown MIME Type, cannot determine extension.")
+            print("❌ Unable to determine extension from MIME type.")
             sys.exit(1)
-    else:
-        print("❌ Unable to determine MIME type.")
+    
+    except ImportError:
+        print("❌ Unable to import python-magic to determine file type.")
         sys.exit(1)
+
+# Print the extension for debugging
+print(f"Debug: Extracted extension: {file_extension}")
 
 # Output the extension (this is what Node.js will capture)
 print(file_extension)
 
-# Optionally, delete the file after logging the extension (you can skip this part if unnecessary)
-os.remove(file_path)
+# Optionally, you can save the file with its extension
+new_file_name = file_path + file_extension
+os.rename(file_path, new_file_name)
+
+# Print the new file name with extension
+print(f"File saved as: {new_file_name}")
+
+# Optionally, delete the file after logging the extension (if necessary)
+os.remove(new_file_name)
 print(f"File deleted after logging.")
