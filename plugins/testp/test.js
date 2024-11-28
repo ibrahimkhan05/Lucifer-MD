@@ -44,11 +44,8 @@ exports.run = {
                         return;
                     }
 
-                    // Log and send the extension to the user
+                    // Get the file extension and send only that to the user
                     const extension = stdout.trim();
-                    console.log(`File extension: ${extension}`);
-
-                    // Send the result back to the user
                     client.reply(m.chat, `Your file extension is: ${extension}`, m);
 
                     // After processing, rename the file with the extension
