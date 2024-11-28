@@ -1,7 +1,16 @@
 const fs = require('fs');  // Ensure fs is imported
 const path = require('path');
 const { execFile } = require('child_process');
-const crypto = require('crypto');  // For random filename generation
+
+// Function to generate a random 6-letter alphabetic string
+function generateRandomFilename() {
+    const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+        result += letters.charAt(Math.floor(Math.random() * letters.length));
+    }
+    return result;
+}
 
 exports.run = {
     usage: ['getext'],
@@ -18,8 +27,8 @@ exports.run = {
                     return client.reply(m.chat, '❌ Failed to download the media.', m);
                 }
 
-                // Generate a random file name for the downloaded media
-                const randomFileName = crypto.randomBytes(16).toString('hex');
+                // Generate a random 6-letter file name
+                const randomFileName = generateRandomFilename();
                 const filePath = path.join(__dirname, 'downloads', randomFileName);
 
                 // Ensure the 'downloads' folder exists
@@ -52,9 +61,14 @@ exports.run = {
                     // Send the result back to the user
                     client.reply(m.chat, `📄 The file extension is: ${extension}`, m);
 
-                    // After processing, delete the file
-                    fs.unlinkSync(filePath);
-                    console.log('File deleted after logging.');
+                    // Ensure the file exists before attempting to delete it
+                    if (fs.existsSync(filePath)) {
+                        // After processing, delete the file
+                        fs.unlinkSync(filePath);
+                        console.log('File deleted after logging.');
+                    } else {
+                        console.log('File does not exist. Skipping deletion.');
+                    }
                 });
 
             } else {
