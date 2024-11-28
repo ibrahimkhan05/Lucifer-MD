@@ -26,13 +26,13 @@ exports.run = {
                 user.referralCode = Math.random().toString(36).substring(2, 8); // Generates a 6-char referral code
                 global.db.users = global.db.users.map(v => v.jid === user.jid ? user : v);
                 
-                // Create a redeem link for the referral code
-                redeemLink = `https://api.whatsapp.com/send?phone=447375237255&text=/redeem${user.referralCode}`; // Removed space after '/redeem'
+                // Create a redeem link for the referral code with %20 for space encoding
+                redeemLink = `https://api.whatsapp.com/send?phone=447375237255&text=/redeem%20${user.referralCode}`;
                 
                 client.reply(m.chat, `Your referral code is: ${user.referralCode}\nRedeem it here: ${redeemLink}`, m);
              } else {
                 // If the user already has a referral code, show it
-                redeemLink = `https://api.whatsapp.com/send?phone=447375237255&text=/redeem${user.referralCode}`; // Removed space after '/redeem'
+                redeemLink = `https://api.whatsapp.com/send?phone=447375237255&text=/redeem%20${user.referralCode}`;
                 client.reply(m.chat, `Your referral code is already: ${user.referralCode}\nRedeem it here: ${redeemLink}`, m);
              }
           } else {
