@@ -22,25 +22,32 @@ exports.run = {
                 return client.reply(m.chat, '❌ **No users with referral codes found.** ❌', m);
             }
 
+            // Create a message that will contain all the referral data
+            let referralSummaryMessage = '';
+
             // Loop through each user with a referral code and gather the referral details
             for (let user of usersWithReferrals) {
                 const referredUsers = user.referredUsers || [];
                 const referralPoints = user.referralPoints || 0;
                 const formattedJid = `+${user.jid.replace('@s.whatsapp.net', '')}`;  // Format JID
 
-                // Prepare the message with referral details
-                let referredUserDetails = referredUsers.map(referred => {
+                // Append referrer details to the summary message
+                referralSummaryMessage += `👤 **Referrer**: ${user.name || 'Unknown'}\n📞 **Referrer Number**: ${formattedJid}\n🏆 **Total Points Earned**: ${referralPoints}\n\n**Referred Users**:\n`;
+
+                // Loop through referred users to add their details
+                for (let referred of referredUsers) {
                     const referredUser = global.db.users.find(v => v.jid === referred);
                     if (referredUser) {
                         const referredName = referredUser.name || 'Unknown';
-                        return `👥 **Referred User**: ${referredName}\n📞 **Referred JID**: +${referredUser.jid.replace('@s.whatsapp.net', '')}\n🏆 **Points Earned**: ${referredUser.referralPoints || 0}\n\n`;
+                        const referredFormattedJid = `+${referredUser.jid.replace('@s.whatsapp.net', '')}`;  // Format JID for referred users
+                        referralSummaryMessage += `👥 **Referred User**: ${referredName}\n📞 **Referred Number**: ${referredFormattedJid}\n🏆 **Points Earned**: ${referredUser.referralPoints || 0}\n\n`;
                     }
-                    return '';
-                }).join('');
-
-                // Send message with details of the referrer and their referred users
-                await client.reply(m.chat, `👤 **Referrer**: ${user.name || 'Unknown'}\n📞 **Referrer JID**: ${formattedJid}\n🏆 **Total Points Earned**: ${referralPoints}\n\n**Referred Users**:\n${referredUserDetails || 'No users referred yet.'}`, m);
+                }
+                referralSummaryMessage += '\n';
             }
+
+            // Send the referral summary in one message
+            client.reply(m.chat, referralSummaryMessage || 'No referral details to show.', m);
 
             // Notify the owner that the process is complete
             client.reply(m.chat, '📊 **Referral Summary Sent to Owner!** 📊', m);
