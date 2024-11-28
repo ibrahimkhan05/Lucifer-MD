@@ -1,49 +1,42 @@
+const fs = require('fs');
+const path = require('path');
+const axios = require('axios');
 
 exports.run = {
-    usage: ['session'],
-    category: 'test',
-    async: async (m, { client, text, body }) => {
-      const cards = [{
-         header: {
-            imageMessage: global.db.setting.cover,
-            hasMediaAttachment: true,
-         },
-         body: {
-            text: "P"
-         },
-         nativeFlowMessage: {
-            buttons: [{
-               name: "quick_reply",
-               buttonParamsJson: JSON.stringify({
-                  display_text: "OWNER",
-                  id: ".owner"
-               })
-            }]
-         }
-         
-      }, {
-         header: {
-            imageMessage: global.db.setting.cover,
-            hasMediaAttachment: true,
-         },
-         body: {
-            text: "P"
-         },
-         nativeFlowMessage: {
-            buttons: [{
-               name: "cta_url",
-               buttonParamsJson: JSON.stringify({
-                  display_text: 'Contact Owner',
-                  url: 'https://api.neoxr.eu',
-                  webview_presentation: null
-               })
-            }]
-         }
-      }]
-      
-      client.sendCarousel(m.chat, cards, m, {
-         content: 'Hi!'
-      })
+    usage: ['getext'],
+    hidden: [''],
+    use: 'Downloads the file and returns its extension.',
+    category: 'utility',
+    async: async (m, { client, args, text, env }) => {
+        try {
+            // Check if the message has a document attached
+            if (!m.quoted || !m.quoted.documentMessage) {
+                return client.reply(m.chat, '❌ Please reply to a document to get its extension.', m);
+            }
+
+            const documentUrl = await client.downloadMediaMessage(m.quoted); // Download the file
+            const filePath = `./temp/${m.quoted.fileName}`; // Save it temporarily
+
+            // Write the file to disk
+            fs.writeFileSync(filePath, documentUrl);
+
+            // Extract the file extension
+            const fileExtension = path.extname(filePath).slice(1); // Remove the dot
+
+            // Clean up (delete the file after processing)
+            fs.unlinkSync(filePath);
+
+            // Reply with the file extension
+            client.reply(m.chat, `📄 The file extension is: *${fileExtension}*`, m);
+
+        } catch (e) {
+            console.log(e);
+            client.reply(m.chat, '❌ Error processing the file. Please try again.', m);
+        }
     },
-    error: false
-};
+    error: false,
+    limit: true,
+    restrict: true,
+    cache: true,
+    location: __filename
+}
