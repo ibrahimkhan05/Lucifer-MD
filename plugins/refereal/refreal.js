@@ -1,8 +1,8 @@
 exports.run = {
-    usage: ['referal'],
-    hidden: ['rf'],
-    use: 'referal',
-    category: 'downloader',
+    usage: ['refreal'],
+    hidden: ['gencode'],
+    use: 'Generates a referral code for the user.',
+    category: 'referral',
     async: async (m, {
        client,
        args,
@@ -10,29 +10,28 @@ exports.run = {
        isPrefix,
        command,
        env,
+       Scraper,
        Func
     }) => {
        try {
-          const userJid = m.sender
-          let user = global.db.users.find(u => u.jid === userJid)
-          
-          // If the user doesn't have a referral code, create one
-          if (!user.referralCode) {
-             const referralCode = generateReferralCode(userJid)
-             user.referralCode = referralCode
-             user.referralCount = 0  // Initial count is 0
-             user.referredUsers = []  // To track which users used this referral code
- 
-             // Save the user data
-             Func.saveDatabase(global.db)
+          const isNumber = x => typeof x === 'number' && !isNaN(x);
+          // Check if the user already has a referral code
+          let user = global.db.users.find(v => v.jid === m.sender);
+          if (user) {
+             if (!user.referralCode) {
+                // Generate a new referral code if not present
+                user.referralCode = Math.random().toString(36).substring(2, 8); // Generates a 6-char referral code
+                global.db.users = global.db.users.map(v => v.jid === user.jid ? user : v);
+                client.reply(m.chat, `Your referral code is: ${user.referralCode}`, m);
+             } else {
+                client.reply(m.chat, `Your referral code is already: ${user.referralCode}`, m);
+             }
+          } else {
+             client.reply(m.chat, 'User not found, please try again later.', m);
           }
-          
-          // Send the referral link to the user
-          const referralLink = `https://api.whatsapp.com/send?phone=${env.botNumber}&text=/redeem ${user.referralCode}`
-          client.reply(m.chat, `Your referral link: ${referralLink}`, m)
        } catch (e) {
-          console.log(e)
-          client.reply(m.chat, Func.jsonFormat(e), m)
+          console.log(e);
+          client.reply(m.chat, Func.jsonFormat(e), m);
        }
     },
     error: false,
@@ -40,10 +39,5 @@ exports.run = {
     restrict: true,
     cache: true,
     location: __filename
- }
- 
- function generateReferralCode(jid) {
-    // Generate a simple referral code using user JID and timestamp
-    return `${jid.slice(0, 5)}-${Date.now()}`
  }
  
