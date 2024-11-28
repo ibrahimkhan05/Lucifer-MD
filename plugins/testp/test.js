@@ -1,4 +1,4 @@
-const fs = require('fs');  // <-- Add this line to import the fs module
+const fs = require('fs');  // Ensure fs is imported
 const path = require('path');
 const { execFile } = require('child_process');
 
@@ -30,8 +30,11 @@ exports.run = {
                 fs.writeFileSync(filePath, media, 'base64');
                 console.log(`File saved at: ${filePath}`);
 
+                // Correct path to the Python script
+                const pythonScriptPath = path.join(__dirname, 'get_extension.py');  // Correct the path here
+
                 // Call Python script to get file extension
-                execFile('python3', [path.join(__dirname, 'Lucifer-MD/plugins/testp/get_extension.py'), filePath], (error, stdout, stderr) => {
+                execFile('python3', [pythonScriptPath, filePath], (error, stdout, stderr) => {
                     if (error) {
                         console.error(`Error: ${error.message}`);
                         return client.reply(m.chat, '❌ Error occurred while processing the file.', m);
