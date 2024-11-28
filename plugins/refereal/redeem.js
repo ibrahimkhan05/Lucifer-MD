@@ -16,9 +16,9 @@ exports.run = {
        try {
           const isNumber = x => typeof x === 'number' && !isNaN(x);
           
-          // Get referral code and remove any hyphen (-) if present
+          // Get referral code and remove any unwanted characters (hyphens)
           let referralCode = args[0]; // The referral code provided by the user
-          referralCode = referralCode.replace('-', '');  // Remove any hyphens
+          referralCode = referralCode.replace(/[^a-zA-Z0-9]/g, '');  // Remove all non-alphanumeric characters
 
           if (!referralCode) {
              return client.reply(m.chat, 'Please provide a valid referral code.', m);
