@@ -1,7 +1,6 @@
 const { execFile } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { downloadMediaMessage } = require('whatsapp-web.js');
 
 exports.run = {
     usage: ['getext'],
