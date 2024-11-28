@@ -1,5 +1,6 @@
-const { execFile } = require('child_process');
+const fs = require('fs');  // <-- Add this line to import the fs module
 const path = require('path');
+const { execFile } = require('child_process');
 
 exports.run = {
     usage: ['getext'],
