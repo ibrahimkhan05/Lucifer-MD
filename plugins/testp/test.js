@@ -13,19 +13,14 @@ exports.run = {
          },
          nativeFlowMessage: {
             buttons: [{
-               name: "single_select",
+               name: "quick_reply",
                buttonParamsJson: JSON.stringify({
-                  title: "Tap!",
-                  sections: [{
-                     rows: [{
-                        title: "Owner",
-                        description: `X`,
-                        id: `.owner`
-                     }, ]
-                  }]
+                  display_text: "OWNER",
+                  id: ".owner"
                })
             }]
          }
+         
       }, {
          header: {
             imageMessage: global.db.setting.cover,
