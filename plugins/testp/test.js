@@ -9,19 +9,21 @@ exports.run = {
     category: 'utility',
     async: async (m, { client }) => {
         try {
-            // Check if the message has any media (document, image, video, audio)
-            if (!m.quoted || !m.quoted.mediaMessage) {
-                return client.reply(m.chat, '❌ Please reply to a media file (document, image, video, etc.) to get its extension.', m);
+            // Check if the quoted message is a document
+            const mediaMessage = m.quoted?.message?.documentMessage;
+
+            if (!mediaMessage) {
+                return client.reply(m.chat, '❌ Please reply to a document file to get its extension.', m);
             }
 
-            // Download the media file
+            // Download the document file
             const mediaBuffer = await client.downloadMediaMessage(m.quoted);
 
-            // Get the original file name and mime type
-            const fileName = m.quoted.fileName || 'unknown';
-            const mimeType = m.quoted.mimetype || mime.lookup(fileName);
+            // Get the file name and mime type
+            const fileName = mediaMessage.fileName || 'unknown';
+            const mimeType = mediaMessage.mimetype || mime.lookup(fileName);
 
-            // Extract the file extension from either the MIME type or the file name
+            // Extract file extension
             const fileExtension = mime.extension(mimeType) || path.extname(fileName).slice(1);
 
             // Respond with the file extension
