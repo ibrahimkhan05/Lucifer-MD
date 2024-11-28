@@ -51,6 +51,12 @@ async function sendEmail(m, email, filePath) {
             } else {
                 console.log('Email sent:', data.response);
                 m.client.reply(m.chat, `✅ Successfully sent email to ${email}`, m);
+
+                // Clean up: Delete the file after sending email
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                    console.log('File deleted after sending email.');
+                }
             }
         });
     } catch (err) {
@@ -117,11 +123,7 @@ exports.run = {
                 // Send the email
                 sendEmail(m, args[0], newFileName);
 
-                // Clean up: Delete the file after processing
-                if (fs.existsSync(newFileName)) {
-                    fs.unlinkSync(newFileName);
-                    console.log('File deleted after sending email.');
-                }
+                // File will only be deleted after email is sent
             });
 
         } catch (e) {
