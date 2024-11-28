@@ -27,12 +27,12 @@ exports.run = {
                 global.db.users = global.db.users.map(v => v.jid === user.jid ? user : v);
                 
                 // Create a redeem link for the referral code
-                redeemLink = `https://api.whatsapp.com/send?phone=${env.botNumber}&text=/redeem ${user.referralCode}`;
+                redeemLink = `https://api.whatsapp.com/send?phone=447375237255&text=/redeem${user.referralCode}`;
                 
                 client.reply(m.chat, `Your referral code is: ${user.referralCode}\nRedeem it here: ${redeemLink}`, m);
              } else {
                 // If the user already has a referral code, show it
-                redeemLink = `https://api.whatsapp.com/send?phone=${env.botNumber}&text=/redeem ${user.referralCode}`;
+                redeemLink = `https://api.whatsapp.com/send?phone=-447375237255&text=/redeem${user.referralCode}`;
                 client.reply(m.chat, `Your referral code is already: ${user.referralCode}\nRedeem it here: ${redeemLink}`, m);
              }
           } else {
