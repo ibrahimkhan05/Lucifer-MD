@@ -1,67 +1,70 @@
 exports.run = {
-   usage: ['xnxx'],
-   hidden: ['getxnxx'],
-   use: 'query <𝘱𝘳𝘦𝘮𝘪𝘶𝘮>',
+   usage: ['search', 'download'],
+   hidden: ['getsearch', 'getdownload'],
+   use: 'search <query> | download <video_url>',
    category: 'porn',
    async: async (m, { client, text, args, isPrefix, command, Func }) => {
       try {
-         if (command === 'xnxx') {
-            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'step mom'), m);
+         if (command === 'search') {
+            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'query'), m);
             client.sendReact(m.chat, '🕒', m.key);
 
-            let json = await Func.fetchJson(`https://api.cafirexos.com/api/xnxxsearch?text=${text}`);
+            // API call to search for videos based on the query
+            let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/search/xvideos?query=${text}&apikey=beta-Ibrahim1209`);
+            
+            // If the API status is false, reply with failure message
             if (!json.status) return client.reply(m.chat, global.status.fail, m);
 
-            // Prepare button sections for all results
-            const sections = [];
-            const buttonsPerSection = 5; // Adjust based on platform limits
-
-            for (let i = 0; i < json.result.length; i += buttonsPerSection) {
-               const rows = json.result.slice(i, i + buttonsPerSection).map(v => ({
-                  title: `${v.title}`,
-                  id: `${isPrefix}getxnxx ${v.link}` // ID for button interaction
-               }));
-
-               sections.push({
-                  rows
-               });
-            }
-
-            const buttons = [{
-               name: 'single_select',
-               buttonParamsJson: JSON.stringify({
-                  title: 'Select Video',
-                  sections: [{
-                     title: 'Select from below to get video',
-                     rows: sections.flat().map(section => section.rows).flat()
+            // Create a list of cards (carousel items)
+            const cards = json.result.map((v, index) => ({
+               header: {
+                  imageMessage: global.db.setting.cover, // Set the image for the card header
+                  hasMediaAttachment: true,
+               },
+               body: {
+                  text: `${v.title} (${v.duration})\nViews: ${v.views}, HD: ${v.hd}, Premium: ${v.premium}`,
+               },
+               nativeFlowMessage: {
+                  buttons: [{
+                     name: "quick_reply",
+                     buttonParamsJson: JSON.stringify({
+                        display_text: `Download ${v.title}`,
+                        id: `${isPrefix}download ${v.url}` // Trigger download with the selected video URL
+                     })
                   }]
-               })
-            }];
+               }
+            }));
 
-            const combinedCaption = "*X N X X  S E A R C H*\n\nHere are the results for your search: " + text + ".\n\nPlease select a video from the options below to view more details.";
+            // Create a caption for the combined search result
+            const combinedCaption = "*X H M A T E R   S E A R C H*\n\nHere are the results for your search: " + text + ".\n\nPlease select a video from the options below. Once you make a selection, the video will be sent to you directly.";
 
-            // Send the message with buttons for all results
-            await client.sendIAMessage(m.chat, buttons, m, {
-               header: '',
+            // Send the carousel with the available videos as buttons
+            await client.sendCarousel(m.chat, cards, m, {
                content: combinedCaption
             });
 
-         } else if (command === 'getxnxx') {
-            if (!args || !args[0]) return client.reply(m.chat, Func.example(isPrefix, command, 'your link'), m);
-            if (!args[0].match(/(?:https?:\/\/(www\.)?(xnxx)\.(com)\S+)?$/)) return client.reply(m.chat, global.status.invalid, m);
+         } else if (command === 'download') {
+            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'video_url'), m);
             client.sendReact(m.chat, '🕒', m.key);
 
-            let json = await Func.fetchJson(`https://api.cafirexos.com/api/xnxxdl?url=${args[0]}`);
-            if (!json.status) return client.reply(m.chat, Func.jsonFormat(json), m);
+            // API call to fetch video details and download link
+            let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/xvideosdl?url=${text}&apikey=beta-Ibrahim1209`);
+            
+            // If the API status is false, reply with failure message
+            if (!json.status) return client.reply(m.chat, global.status.fail, m);
 
-            // Send only the caption with the video file
-            let teks = `乂  *N S F W*\n\n`;
-            teks += '◦  *Name* : ' + json.result.title + '\n';
-            teks += '◦  *Duration* : ' + json.result.duration + '\n';
+            // Prepare caption for the video download details
+            const teks = `*Download Video*\n\n`;
+            teks += `◦  *Title*: ${json.result.title}\n`;
+            teks += `◦  *Views*: ${json.result.views}\n`;
+            teks += `◦  *Likes*: ${json.result.like_count}\n`;
+            teks += `◦  *Dislikes*: ${json.result.dislike_count}\n`;
+            teks += `◦  *Keywords*: ${json.result.keyword}\n`;
+            teks += `◦  *Download Link*: ${json.result.url}\n\n`;
             teks += global.footer;
 
-            // Send the video file with the caption
-            client.sendFile(m.chat, json.result.files.high, '', teks, m);
+            // Send the formatted response to the user with the download link
+            client.reply(m.chat, teks, m);
          }
       } catch (e) {
          console.log(e);
@@ -71,4 +74,4 @@ exports.run = {
    error: false,
    limit: true,
    premium: true
-}
+};
