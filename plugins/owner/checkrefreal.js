@@ -1,66 +1,65 @@
+const fs = require('fs');
+const axios = require('axios');
+const decode = require('html-entities').decode;
+
 exports.run = {
-    usage: ['totalreferral'],
-    hidden: [''],
-    use: '',
-    category: 'owner',
-    owner: true,  // Ensures that only the owner can use this command
-    async: async (m, {
-        client,
-        args,
-        text,
-        isPrefix,
-        command,
-        env,
-        Scraper,
-        Func
-    }) => {
-        try {
-            // Get all users who have referral codes
-            const usersWithReferrals = global.db.users.filter(user => user.referralCode);
-
-            if (usersWithReferrals.length === 0) {
-                return client.reply(m.chat, '❌ *No users with referral codes found.* ❌', m);
+   usage: ['get'],
+   category: 'owner',
+   async: async (m, {
+      client,
+      command,
+      args,
+      env,
+      Func
+   }) => {
+      try {
+         // Check if the command is "get" or "fetch" and if a URL is provided
+         if (/get|fetch/i.test(command)) {
+            if (!args || !args[0]) {
+                // Inform the user to provide a URL
+                return client.reply(m.chat, Func.example("/get your link"), m);
             }
 
-            // Create a message that will contain all the referral data
-            let referralSummaryMessage = '';
+            // The URL is provided in args[0]
+            const url = args[0];
 
-            // Loop through each user with a referral code and gather the referral details
-            for (let user of usersWithReferrals) {
-                const referredUsers = user.referredUsers || [];
-                const numberOfReferredUsers = referredUsers.length;
-
-                const formattedJid = `+${user.jid.replace('@s.whatsapp.net', '')}`;  // Format JID
-
-                // Append referrer details to the summary message
-                referralSummaryMessage += `👤 *Referrer*: ${user.name || 'Unknown'}\n📞 *Referrer Number*: ${formattedJid}\n📊 *Total Users Referred*: ${numberOfReferredUsers}\n\n*Referred Users*:\n`;
-
-                // Loop through referred users to add their details
-                for (let referred of referredUsers) {
-                    const referredUser = global.db.users.find(v => v.jid === referred);
-                    if (referredUser) {
-                        const referredName = referredUser.name || 'Unknown';
-                        const referredFormattedJid = `+${referredUser.jid.replace('@s.whatsapp.net', '')}`;  // Format JID for referred users
-                        referralSummaryMessage += `👥 *Referred User*: ${referredName}\n📞 *Referred Number*: ${referredFormattedJid}\n\n`;
-                    }
-                }
-                referralSummaryMessage += '\n';
+            // Ensure the URL is valid
+            if (!/^https?:\/\//i.test(url)) {
+                return client.reply(m.chat, 'Please provide a valid URL starting with http:// or https://', m);
             }
 
-            // Send the referral summary in one message
-            client.reply(m.chat, referralSummaryMessage || 'No referral details to show.', m);
+            // Send a loading reaction while fetching the URL
+            client.sendReact(m.chat, '🕒', m.key);
 
-            // Notify the owner that the process is complete
-            client.reply(m.chat, '📊 *Referral Summary Sent to Owner!* 📊', m);
+            // Fetch the data from the provided URL
+            const fetch = await axios.get(url, {
+               headers: {
+                  "Access-Control-Allow-Origin": "*",
+                  "Referer": "https://www.google.com/",
+                  "Referrer-Policy": "strict-origin-when-cross-origin",
+                  "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
+               }
+            });
 
-        } catch (e) {
-            console.log(e);
-            client.reply(m.chat, Func.jsonFormat(e), m);
-        }
-    },
-    error: false,
-    limit: true,
-    restrict: true,
-    cache: true,
-    location: __filename
-}
+            // Check the content type and respond accordingly
+            if (/json/i.test(fetch.headers['content-type'])) {
+                return m.reply(Func.jsonFormat(fetch.data));  // Send the JSON data formatted
+            }
+
+            if (/text/i.test(fetch.headers['content-type'])) {
+                return m.reply(fetch.data);  // Send the text data
+            }
+
+            // If it's neither JSON nor text, send the file from the URL
+            return client.sendFile(m.chat, url, '', '', m);
+         }
+      } catch (e) {
+         // Log the error and send an error message to the user
+         console.log(e);
+         return client.reply(m.chat, `An error occurred: ${e.message}`, m);
+      }
+   },
+   owner: true,
+   cache: true,
+   location: __filename
+};
