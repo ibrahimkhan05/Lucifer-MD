@@ -48,9 +48,12 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
     const formats = result;
 
     if (formats.length === 0) {
-        // Send a default option if no specific qualities are available
-        const noQualitiesMessage = `No specific qualities are available for this video.\n\nReply with:\n1. Default Quality (best)`;
+        // If no specific qualities are available, send default quality download option
+        const noQualitiesMessage = `No specific qualities are available for this video.\n\nYou can download the default quality video by clicking below:`;
         await client.reply(m.chat, noQualitiesMessage, m);
+
+        // Add the option for default quality
+        await sendDefaultQualityButton(url, client, m);
     } else {
         // Display available qualities with carousel buttons
         let qualityMessage = "Select a quality to download by clicking the corresponding button:";
@@ -79,6 +82,33 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
             content: qualityMessage
         });
     }
+}
+
+// Function to send the default quality button
+async function sendDefaultQualityButton(url, client, m) {
+    const buttonMessage = {
+        header: {
+            imageMessage: global.db.setting.cover, // Set the image for the card header
+            hasMediaAttachment: true,
+        },
+        body: {
+            text: `Download the video in default quality (best available).`,
+        },
+        nativeFlowMessage: {
+            buttons: [{
+                name: "quick_reply",
+                buttonParamsJson: JSON.stringify({
+                    display_text: "Download Default Quality",
+                    id: `/cvbi ${url}` // Trigger download with default quality
+                })
+            }]
+        }
+    };
+
+    // Send button for default quality download
+    await client.sendCarousel(m.chat, [buttonMessage], m, {
+        content: "Click below to download the video in default quality."
+    });
 }
 
 // Main exportable handler for the bot
