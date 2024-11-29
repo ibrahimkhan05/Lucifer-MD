@@ -13,7 +13,7 @@ exports.run = {
    }) => {
       try {
         if (/get|fetch/i.test(command)) {
-            if (!args || !args[0]) return client.reply(m.chat, Func.example(prefix, command, global.db.setting.cover), m)
+            if (!args || !args[0]) return client.reply(m.chat, Func.example("/get your link" ), m)
             client.sendReact(m.chat, '🕒', m.key)
               const fetch = await axios.get(args[0], {
                   headers: {
