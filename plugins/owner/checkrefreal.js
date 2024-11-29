@@ -28,11 +28,27 @@ exports.run = {
             // Loop through each user with a referral code and gather the referral details
             for (let user of usersWithReferrals) {
                 const referredUsers = user.referredUsers || [];
-                const referralPoints = user.referralPoints || 0;
+                let totalLimitEarned = 0;
+
+                // Loop through referred users to calculate the limit earned
+                for (let referred of referredUsers) {
+                    const referredUser = global.db.users.find(v => v.jid === referred);
+                    if (referredUser) {
+                        // Referred user gets 5 points
+                        totalLimitEarned += 5;
+                    }
+                }
+
+                // Referrer earns 10 points for each user they referred
+                const referralLimitFromReferredUsers = referredUsers.length * 10;
+
+                // Sum of both total limit earned and referral limit from referring others
+                totalLimitEarned += referralLimitFromReferredUsers;
+
                 const formattedJid = `+${user.jid.replace('@s.whatsapp.net', '')}`;  // Format JID
 
                 // Append referrer details to the summary message
-                referralSummaryMessage += `👤 *Referrer*: ${user.name || 'Unknown'}\n📞 *Referrer Number*: ${formattedJid}\n🏆 *Total Points Earned*: ${referralPoints}\n\n*Referred Users*:\n`;
+                referralSummaryMessage += `👤 *Referrer*: ${user.name || 'Unknown'}\n📞 *Referrer Number*: ${formattedJid}\n🏆 *Total Limit Earned*: ${totalLimitEarned}\n\n*Referred Users*:\n`;
 
                 // Loop through referred users to add their details
                 for (let referred of referredUsers) {
@@ -40,7 +56,7 @@ exports.run = {
                     if (referredUser) {
                         const referredName = referredUser.name || 'Unknown';
                         const referredFormattedJid = `+${referredUser.jid.replace('@s.whatsapp.net', '')}`;  // Format JID for referred users
-                        referralSummaryMessage += `👥 *Referred User*: ${referredName}\n📞 *Referred Number*: ${referredFormattedJid}\n🏆 *Points Earned*: ${referredUser.referralPoints || 0}\n\n`;
+                        referralSummaryMessage += `👥 *Referred User*: ${referredName}\n📞 *Referred Number*: ${referredFormattedJid}\n🏆 *Limit Earned*: 5\n\n`; // Referred user gets 5 limit
                     }
                 }
                 referralSummaryMessage += '\n';
