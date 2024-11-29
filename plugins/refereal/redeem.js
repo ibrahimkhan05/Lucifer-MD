@@ -16,13 +16,14 @@ exports.run = {
        try {
            const isNumber = x => typeof x === 'number' && !isNaN(x);
 
-           // Get referral code and remove any unwanted characters (hyphens)
+           // Ensure a referral code is provided and sanitize it
            let referralCode = args[0];
-           referralCode = referralCode.replace(/[^a-zA-Z0-9]/g, ''); // Remove all non-alphanumeric characters
-
            if (!referralCode) {
                return client.reply(m.chat, 'Please provide a valid referral code.', m);
            }
+
+           // Remove any unwanted characters (hyphens, spaces, etc.)
+           referralCode = referralCode.replace(/[^a-zA-Z0-9]/g, ''); // Remove all non-alphanumeric characters
 
            // Find the referrer and the user who is redeeming the code
            let referredUser = global.db.users.find(v => v.referralCode === referralCode);
