@@ -30,7 +30,7 @@ exports.run = {
                 const referredUsers = user.referredUsers || [];
                 let totalLimitEarned = 0;
 
-                // Loop through referred users to calculate the limit earned
+                // Loop through referred users to calculate the limit earned for each referred user
                 for (let referred of referredUsers) {
                     const referredUser = global.db.users.find(v => v.jid === referred);
                     if (referredUser) {
