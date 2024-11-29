@@ -60,6 +60,9 @@ exports.run = {
            // Adding 10 points to the referrer's limit (the one whose code is used)
            referredUser.limit += referrerLimitIncrease;
 
+           // Increment the referral count for the referrer
+           referredUser.referralCount = (referredUser.referralCount || 0) + 1;
+
            // Save the updated data
            global.db.users = global.db.users.map(v => v.jid === referredUser.jid ? referredUser : v);
            global.db.users = global.db.users.map(v => v.jid === user.jid ? user : v);
@@ -68,7 +71,7 @@ exports.run = {
            client.reply(m.chat, `You have successfully redeemed a referral code!\nYour limit has been updated by +${userLimitIncrease} points.`, m);
 
            // Notify the referrer
-           client.reply(referredUser.jid, `Congratulations! Your referral code was successfully redeemed by ${user.name}.\nYour limit has been updated by +${referrerLimitIncrease} points.`, m);
+           client.reply(referredUser.jid, `Congratulations! Your referral code was successfully redeemed by ${user.name}.\nYour limit has been updated by +${referrerLimitIncrease} points.\nYour referral count has been updated to ${referredUser.referralCount}.`, m);
 
        } catch (e) {
            console.log(e);
