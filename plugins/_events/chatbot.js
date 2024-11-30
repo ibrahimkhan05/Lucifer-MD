@@ -104,5 +104,4 @@ exports.run = {
     },
     error: false,
     private: true,
-    premium: true
 };
