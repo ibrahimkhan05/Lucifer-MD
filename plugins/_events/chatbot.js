@@ -43,9 +43,9 @@ exports.run = {
             const user = global.db.users.find(v => v.jid === userId);
 
             // Ignore if the user is not premium
-            if (!user || !user.premium) return;
+            if (!user || !user.premium) return; // Don't reply if the user is not premium
 
-            // Handle "/newchat" command
+            // Handle "/newchat" command to reset history
             if (m.text === '/newchat') {
                 delete userConversations[userId];
                 fs.writeFileSync(userConversationsFile, JSON.stringify(userConversations), 'utf8');
