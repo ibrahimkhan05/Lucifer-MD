@@ -52,14 +52,14 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
         return client.reply(m.chat, "No qualities found. Please try another video.", m);
     }
 
-    // Save the session
+    // Save the session with a longer timeout (e.g., 5 minutes)
     global.videoSessions[m.chat] = {
         url,
         formats,
         timeout: setTimeout(() => {
             delete global.videoSessions[m.chat];
             client.reply(m.chat, "Session expired. Please start again.", m);
-        }, 60000) // 1-minute session timeout
+        }, 300000) // 5 minutes timeout
     };
 
     // Send quality options to user
@@ -78,7 +78,7 @@ async function handleQualitySelection(m, { client }) {
         return client.reply(m.chat, "No active session. Please start with the command again.", m);
     }
 
-    // Safely parse the user's choice (1 to 9)
+    // Safely parse the user's choice
     const choice = parseInt(m.body.trim(), 10);
     console.log(`User selected choice: ${choice}`); // Debugging log
 
@@ -88,16 +88,17 @@ async function handleQualitySelection(m, { client }) {
     }
 
     const selectedFormat = session.formats[choice - 1];
-    const downloadCommand = `python3 ./download_script.py ${session.url} ${selectedFormat.id}`; // Modify as needed
+    const downloadCommand = `/cvbi ${session.url} ${selectedFormat.id}`; // Changed downloadCommand to use /cvbi
 
     // Notify user and start download
     await client.reply(m.chat, `Downloading: ${selectedFormat.label} (${selectedFormat.size})`, m);
 
+    // Call the download command or any further action as needed
     try {
         const { stdout, stderr } = await execPromise(downloadCommand, { shell: true });
         if (stderr) throw new Error(stderr);
 
-        await client.reply(m.chat, "Download completed successfully.", m);
+        await client.reply(m.chat, "Download started successfully.", m);
         console.log(`Download output: ${stdout}`); // Debugging log
     } catch (error) {
         console.error(`Download error: ${error.message}`);
