@@ -12,7 +12,7 @@ exports.run = {
             let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/search/xvideos?query=${text}&apikey=beta-Ibrahim1209`);
             if (!json.status) return client.reply(m.chat, global.status.fail, m);
 
-            const results = json.result.slice(0, 5); // Limiting to top 5 results for faster response
+            const results = json.result; // Use all results from the API response
 
             // Create the carousel with video results
             const cards = results.map((result, index) => ({
