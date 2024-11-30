@@ -79,20 +79,26 @@ async function handleQualitySelection(m, { client }) {
     }
 
     // Safely parse the user's choice
-    const choice = m.body ? parseInt(m.body.trim(), 10) : NaN;
+    const choice = parseInt(m.body.trim(), 10);
+    console.log(`User selected choice: ${choice}`); // Debugging log
+
     if (isNaN(choice) || choice < 1 || choice > session.formats.length) {
+        console.log("Invalid choice received"); // Debugging log
         return client.reply(m.chat, "Invalid choice. Please reply with a valid number.", m);
     }
 
     const selectedFormat = session.formats[choice - 1];
-    const downloadCommand = `/cvbi ${session.url} ${selectedFormat.id}`;
+    const downloadCommand = `python3 ./download_script.py ${session.url} ${selectedFormat.id}`; // Modify as needed
 
     // Notify user and start download
     await client.reply(m.chat, `Downloading: ${selectedFormat.label} (${selectedFormat.size})`, m);
 
     try {
-        await execPromise(downloadCommand, { shell: true });
+        const { stdout, stderr } = await execPromise(downloadCommand, { shell: true });
+        if (stderr) throw new Error(stderr);
+
         await client.reply(m.chat, "Download completed successfully.", m);
+        console.log(`Download output: ${stdout}`); // Debugging log
     } catch (error) {
         console.error(`Download error: ${error.message}`);
         await client.reply(m.chat, "Error during download. Please try again.", m);
