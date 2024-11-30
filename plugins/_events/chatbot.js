@@ -40,6 +40,10 @@ exports.run = {
     async: async (m, { client, isPrefix, command, Func }) => {
         try {
             const userId = `${m.chat}`;
+            const user = global.db.users.find(v => v.jid === userId);
+
+            // Ignore if the user is not premium
+            if (!user || !user.premium) return; // Don't reply if the user is not premium
 
             // Check if chatbot is enabled
             const setting = global.db.setting;
