@@ -12,39 +12,31 @@ exports.run = {
             let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/search/xvideos?query=${text}&apikey=beta-Ibrahim1209`);
             if (!json.status) return client.reply(m.chat, global.status.fail, m);
 
-            // Prepare button sections for all results
-            const sections = [];
-            const buttonsPerSection = 5; // Adjust based on platform limits
+            const results = json.result.slice(0, 5); // Limiting to top 5 results for faster response
 
-            for (let i = 0; i < json.result.length; i += buttonsPerSection) {
-               const rows = json.result.slice(i, i + buttonsPerSection).map(v => ({
-                  title: `${v.title}`,
-                  description: `Duration: ${v.duration}`,
-                  id: `${isPrefix}getxvideos ${v.url}` // ID for button interaction
-               }));
+            // Create the carousel with video results
+            const cards = results.map((result, index) => ({
+                header: {
+                    imageMessage: global.db.setting.cover, // Image for the card header (can be customized)
+                    hasMediaAttachment: true,
+                },
+                body: {
+                    text: `${result.title}\nDuration: ${result.duration}\nViews: ${result.views}`, // Video details
+                },
+                nativeFlowMessage: {
+                    buttons: [{
+                        name: "quick_reply",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "Watch Video", // Button text
+                            id: `${isPrefix}getxvideos ${result.url}` // Trigger download with the selected video URL
+                        })
+                    }]
+                }
+            }));
 
-               sections.push({
-                  rows
-               });
-            }
-
-            const buttons = [{
-               name: 'single_select',
-               buttonParamsJson: JSON.stringify({
-                  title: 'Select Video',
-                  sections: [{
-                     title: 'Select from below to get video',
-                     rows: sections.flat().map(section => section.rows).flat()
-                  }]
-               })
-            }];
-
-            const combinedCaption = "*X V I D E O S  S E A R C H*\n\nResults for your search: " + text + ".\n\nPlease select a video from the options below to view more details.";
-
-            // Send the message with buttons for all results
-            await client.sendIAMessage(m.chat, buttons, m, {
-               header: '',
-               content: combinedCaption
+            // Send carousel with the video options
+            await client.sendCarousel(m.chat, cards, m, {
+                content: `*X V I D E O S  S E A R C H*\n\nResults for your search: ${text}. Please select a video from the options below.`
             });
 
          } else if (command === 'getxvideos') {
@@ -55,15 +47,15 @@ exports.run = {
             let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/xvideosdl?url=${args[0]}&apikey=beta-Ibrahim1209`);
             if (!json.status) return client.reply(m.chat, Func.jsonFormat(json), m);
 
-            // Send only the caption with the video file
+            // Build the caption with video details
             let teks = `乂  *X V I D E O S*\n\n`;
             teks += '◦  *Name* : ' + json.result.title + '\n';
             teks += '◦  *Views* : ' + json.result.views + '\n';
             teks += '◦  *Keywords* : ' + json.result.keyword + '\n';
             teks += global.footer;
 
-            // Send the video file with the caption
-            client.sendFile(m.chat, json.result.url, '', teks, m);
+            // Send the video file directly
+            await client.sendFile(m.chat, json.result.url, '', teks, m);
          }
       } catch (e) {
          console.log(e);
@@ -73,4 +65,4 @@ exports.run = {
    error: false,
    limit: true,
    premium: true
-}
+};

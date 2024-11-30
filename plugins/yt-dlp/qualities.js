@@ -1,69 +1,134 @@
+const { exec } = require('child_process');
+const path = require('path');
+const { promisify } = require('util');
+
+const execPromise = promisify(exec);
+
+// Function to fetch video qualities using Python script
+async function fetchQualities(url) {
+    const scriptPath = path.resolve(__dirname, 'fetch_qualities.py');
+    const command = `python3 ${scriptPath} ${url}`;
+
+    try {
+        const { stdout, stderr } = await execPromise(command, { shell: true });
+
+        if (stderr) {
+            throw new Error(stderr);
+        }
+
+        const result = JSON.parse(stdout);
+
+        if (Array.isArray(result)) {
+            return result;
+        } else if (result.error) {
+            throw new Error(result.error);
+        } else {
+            throw new Error('Unexpected response format');
+        }
+    } catch (error) {
+        console.error(`Error fetching qualities: ${error.message}`);
+        return { error: error.message };
+    }
+}
+
+// Function to handle user request for fetching qualities and starting the session
+async function handleUserRequest(m, { client, text, isPrefix, command }) {
+    if (!text) {
+        return client.reply(m.chat, `Usage: ${isPrefix}${command} <url>`, m);
+    }
+
+    const url = text.split(' ')[0];
+    const result = await fetchQualities(url);
+
+    if (result.error) {
+        await client.reply(m.chat, `Error fetching qualities: ${result.error}`, m);
+        return;
+    }
+
+    const formats = result;
+
+    if (formats.length === 0) {
+        // If no specific qualities are available, send default quality download option
+        const noQualitiesMessage = `No specific qualities are available for this video.\n\nYou can download the default quality video by clicking below:`;
+        await client.reply(m.chat, noQualitiesMessage, m);
+
+        // Add the option for default quality
+        await sendDefaultQualityButton(url, client, m);
+    } else {
+        // Display available qualities with carousel buttons
+        let qualityMessage = "Select a quality to download by clicking the corresponding button:";
+
+        const cards = formats.map((format, index) => ({
+            header: {
+                imageMessage: global.db.setting.cover, // Set the image for the card header
+                hasMediaAttachment: true,
+            },
+            body: {
+                text: `${format.label} (${format.size})`, // Video quality and size
+            },
+            nativeFlowMessage: {
+                buttons: [{
+                    name: "quick_reply",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: format.label,
+                        id: `/cvbi ${url} ${format.id}` // Trigger download with the selected quality
+                    })
+                }]
+            }
+        }));
+
+        // Send carousel with the available video qualities as buttons
+        await client.sendCarousel(m.chat, cards, m, {
+            content: qualityMessage
+        });
+    }
+}
+
+// Function to send the default quality button
+async function sendDefaultQualityButton(url, client, m) {
+    const buttonMessage = {
+        header: {
+            imageMessage: global.db.setting.cover, // Set the image for the card header
+            hasMediaAttachment: true,
+        },
+        body: {
+            text: `Download the video in default quality (best available).`,
+        },
+        nativeFlowMessage: {
+            buttons: [{
+                name: "quick_reply",
+                buttonParamsJson: JSON.stringify({
+                    display_text: "Download Default Quality",
+                    id: `/cvbi ${url}` // Trigger download with default quality
+                })
+            }]
+        }
+    };
+
+    // Send button for default quality download
+    await client.sendCarousel(m.chat, [buttonMessage], m, {
+        content: "Click below to download the video in default quality."
+    });
+}
+
+// Main exportable handler for the bot
 exports.run = {
-    usage: ['xvideos'],
-    hidden: ['getxvideos'],
-    use: 'query <𝘱𝘳𝘦𝘮𝘪𝘶𝘮>',
-    category: 'porn',
-    async: async (m, { client, text, args, isPrefix, command, Func }) => {
-       try {
-          if (command === 'xvideos') {
-             if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'step mom'), m);
-             client.sendReact(m.chat, '🕒', m.key);
- 
-             let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/search/xvideos?query=${text}&apikey=beta-Ibrahim1209`);
-             if (!json.status) return client.reply(m.chat, global.status.fail, m);
- 
-             const results = json.result.slice(0, 5); // Limiting to top 5 results for faster response
- 
-             // Create the carousel with video results
-             const cards = results.map((result, index) => ({
-                 header: {
-                     imageMessage: global.db.setting.cover, // Image for the card header (can be customized)
-                     hasMediaAttachment: true,
-                 },
-                 body: {
-                     text: `${result.title}\nDuration: ${result.duration}\nViews: ${result.views}`, // Video details
-                 },
-                 nativeFlowMessage: {
-                     buttons: [{
-                         name: "quick_reply",
-                         buttonParamsJson: JSON.stringify({
-                             display_text: "Watch Video", // Button text
-                             id: `${isPrefix}getxvideos ${result.url}` // Trigger download with the selected video URL
-                         })
-                     }]
-                 }
-             }));
- 
-             // Send carousel with the video options
-             await client.sendCarousel(m.chat, cards, m, {
-                 content: `*X V I D E O S  S E A R C H*\n\nResults for your search: ${text}. Please select a video from the options below.`
-             });
- 
-          } else if (command === 'getxvideos') {
-             if (!args || !args[0]) return client.reply(m.chat, Func.example(isPrefix, command, 'your link'), m);
-             if (!args[0].match(/(?:https?:\/\/(www\.)?(xvideos)\.(com)\S+)?$/)) return client.reply(m.chat, global.status.invalid, m);
-             client.sendReact(m.chat, '🕒', m.key);
- 
-             let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/xvideosdl?url=${args[0]}&apikey=beta-Ibrahim1209`);
-             if (!json.status) return client.reply(m.chat, Func.jsonFormat(json), m);
- 
-             // Build the caption with video details
-             let teks = `乂  *X V I D E O S*\n\n`;
-             teks += '◦  *Name* : ' + json.result.title + '\n';
-             teks += '◦  *Views* : ' + json.result.views + '\n';
-             teks += '◦  *Keywords* : ' + json.result.keyword + '\n';
-             teks += global.footer;
- 
-             // Send the video file directly
-             await client.sendFile(m.chat, json.result.url, '', teks, m);
-          }
-       } catch (e) {
-          console.log(e);
-          return client.reply(m.chat, global.status.error, m);
-       }
+    usage: ['ytdl'],
+    use: 'url',
+    category: 'special',
+    async: async (m, { client, text, isPrefix, command }) => {
+        try {
+            // Handle the user request for video quality selection
+            await handleUserRequest(m, { client, text, isPrefix, command });
+        } catch (e) {
+            console.error('Error:', e);
+            client.reply(m.chat, global.status.error, m);
+        }
     },
     error: false,
     limit: true,
-    premium: true
- };
- 
+    cache: true,
+    premium: true,
+    verified: true,
+    location: __filename
+};
