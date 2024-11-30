@@ -1,7 +1,7 @@
 exports.run = {
-   usage: ['search', 'download'],
-   hidden: ['getsearch', 'getdownload'],
-   use: 'search <query> | download <video_url>',
+   usage: ['xnxx'],
+   hidden: ['getxnxx'],
+   use: '<query>',
    category: 'porn',
    async: async (m, { client, text, args, isPrefix, command, Func }) => {
       try {
