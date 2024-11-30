@@ -3,7 +3,7 @@ const { gpt } = require("gpti");
 
 const userConversationsFile = 'user_conversations.json';
 
-// Ensure the user conversations file exists
+// Ensure user conversations file exists
 if (!fs.existsSync(userConversationsFile)) {
     fs.writeFileSync(userConversationsFile, '{}', 'utf8');
     console.log('user_conversations.json created successfully.');
@@ -19,7 +19,7 @@ try {
     console.error('Error loading user conversations:', err);
 }
 
-// Function to clean up old conversations (older than 24 hours)
+// Clean up old conversations (24-hour retention)
 function cleanupOldConversations() {
     const now = Date.now();
     for (const userId in userConversations) {
@@ -33,75 +33,65 @@ function cleanupOldConversations() {
     fs.writeFileSync(userConversationsFile, JSON.stringify(userConversations), 'utf8');
 }
 
-// Schedule cleanup to run every hour
+// Run cleanup hourly
 setInterval(cleanupOldConversations, 60 * 60 * 1000);
 
-// Main chatbot function
 exports.run = {
     async: async (m, { client }) => {
         try {
             const userId = `${m.sender}`;
             const user = global.db.users.find(v => v.jid === userId);
 
-            // Exit early if user is not premium
-            if (!user || !user.premium) {
-                return; // No response for non-premium users
-            }
+            // Ignore if the user is not premium
+            if (!user || !user.premium) return;
 
-            // Handle "/newchat" command to reset conversation history
+            // Handle "/newchat" command
             if (m.text === '/newchat') {
                 delete userConversations[userId];
                 fs.writeFileSync(userConversationsFile, JSON.stringify(userConversations), 'utf8');
-                client.reply(m.chat, 'Your chat history has been cleared. Start a new conversation now.', m);
+                client.reply(m.chat, 'Your chat history has been cleared. You can start a new conversation.', m);
                 return;
             }
 
-            // Initialize conversation if new
+            // Initialize new conversation if not present
             if (!userConversations[userId]) {
                 userConversations[userId] = { conversations: [] };
-                client.reply(m.chat, 'Welcome Premium User! Start chatting. Use /newchat to reset the conversation.', m);
             }
 
-            // Add user's message to conversation history
+            // Add user message to conversation history
             userConversations[userId].conversations.push({
                 role: "user",
                 content: m.text,
                 timestamp: new Date()
             });
 
-            // Get conversation history and call GPT API
+            // Call GPT API
             const history = userConversations[userId].conversations;
-            try {
-                const data = await gpt.v1({
-                    messages: history,
-                    prompt: m.text,
-                    model: "GPT-4",
-                    markdown: false
-                });
+            const data = await gpt.v1({
+                messages: history,
+                prompt: m.text,
+                model: "GPT-4",
+                markdown: false
+            });
 
-                const response = data?.gpt || 'No response from GPT-4 API';
+            const response = data?.gpt || 'No response from GPT-4 API';
 
-                // Reply to user and store assistant's response
-                client.reply(m.chat, response, m);
-                userConversations[userId].conversations.push({
-                    role: "assistant",
-                    content: response,
-                    timestamp: new Date()
-                });
+            // Reply to user and store response in history
+            client.reply(m.chat, response, m);
+            userConversations[userId].conversations.push({
+                role: "assistant",
+                content: response,
+                timestamp: new Date()
+            });
 
-                // Save conversation history
-                fs.writeFileSync(userConversationsFile, JSON.stringify(userConversations), 'utf8');
-            } catch (apiError) {
-                console.error('GPT-4 API error:', apiError);
-                client.reply(m.chat, 'Error processing your request. Try again later.', m);
-            }
+            // Save updated conversation
+            fs.writeFileSync(userConversationsFile, JSON.stringify(userConversations), 'utf8');
 
         } catch (err) {
             console.error('Error:', err);
-            client.reply(m.chat, 'Unexpected error occurred. Please try again later.', m);
+            client.reply(m.chat, 'An unexpected error occurred. Please try again later.', m);
         }
     },
     error: false,
-    private: true,
-    premium: true // Only runs for premium users
+    private: true
 };
