@@ -78,7 +78,7 @@ async function handleQualitySelection(m, { client }) {
         return client.reply(m.chat, "No active session. Please start with the command again.", m);
     }
 
-    // Safely parse the user's choice
+    // Safely parse the user's choice (1 to 9)
     const choice = parseInt(m.body.trim(), 10);
     console.log(`User selected choice: ${choice}`); // Debugging log
 
