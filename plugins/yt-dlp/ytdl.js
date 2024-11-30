@@ -52,12 +52,12 @@ exports.run = {
                 const fileSize = fs.statSync(filePath).size;
                 const fileSizeStr = `${(fileSize / (1024 * 1024)).toFixed(2)} MB`;
 
-                if (fileSize > 930 * 1024 * 1024) { // 999 MB
-                    await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 999MB`, m);
+                if (fileSize > 1900 * 1024 * 1024) { // 1900 MB
+                    await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 1900MB`, m);
                     fs.unlinkSync(filePath); // Delete the file
                     return;
                 }
-
+                
                 const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
                 const chSize = Func.sizeLimit(fileSize.toString(), maxUpload.toString());
 

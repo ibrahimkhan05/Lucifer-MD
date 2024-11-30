@@ -4,7 +4,7 @@
    "database": "data",
    "limit": 15,
    "ram_limit": "3500mb",
-   "max_upload": 930,
+   "max_upload": 1800,
    "max_upload_free": 80,
    "cooldown": 1,
    "timer": 180000,
