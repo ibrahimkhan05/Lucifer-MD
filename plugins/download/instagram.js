@@ -1,4 +1,4 @@
-const { ndown } = require("nayan-media-downloader");
+const { ndown } = require("nayan-video-downloader");
 
 exports.run = {
    usage: ['ig'],
