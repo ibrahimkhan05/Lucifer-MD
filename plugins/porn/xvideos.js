@@ -28,12 +28,14 @@ exports.run = {
             results.forEach((result, index) => {
                 responseText += `*${index + 1}. ${result.title}*\n`;
                 responseText += `  _Duration:_ ${result.duration}\n`;
+                responseText += `  _Link:_ ${result.link}\n\n`;
             });
 
             responseText += `To download a video, type: /getxvideos <number>\nExample: /getxvideos 1 for the first video.`;
 
             // Send the list of search results
             await client.reply(m.chat, responseText, m);
+
 
          } else if (command === 'getxvideos') {
             if (!args || !args[0]) return client.reply(m.chat, Func.example(isPrefix, command, '1'), m);
@@ -53,14 +55,18 @@ exports.run = {
 
             client.sendReact(m.chat, '🕒', m.key);
 
-            // Send the video directly
+            let videoJson = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/xvideosdl?url=${selectedVideo.link}&apikey=beta-Ibrahim1209`);
+            if (!videoJson.status) return client.reply(m.chat, Func.jsonFormat(videoJson), m);
+
+            // Build the caption with video details
             let teks = `乂  *XVIDEOS VIDEO*\n\n`;
-            teks += '◦  *Name* : ' + selectedVideo.title + '\n';
-            teks += '◦  *Duration* : ' + selectedVideo.duration + '\n';
+            teks += '◦  *Name* : ' + videoJson.result.title + '\n';
+            teks += '◦  *Views* : ' + videoJson.result.views + '\n';
+            teks += '◦  *Keywords* : ' + videoJson.result.keyword + '\n';
             teks += global.footer;
 
-            // Send the video link directly (embed URL)
-            await client.sendFile(m.chat, selectedVideo.link, '', teks, m);
+            // Send the video file directly
+            await client.sendFile(m.chat, videoJson.result.url, '', teks, m);
 
             // Optionally, clear the session after use
             delete userSessions[m.chat];
