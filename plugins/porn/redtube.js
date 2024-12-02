@@ -8,49 +8,58 @@ const execPromise = promisify(exec);
 if (!global.redTubeSessions) global.redTubeSessions = {};
 if (!global.videoSessions) global.videoSessions = {};
 
-// Function to fetch RedTube search results
-async function fetchRedTubeSearchResults(query) {
-    const url = `https://lust.scathach.id/redtube/search?key=${encodeURIComponent(query)}`;
+// Function to fetch video qualities (using your custom fetch script)
+async function fetchQualities(url) {
+    const scriptPath = path.resolve(__dirname, 'fetch_qualities.py');
+    const command = `python3 ${scriptPath} ${url}`;
+
     try {
-        const response = await fetch(url);
-        const result = await response.json();
-        if (!result.success || !result.data || result.data.length === 0) {
-            throw new Error("No results found.");
-        }
-        return result.data;
+        const { stdout, stderr } = await execPromise(command, { shell: true });
+        if (stderr) throw new Error(stderr);
+
+        const result = JSON.parse(stdout);
+        if (Array.isArray(result)) return result;
+        if (result.error) throw new Error(result.error);
+        throw new Error('Unexpected response format');
     } catch (error) {
-        console.error(`Error fetching RedTube search results: ${error.message}`);
+        console.error(`Error fetching qualities: ${error.message}`);
         return { error: error.message };
     }
 }
 
 // Function to handle the /redtube command (Search videos)
 async function handleRedTubeRequest(m, { client, text, isPrefix, command, Func }) {
-    if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'milf'), m);
+    if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'step mom'), m);
 
     client.sendReact(m.chat, '🕒', m.key);
 
     // Fetch search results from RedTube API
-    const result = await fetchRedTubeSearchResults(text);
+    const apiUrl = `https://lust.scathach.id/redtube/search?key=${text}`;
+    try {
+        const response = await fetch(apiUrl);
+        const data = await response.json();
 
-    if (result.error) {
-        return client.reply(m.chat, `Error: ${result.error}`, m);
+        if (!data.success || !data.data || data.data.length === 0) {
+            return client.reply(m.chat, 'No results found.', m);
+        }
+
+        // Prepare the result in a similar format to the previous PornHub example
+        global.redTubeSessions[m.chat] = { data: data.data };
+
+        // Prepare the list of results
+        let resultMessage = "*🎬 R E D T U B E   S E A R C H*\n\nHere are the results for your search: " + text + ".\n\nPlease select a video from the list below. Reply with `/getrube <number>` to select a video.\n\n";
+        data.data.forEach((v, index) => {
+            resultMessage += `*${index + 1}*: ${v.title}\n\n`;
+        });
+
+        await client.reply(m.chat, resultMessage, m);
+    } catch (error) {
+        console.error(`Error fetching RedTube search results: ${error.message}`);
+        return client.reply(m.chat, 'Error fetching RedTube search results. Please try again later.', m);
     }
-
-    global.redTubeSessions[m.chat] = { data: result };
-
-    // Prepare the list of results
-    let resultMessage = "*🎬 R E D T U B E   S E A R C H*\n\nHere are the results for your search: " + text + ".\n\nPlease select a video from the list below. Reply with `/getredtube <number>` to select a video.\n\n";
-    result.forEach((v, index) => {
-        resultMessage += `*${index + 1}*: ${v.title}\n`;
-        resultMessage += `  ⏱️ *Duration*: ${v.duration}\n`;
-        resultMessage += `  👀 *Views*: ${v.views}\n\n`;
-    });
-
-    await client.reply(m.chat, resultMessage, m);
 }
 
-// Function to handle the /getredtube command (Fetch and list qualities)
+// Function to handle the /getrube command (Fetch and list qualities)
 async function handleGetRedTubeCommand(m, { client, text }) {
     const index = parseInt(text.trim(), 10) - 1;
     const session = global.redTubeSessions[m.chat];
@@ -61,17 +70,21 @@ async function handleGetRedTubeCommand(m, { client, text }) {
     }
 
     const selectedVideo = session.data[index];
-    const url = selectedVideo.link;
-    
-    // Now, assuming you have a function similar to fetchQualities that can fetch video details for RedTube (not implemented here)
-    const result = await fetchQualitiesRedTube(url); 
+    const url = selectedVideo.video;
+    const result = await fetchQualities(url);
 
     if (result.error) return client.reply(m.chat, `Error fetching qualities: ${result.error}`, m);
 
     const formats = result;
     if (formats.length === 0) {
-        // If no qualities found, send a message instructing to use default download
-        return client.reply(m.chat, "❌ No qualities found. To download with the default quality, type `/redtube 1`.", m);
+        // No quality found, session will be deleted after 2 minutes
+        global.videoSessions[m.chat] = {
+            timeout: setTimeout(() => {
+                delete global.videoSessions[m.chat]; // Delete session if no quality is selected after timeout
+            }, 120000) // 2 minutes
+        };
+
+        return client.reply(m.chat, "No qualities found. Session will expire in 2 minutes.", m);
     }
 
     // Store session data for later use with 2-minute timeout
@@ -79,7 +92,7 @@ async function handleGetRedTubeCommand(m, { client, text }) {
         url,
         formats,
         timeout: setTimeout(() => {
-            delete global.videoSessions[m.chat]; // Automatically delete session after 2 minutes
+            delete global.videoSessions[m.chat]; // Just delete the session when it expires
         }, 120000) // 2 minutes
     };
 
@@ -93,7 +106,7 @@ async function handleGetRedTubeCommand(m, { client, text }) {
     });
 
     qualityMessage += `💡 To select a quality, reply with \`/getytdl <number>\` (e.g., \`/getytdl 1\`).\n`;
-    qualityMessage += `⏳ You have 2 minutes to select a quality. The session will expire if no choice is made.`;
+    qualityMessage += `⏳ You have 2 minutes to select a quality.`;
 
     client.reply(m.chat, qualityMessage, m);
 }
@@ -105,17 +118,11 @@ async function handleGetYtdlCommand(m, { client, text }) {
         return client.reply(m.chat, "❌ No active session. Please start with /redtube command first.", m);
     }
 
-    // Handle default quality or user choice
-    let choice = text.trim().toLowerCase();
-
-    if (choice === 'default') {
-        choice = 1; // Use the first quality as default if no choice is made
-    } else {
-        choice = parseInt(choice, 10);
-    }
+    // Handle user choice
+    let choice = parseInt(text.trim(), 10);
 
     if (isNaN(choice) || choice < 1 || choice > session.formats.length) {
-        return client.reply(m.chat, "⚠️ Invalid choice. Please reply with a valid number between 1 and 9, or type 'default'.", m);
+        return client.reply(m.chat, "⚠️ Invalid choice. Please reply with a valid number between 1 and 9.", m);
     }
 
     const selectedFormat = session.formats[choice - 1];
@@ -126,7 +133,7 @@ async function handleGetYtdlCommand(m, { client, text }) {
     execDownloadCommand(m, client, downloadUrl, quality);
 }
 
-// Function to execute the download command (same as before)
+// Function to execute the download command
 async function execDownloadCommand(m, client, url, quality) {
     const outputDir = path.resolve(__dirname, 'downloads'); // Directory to save the download
     const scriptPath = path.resolve(__dirname, 'downloader.py'); // Path to Python script
@@ -194,23 +201,19 @@ async function execDownloadCommand(m, client, url, quality) {
     });
 }
 
-// Main exportable handler for RedTube
+// Main exportable handler
 exports.run = {
     usage: ['redtube'],
-    hidden: ['getredtube'],
-    use: 'query <𝘱𝘳𝘦𝘮𝘪𝘶𝘮>',
+    hidden: ['getrube'],
+    use: 'query <search term>',
     category: 'porn',
     async: async (m, { client, text, isPrefix, command, Func }) => {
-        try {
-            if (command === 'redtube') {
-                await handleRedTubeRequest(m, { client, text, isPrefix, command, Func });
-            } else if (command === 'getredtube') {
-                await handleGetRedTubeCommand(m, { client, text });
-            } else if (command === 'getytdl') {
-                await handleGetYtdlCommand(m, { client, text });
-            }
-        } catch (error) {
-            console.error(`Error in command execution: ${error.message}`);
+        if (command === 'redtube') {
+            await handleRedTubeRequest(m, { client, text, isPrefix, command, Func });
+        } else if (command === 'getrube') {
+            await handleGetRedTubeCommand(m, { client, text });
+        } else if (command === 'getytdl') {
+            await handleGetYtdlCommand(m, { client, text });
         }
     }
 };
