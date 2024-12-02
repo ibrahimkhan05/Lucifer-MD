@@ -39,10 +39,13 @@ async function handleXhMasterRequest(m, { client, text, isPrefix, command, Func 
         return client.reply(m.chat, 'No results found.', m);
     }
 
+    // Store search results in session
+    global.xhMasterSessions[m.chat] = { data };
+
     // Prepare the list of results
-    let resultMessage = "*X H A M S T E R   S E A R C H*\n\nHere are the results for your search: " + text + ".\n\nPlease select a video from the list below. Reply with `/getxhmaster <number>` to select a video.\n\n";
+    let resultMessage = "*🎬 X H A M S T E R   S E A R C H*\n\nHere are the results for your search: " + text + ".\n\nPlease select a video from the list below. Reply with `/getxhmaster <number>` to select a video.\n\n";
     data.forEach((v, index) => {
-        resultMessage += `*${index + 1}*: ${v.title}\n`;
+        resultMessage += `*${index + 1}*: ${v.title}\n\n`;
     });
 
     await client.reply(m.chat, resultMessage, m);
@@ -53,6 +56,7 @@ async function handleGetXhMasterCommand(m, { client, text }) {
     const index = parseInt(text.trim(), 10) - 1;
     const session = global.xhMasterSessions[m.chat];
     
+    // Validate session and selection
     if (!session || !session.data || !session.data[index]) {
         return client.reply(m.chat, "❌ Invalid selection. Please select a valid video from the list.", m);
     }
@@ -77,6 +81,7 @@ async function handleGetXhMasterCommand(m, { client, text }) {
 
     // Stylish quality selection menu
     let qualityMessage = "*🎬 Quality Selector*\n\n";
+    qualityMessage += `*Please select a quality for the video.*\n\n`;
     formats.forEach((format, index) => {
         qualityMessage += `*${index + 1}**️⃣ - ${format.label}\n`;
         qualityMessage += `  📦 *Size*: ${format.size ? format.size : "Not available"}\n`;
