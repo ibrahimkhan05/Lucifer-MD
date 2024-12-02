@@ -1,8 +1,10 @@
 const { exec } = require('child_process');
 const path = require('path');
 const { promisify } = require('util');
-
 const execPromise = promisify(exec);
+
+// Global object to manage video sessions
+global.videoSessions = {};
 
 // Function to fetch video qualities using Python script
 async function fetchQualities(url) {
@@ -11,104 +13,87 @@ async function fetchQualities(url) {
 
     try {
         const { stdout, stderr } = await execPromise(command, { shell: true });
-
-        if (stderr) {
-            throw new Error(stderr);
-        }
+        if (stderr) throw new Error(stderr);
 
         const result = JSON.parse(stdout);
+        if (Array.isArray(result)) return result;
+        if (result.error) throw new Error(result.error);
 
-        if (Array.isArray(result)) {
-            return result;
-        } else if (result.error) {
-            throw new Error(result.error);
-        } else {
-            throw new Error('Unexpected response format');
-        }
+        throw new Error('Unexpected response format');
     } catch (error) {
         console.error(`Error fetching qualities: ${error.message}`);
         return { error: error.message };
     }
 }
 
-// Function to handle user request for fetching qualities and starting the session
+// Function to handle the initial request for video quality selection
 async function handleUserRequest(m, { client, text, isPrefix, command }) {
     if (!text) {
         return client.reply(m.chat, `Usage: ${isPrefix}${command} <url>`, m);
     }
 
-    const url = text.split(' ')[0];
+    const url = text.trim();
     const result = await fetchQualities(url);
 
     if (result.error) {
-        await client.reply(m.chat, `Error fetching qualities: ${result.error}`, m);
-        return;
+        return client.reply(m.chat, `Error fetching qualities: ${result.error}`, m);
     }
 
     const formats = result;
-
     if (formats.length === 0) {
-        // If no specific qualities are available, send default quality download option
-        const noQualitiesMessage = `No specific qualities are available for this video.\n\nYou can download the default quality video by clicking below:`;
-        await client.reply(m.chat, noQualitiesMessage, m);
-
-        // Add the option for default quality
-        await sendDefaultQualityButton(url, client, m);
-    } else {
-        // Display available qualities with carousel buttons
-        let qualityMessage = "Select a quality to download by clicking the corresponding button:";
-
-        const cards = formats.map((format, index) => ({
-            header: {
-                imageMessage: global.db.setting.cover, // Set the image for the card header
-                hasMediaAttachment: true,
-            },
-            body: {
-                text: `${format.label} (${format.size})`, // Video quality and size
-            },
-            nativeFlowMessage: {
-                buttons: [{
-                    name: "quick_reply",
-                    buttonParamsJson: JSON.stringify({
-                        display_text: format.label,
-                        id: `/cvbi ${url} ${format.id}` // Trigger download with the selected quality
-                    })
-                }]
-            }
-        }));
-
-        // Send carousel with the available video qualities as buttons
-        await client.sendCarousel(m.chat, cards, m, {
-            content: qualityMessage
-        });
+        return client.reply(m.chat, "No qualities found. Please try another video.", m);
     }
-}
 
-// Function to send the default quality button
-async function sendDefaultQualityButton(url, client, m) {
-    const buttonMessage = {
-        header: {
-            imageMessage: global.db.setting.cover, // Set the image for the card header
-            hasMediaAttachment: true,
-        },
-        body: {
-            text: `Download the video in default quality (best available).`,
-        },
-        nativeFlowMessage: {
-            buttons: [{
-                name: "quick_reply",
-                buttonParamsJson: JSON.stringify({
-                    display_text: "Download Default Quality",
-                    id: `/cvbi ${url}` // Trigger download with default quality
-                })
-            }]
-        }
+    // Save the session with a timeout (5 minutes)
+    global.videoSessions[m.chat] = {
+        url,
+        formats,
+        timeout: setTimeout(() => {
+            delete global.videoSessions[m.chat];
+            client.reply(m.chat, "Session expired. Please start again.", m);
+        }, 300000) // 5 minutes timeout
     };
 
-    // Send button for default quality download
-    await client.sendCarousel(m.chat, [buttonMessage], m, {
-        content: "Click below to download the video in default quality."
+    // Send quality options to the user
+    let qualityMessage = "Select a quality by replying with the corresponding number:\n\n";
+    formats.forEach((format, index) => {
+        qualityMessage += `*${index + 1}*. ${format.label} (${format.size || 'Size not available'})\n`;
     });
+
+    client.reply(m.chat, qualityMessage, m);
+}
+
+// Function to handle quality selection
+async function handleQualitySelection(m, { client }) {
+    const session = global.videoSessions[m.chat];
+    if (!session) {
+        return client.reply(m.chat, "Session expired. Please start again.", m);
+    }
+
+    const choice = parseInt(m.body.trim(), 10);
+    if (isNaN(choice) || choice < 1 || choice > session.formats.length) {
+        return client.reply(m.chat, "Invalid selection. Please reply with a valid number.", m);
+    }
+
+    const selectedFormat = session.formats[choice - 1];
+    const downloadCommand = `/cvbi ${session.url} ${selectedFormat.id}`;
+
+    // Notify the user and start download
+    await client.reply(m.chat, `Downloading: ${selectedFormat.label} (${selectedFormat.size || 'Size not available'})`, m);
+
+    try {
+        const { stdout, stderr } = await execPromise(downloadCommand, { shell: true });
+        if (stderr) throw new Error(stderr);
+
+        await client.reply(m.chat, "Download started successfully.", m);
+    } catch (error) {
+        console.error(`Download error: ${error.message}`);
+        await client.reply(m.chat, "Error during download. Please try again.", m);
+    }
+
+    // Clear session
+    clearTimeout(session.timeout);
+    delete global.videoSessions[m.chat];
 }
 
 // Main exportable handler for the bot
@@ -118,11 +103,14 @@ exports.run = {
     category: 'special',
     async: async (m, { client, text, isPrefix, command }) => {
         try {
-            // Handle the user request for video quality selection
-            await handleUserRequest(m, { client, text, isPrefix, command });
+            if (global.videoSessions[m.chat]) {
+                await handleQualitySelection(m, { client });
+            } else {
+                await handleUserRequest(m, { client, text, isPrefix, command });
+            }
         } catch (e) {
             console.error('Error:', e);
-            client.reply(m.chat, global.status.error, m);
+            client.reply(m.chat, "An error occurred. Please try again later.", m);
         }
     },
     error: false,
