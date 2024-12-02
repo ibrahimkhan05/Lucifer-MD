@@ -48,16 +48,16 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
     };
 
     // Stylish quality selection menu with cleaner, formatted output
-    let qualityMessage = "🎥 *Select a quality by replying with the corresponding number or type 'default' for the best quality:* \n\n";
+    let qualityMessage = "🎥 *Select a quality by replying with the corresponding number (e.g., /getytdl 1) or type 'default' for the best quality:* \n\n";
 
     formats.forEach((format, index) => {
-        qualityMessage += `*${index + 1}*️⃣\n`;
-        qualityMessage += `*Format*: ${format.label}\n`;
-        qualityMessage += `*Size*: ${format.size ? format.size : "Not available"}\n`;
-        qualityMessage += `*Type*: ${format.container}\n`;
+        qualityMessage += `*${index + 1}*️⃣* - ${format.label}\n`;
+        qualityMessage += `  📦 *Size*: ${format.size ? format.size : "Not available"}\n`;
+        qualityMessage += `  🖥️ *Type*: ${format.container}\n`;
         qualityMessage += `\n`;  // Add some space between entries
     });
 
+    qualityMessage += `💡 To select a quality, reply with \`/getytdl <number>\` (e.g., \`/getytdl 1\`).\n`;
     qualityMessage += `💡 Default quality will be used if no choice is made.`;
 
     client.reply(m.chat, qualityMessage, m);
@@ -150,7 +150,6 @@ async function execDownloadCommand(m, client, url, quality) {
 
             // Delete session after sending the file
             delete global.videoSessions[m.chat];
-
             fs.unlinkSync(filePath); // Delete the file after sending
         } catch (parseError) {
             console.error(`Error handling file: ${parseError.message}`);
