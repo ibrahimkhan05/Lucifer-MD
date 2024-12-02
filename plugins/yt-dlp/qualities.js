@@ -47,13 +47,18 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
         }, 300000) // 5 minutes
     };
 
-    // Stylish quality selection menu
+    // Stylish quality selection menu with cleaner, formatted output
     let qualityMessage = "🎥 *Select a quality by replying with the corresponding number or type 'default' for the best quality:* \n\n";
+
     formats.forEach((format, index) => {
-        qualityMessage += `${index + 1}  *️⃣ - ${format.label} ${format.size ? `(${format.size})` : ''}\n`;
+        qualityMessage += `*${index + 1}*️⃣\n`;
+        qualityMessage += `*Format*: ${format.label}\n`;
+        qualityMessage += `*Size*: ${format.size ? format.size : "Not available"}\n`;
+        qualityMessage += `*Type*: ${format.container}\n`;
+        qualityMessage += `\n`;  // Add some space between entries
     });
 
-    qualityMessage += `\n💡 Default quality will be used if no choice is made.`;
+    qualityMessage += `💡 Default quality will be used if no choice is made.`;
 
     client.reply(m.chat, qualityMessage, m);
 }
@@ -143,11 +148,10 @@ async function execDownloadCommand(m, client, url, quality) {
 
             await client.sendFile(m.chat, filePath, fileName, '', m, { document: isDocument });
 
-            fs.unlinkSync(filePath); // Delete the file after sending
-
-            // Delete session after the file is sent
+            // Delete session after sending the file
             delete global.videoSessions[m.chat];
 
+            fs.unlinkSync(filePath); // Delete the file after sending
         } catch (parseError) {
             console.error(`Error handling file: ${parseError.message}`);
             await client.reply(m.chat, `Error handling file: ${parseError.message}`, m);
