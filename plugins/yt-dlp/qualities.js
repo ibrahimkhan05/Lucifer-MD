@@ -26,7 +26,7 @@ async function fetchQualities(url) {
 }
 
 // Function to handle the /ytdl command (Fetch and list qualities)
-aasync function handleUserRequest(m, { client, text, isPrefix, command }) {
+async function handleUserRequest(m, { client, text, isPrefix, command }) {
     if (!text) return client.reply(m.chat, `Usage: ${isPrefix}${command} <url>`, m);
 
     const url = text.trim();
