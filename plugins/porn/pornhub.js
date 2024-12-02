@@ -1,14 +1,10 @@
-const { PornHub } = require('pornhub.js'); // Import the PornHub class
-const pornhub = new PornHub(); // Create an instance of the PornHub class
 const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const { promisify } = require('util');
 const execPromise = promisify(exec);
 
-// Initialize global sessions if they don't exist
-if (!global.pornHubSessions) global.pornHubSessions = {};
-if (!global.videoSessions) global.videoSessions = {};
+global.videoSessions = {}; // Global storage for video sessions
 
 // Function to fetch video qualities
 async function fetchQualities(url) {
@@ -29,103 +25,99 @@ async function fetchQualities(url) {
     }
 }
 
-// Function to handle the /pornhub command (Search videos)
-async function handlePornHubRequest(m, { client, text, isPrefix, command, Func }) {
-    if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'step mom'), m);
+// Function to handle the /ytdl command (Fetch and list qualities)
+async function handleUserRequest(m, { client, text, isPrefix, command }) {
+    if (!text) return client.reply(m.chat, `Usage: ${isPrefix}${command} <url>`, m);
 
-    client.sendReact(m.chat, '🕒', m.key);
-
-    // Fetch search results from PornHub API
-    const result = await pornhub.searchVideo(text);
-
-    if (!result.data || result.data.length === 0) {
-        return client.reply(m.chat, 'No results found.', m);
-    }
-
-    // Prepare the result in a similar format to the XHamster example
-    global.pornHubSessions[m.chat] = { data: result.data };
-
-    // Prepare the list of results
-    let resultMessage = "*🎬 P O R N H U B   S E A R C H*\n\nHere are the results for your search: " + text + ".\n\nPlease select a video from the list below. Reply with `/getpornhub <number>` to select a video.\n\n";
-    result.data.forEach((v, index) => {
-        resultMessage += `*${index + 1}*: ${v.title}\n\n`;
-    });
-
-    await client.reply(m.chat, resultMessage, m);
-}
-
-// Function to handle the /getpornhub command (Fetch and list qualities)
-async function handleGetPornHubCommand(m, { client, text }) {
-    const index = parseInt(text.trim(), 10) - 1;
-    const session = global.pornHubSessions[m.chat];
-
-    // Validate session and selection
-    if (!session || !session.data || !session.data[index]) {
-        return client.reply(m.chat, "❌ Invalid selection. Please select a valid video from the list.", m);
-    }
-
-    const selectedVideo = session.data[index];
-    const url = selectedVideo.url;
+    const url = text.trim();
     const result = await fetchQualities(url);
 
     if (result.error) return client.reply(m.chat, `Error fetching qualities: ${result.error}`, m);
 
     const formats = result;
-    if (formats.length === 0) return client.reply(m.chat, "❌ No qualities found. Please try another video.", m);
+    const totalQualities = formats.length;
 
-    // Store session data for later use with 2-minute timeout
+    // Default quality is always the next index after available qualities
+    const defaultIndex = totalQualities + 1;
+
+    // If no qualities are found, treat the first option as default
+    if (totalQualities === 0) {
+        global.videoSessions[m.chat] = {
+            url,
+            formats: [],
+            defaultIndex: 1,
+            timeout: setTimeout(() => {
+                delete global.videoSessions[m.chat]; // Just delete the session when it expires
+            }, 120000) // 2 minutes
+        };
+
+        // Directly inform the user about the default quality (option 1)
+        return client.reply(m.chat, "*❌ No qualities found. Downloading with default quality (option 1)...*", m);
+    }
+
+    // Store session data for later use with a 2-minute timeout
     global.videoSessions[m.chat] = {
         url,
         formats,
+        defaultIndex,
         timeout: setTimeout(() => {
             delete global.videoSessions[m.chat]; // Just delete the session when it expires
         }, 120000) // 2 minutes
     };
 
-    // Stylish quality selection menu
+    // Stylish quality selection menu with formatted output
     let qualityMessage = "*🎬 Quality Selector*\n\n";
-    qualityMessage += `*Please select a quality for the video.*\n\n`;
+
     formats.forEach((format, index) => {
         qualityMessage += `*${index + 1}**️⃣ - ${format.label}\n`;
         qualityMessage += `  📦 *Size*: ${format.size ? format.size : "Not available"}\n`;
-        qualityMessage += `  🖥️ *Type*: ${format.container}\n\n`;
+        qualityMessage += `  🖥️ *Type*: ${format.container}\n`;
+        qualityMessage += `\n`;  // Add some space between entries
     });
 
+    // Add default quality as the next option
+    qualityMessage += `*${defaultIndex}**️⃣ - Default Quality (choose this if you want the default)\n\n`;
     qualityMessage += `💡 To select a quality, reply with \`/getytdl <number>\` (e.g., \`/getytdl 1\`).\n`;
-    qualityMessage += `⏳ You have 2 minutes to select a quality. Default quality will be used if no choice is made.`;
+    qualityMessage += `⏳ You must choose the default quality or one of the available options.`;
 
     client.reply(m.chat, qualityMessage, m);
 }
 
-// Function to handle the /getytdl command (Fetch and execute download)
+// Function to handle /getytdl command (Execute download)
 async function handleGetYtdlCommand(m, { client, text }) {
     const session = global.videoSessions[m.chat];
     if (!session) {
-        return client.reply(m.chat, "❌ No active session. Please start with /pornhub command first.", m);
+        return client.reply(m.chat, "❌ No active session. Please start with /ytdl command first.", m);
     }
 
-    // Handle default quality or user choice
-    let choice = text.trim().toLowerCase();
+    let choice = text.trim();
 
-    if (choice === 'default') {
-        choice = 1; // Use the first quality as default if no choice is made
+    // If no qualities found, treat /getytdl 1 as download for the default quality
+    if (session.formats.length === 0 && choice === '1') {
+        choice = 1;  // Force choice to 1 as the default
+    }
+
+    // Ensure user provides a valid number, and that it matches a valid option
+    if (isNaN(choice) || choice < 1 || choice > session.formats.length + 1) {
+        return client.reply(m.chat, "⚠️ Invalid choice. Please reply with a valid number between 1 and " + (session.formats.length + 1) + ".", m);
+    }
+
+    // If the user selects the default index
+    if (choice == session.defaultIndex) {
+        choice = session.defaultIndex;
     } else {
         choice = parseInt(choice, 10);
     }
 
-    if (isNaN(choice) || choice < 1 || choice > session.formats.length) {
-        return client.reply(m.chat, "⚠️ Invalid choice. Please reply with a valid number between 1 and 9, or type 'default'.", m);
-    }
-
     const selectedFormat = session.formats[choice - 1];
     const downloadUrl = session.url;
-    const quality = selectedFormat.id;
+    const quality = selectedFormat ? selectedFormat.id : "default"; // Fallback to default if no format is selected
 
     // Execute the download command
     execDownloadCommand(m, client, downloadUrl, quality);
 }
 
-// Function to execute the download command
+// Function to execute the /cvbi download command
 async function execDownloadCommand(m, client, url, quality) {
     const outputDir = path.resolve(__dirname, 'downloads'); // Directory to save the download
     const scriptPath = path.resolve(__dirname, 'downloader.py'); // Path to Python script
@@ -195,21 +187,25 @@ async function execDownloadCommand(m, client, url, quality) {
 
 // Main exportable handler
 exports.run = {
-    usage: ['pornhub'],
-    hidden: ['getpornhub'],
-    use: 'query <𝘱𝘳𝘦𝘮𝘪𝘶𝘮>',
-    category: 'porn',
-    async: async (m, { client, text, isPrefix, command, Func }) => {
+    usage: ['ytdl', 'getytdl'],
+    use: 'url',
+    category: 'special',
+    async: async (m, { client, text, isPrefix, command }) => {
         try {
-            if (command === 'pornhub') {
-                await handlePornHubRequest(m, { client, text, isPrefix, command, Func });
-            } else if (command === 'getpornhub') {
-                await handleGetPornHubCommand(m, { client, text });
+            if (command === 'ytdl') {
+                await handleUserRequest(m, { client, text, isPrefix, command });
             } else if (command === 'getytdl') {
                 await handleGetYtdlCommand(m, { client, text });
             }
-        } catch (error) {
-            console.error(`Error in command execution: ${error.message}`);
+        } catch (e) {
+            console.error('Error:', e);
+            client.reply(m.chat, "❌ An error occurred. Please try again later.", m);
         }
-    }
+    },
+    error: false,
+    limit: true,
+    cache: true,
+    premium: true,
+    verified: true,
+    location: __filename
 };
