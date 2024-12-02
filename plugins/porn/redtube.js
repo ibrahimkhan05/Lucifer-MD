@@ -47,7 +47,7 @@ async function handleRedTubeRequest(m, { client, text, isPrefix, command, Func }
         global.redTubeSessions[m.chat] = { data: data.data };
 
         // Prepare the list of results
-        let resultMessage = "*🎬 R E D T U B E   S E A R C H*\n\nHere are the results for your search: " + text + ".\n\nPlease select a video from the list below. Reply with `/getrube <number>` to select a video.\n\n";
+        let resultMessage = "*🎬 R E D T U B E   S E A R C H*\n\nHere are the results for your search: " + text + ".\n\nPlease select a video from the list below. Reply with `/getredtube <number>` to select a video.\n\n";
         data.data.forEach((v, index) => {
             resultMessage += `*${index + 1}*: ${v.title}\n\n`;
         });
@@ -204,13 +204,13 @@ async function execDownloadCommand(m, client, url, quality) {
 // Main exportable handler
 exports.run = {
     usage: ['redtube'],
-    hidden: ['getrube'],
+    hidden: ['getredtube'],
     use: 'query <search term>',
     category: 'porn',
     async: async (m, { client, text, isPrefix, command, Func }) => {
         if (command === 'redtube') {
             await handleRedTubeRequest(m, { client, text, isPrefix, command, Func });
-        } else if (command === 'getrube') {
+        } else if (command === 'getredtube') {
             await handleGetRedTubeCommand(m, { client, text });
         } else if (command === 'getytdl') {
             await handleGetYtdlCommand(m, { client, text });
