@@ -82,6 +82,9 @@ async function handleGetYtdlCommand(m, { client, text }) {
     const downloadUrl = session.url;
     const quality = selectedFormat.id;
 
+    // Delete session after choice is made
+    delete global.videoSessions[m.chat];
+
     // Execute the download command
     execDownloadCommand(m, client, downloadUrl, quality);
 }
