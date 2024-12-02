@@ -196,7 +196,8 @@ async function execDownloadCommand(m, client, url, quality) {
 
 // Main exportable handler
 exports.run = {
-    usage: ['xhmaster', 'getxhmaster'],
+    usage: ['xhmaster'],
+    hidden: ['getxhmaster'],
     use: 'query <𝘱𝘳𝘦𝘮𝘪𝘶𝘮>',
     category: 'porn',
     async: async (m, { client, text, isPrefix, command, Func }) => {
