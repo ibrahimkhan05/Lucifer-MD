@@ -50,7 +50,7 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
     let qualityMessage = "🎥 *Select a quality by replying with the corresponding number (e.g., /getytdl 1) or type 'default' for the best quality:* \n\n";
 
     formats.forEach((format, index) => {
-        qualityMessage += `*${index + 1}*️⃣ - ${format.label}\n`;
+        qualityMessage += `*${index + 1}**️⃣ - ${format.label}\n`;
         qualityMessage += `  📦 *Size*: ${format.size ? format.size : "Not available"}\n`;
         qualityMessage += `  🖥️ *Type*: ${format.container}\n`;
         qualityMessage += `\n`;  // Add some space between entries
