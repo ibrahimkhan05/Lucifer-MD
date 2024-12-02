@@ -28,7 +28,6 @@ exports.run = {
             results.forEach((result, index) => {
                 responseText += `*${index + 1}. ${result.title}*\n`;
                 responseText += `  _Duration:_ ${result.duration}\n`;
-
             });
 
             responseText += `To download a video, type: /getxvideos <number>\nExample: /getxvideos 1 for the first video.`;
@@ -54,15 +53,14 @@ exports.run = {
 
             client.sendReact(m.chat, '🕒', m.key);
 
-            // Build the caption with video details
+            // Send the video directly
             let teks = `乂  *XVIDEOS VIDEO*\n\n`;
             teks += '◦  *Name* : ' + selectedVideo.title + '\n';
             teks += '◦  *Duration* : ' + selectedVideo.duration + '\n';
-            teks += '◦  *Link* : ' + selectedVideo.link + '\n';
             teks += global.footer;
 
-            // Send the video link directly (assuming we're sending the embed link)
-            await client.reply(m.chat, teks, m);
+            // Send the video link directly (embed URL)
+            await client.sendFile(m.chat, selectedVideo.link, '', teks, m);
 
             // Optionally, clear the session after use
             delete userSessions[m.chat];
