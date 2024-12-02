@@ -28,7 +28,6 @@ exports.run = {
             results.forEach((result, index) => {
                 responseText += `*${index + 1}. ${result.title}*\n`;
                 responseText += `  _Duration:_ ${result.duration}\n`;
-                responseText += `  _Link:_ ${result.link}\n\n`;
             });
 
             responseText += `To download a video, type: /getxvideos <number>\nExample: /getxvideos 1 for the first video.`;
