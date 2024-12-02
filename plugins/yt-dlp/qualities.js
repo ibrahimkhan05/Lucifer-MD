@@ -82,9 +82,6 @@ async function handleGetYtdlCommand(m, { client, text }) {
     const downloadUrl = session.url;
     const quality = selectedFormat.id;
 
-    // Delete session after choice is made
-    delete global.videoSessions[m.chat];
-
     // Execute the download command
     execDownloadCommand(m, client, downloadUrl, quality);
 }
@@ -147,6 +144,10 @@ async function execDownloadCommand(m, client, url, quality) {
             await client.sendFile(m.chat, filePath, fileName, '', m, { document: isDocument });
 
             fs.unlinkSync(filePath); // Delete the file after sending
+
+            // Delete session after the file is sent
+            delete global.videoSessions[m.chat];
+
         } catch (parseError) {
             console.error(`Error handling file: ${parseError.message}`);
             await client.reply(m.chat, `Error handling file: ${parseError.message}`, m);
