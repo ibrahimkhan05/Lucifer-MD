@@ -1,93 +1,70 @@
-// Create a session object to store search results per user
-const userSessions = {};
-
 exports.run = {
    usage: ['xnxx'],
    hidden: ['getxnxx'],
-   use: 'query <𝘱𝘳𝘦𝘮𝘪𝘶𝘮>',
+   use: '<query>',
    category: 'porn',
    async: async (m, { client, text, args, isPrefix, command, Func }) => {
       try {
-         if (command === 'xnxx') {
-            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'big tits'), m);
-
+         if (command === 'search') {
+            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'query'), m);
             client.sendReact(m.chat, '🕒', m.key);
 
-            // Call the new API with the search query for xnxx
-            let json = await Func.fetchJson(`https://lust.scathach.id/xnxx/search?key=${text}`);
-            if (!json.success) return client.reply(m.chat, global.status.fail, m);
+            // API call to search for videos based on the query
+            let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/search/xvideos?query=${text}&apikey=beta-Ibrahim1209`);
+            
+            // If the API status is false, reply with failure message
+            if (!json.status) return client.reply(m.chat, global.status.fail, m);
 
-            const results = json.data; // Use all results from the API response
+            // Create a list of cards (carousel items)
+            const cards = json.result.map((v, index) => ({
+               header: {
+                  imageMessage: global.db.setting.cover, // Set the image for the card header
+                  hasMediaAttachment: true,
+               },
+               body: {
+                  text: `${v.title} (${v.duration})\nViews: ${v.views}, HD: ${v.hd}, Premium: ${v.premium}`,
+               },
+               nativeFlowMessage: {
+                  buttons: [{
+                     name: "quick_reply",
+                     buttonParamsJson: JSON.stringify({
+                        display_text: `Download ${v.title}`,
+                        id: `${isPrefix}download ${v.url}` // Trigger download with the selected video URL
+                     })
+                  }]
+               }
+            }));
 
-            // Store the search results in the user's session
-            userSessions[m.chat] = results;
+            // Create a caption for the combined search result
+            const combinedCaption = "*X H M A T E R   S E A R C H*\n\nHere are the results for your search: " + text + ".\n\nPlease select a video from the options below. Once you make a selection, the video will be sent to you directly.";
 
-            // Stylish message with search results
-            let responseText = `*🔍 XNXX SEARCH RESULTS* \n\n`;
-            responseText += `*Query:* _${text}_\n\n`;
-            results.forEach((result, index) => {
-                responseText += `*${index + 1}. ${result.title}*\n`;
-                responseText += `  _Duration:_ ${result.duration}\n`;
-                responseText += `  _Views:_ ${result.views}\n`;
+            // Send the carousel with the available videos as buttons
+            await client.sendCarousel(m.chat, cards, m, {
+               content: combinedCaption
             });
 
-            responseText += `To download a video, type: /getxnxx <number> or send the video URL directly.\nExample: /getxnxx 1 for the first video.`;
+         } else if (command === 'download') {
+            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'video_url'), m);
+            client.sendReact(m.chat, '🕒', m.key);
 
-            // Send the list of search results
-            await client.reply(m.chat, responseText, m);
-
-         } else if (command === 'getxnxx') {
-            if (!args || (!args[0] && !text)) return client.reply(m.chat, Func.example(isPrefix, command, '1 or video_url'), m);
+            // API call to fetch video details and download link
+            let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/xvideosdl?url=${text}&apikey=beta-Ibrahim1209`);
             
-            let videoJson;
+            // If the API status is false, reply with failure message
+            if (!json.status) return client.reply(m.chat, global.status.fail, m);
 
-            // If the user sends a URL directly
-            if (text) {
-               client.sendReact(m.chat, '🕒', m.key);
-
-               // Call the download API using the provided URL directly
-               videoJson = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/xnxxdl?url=${text}&apikey=beta-Ibrahim1209`);
-            }
-            // If the user selects a video from the search results
-            else {
-               const videoIndex = parseInt(args[0]) - 1; // Convert to zero-based index
-
-               // Check if the user has searched for videos
-               if (!userSessions[m.chat]) {
-                  return client.reply(m.chat, 'You need to search for videos first using the /xnxx command.', m);
-               }
-
-               const results = userSessions[m.chat]; // Fetch search results from session
-               if (videoIndex < 0 || videoIndex >= results.length) {
-                  return client.reply(m.chat, 'Invalid video selection. Please select a valid number from the list.', m);
-               }
-
-               const selectedVideo = results[videoIndex];
-
-               client.sendReact(m.chat, '🕒', m.key);
-
-               // Call the download API for the selected video
-               videoJson = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/xnxxdl?url=${selectedVideo.link}&apikey=beta-Ibrahim1209`);
-            }
-
-            // Check if the API response was successful
-            if (!videoJson.status) return client.reply(m.chat, Func.jsonFormat(videoJson), m);
-
-            // Build the caption with video details
-            let teks = `乂  *XNXX VIDEO*\n\n`;
-            teks += '◦  *Name* : ' + videoJson.result.title + '\n';
-            teks += '◦  *Duration* : ' + videoJson.result.duration + '\n';
-            teks += '◦  *Views* : ' + videoJson.result.views + '\n';
-            teks += '◦  *Likes* : ' + videoJson.result.like_count + '\n';
-            teks += '◦  *Keywords* : ' + videoJson.result.keyword + '\n';
+            // Prepare caption for the video download details
+            const teks = `*Download Video*\n\n`;
+            teks += `◦  *Title*: ${json.result.title}\n`;
+            teks += `◦  *Views*: ${json.result.views}\n`;
+            teks += `◦  *Likes*: ${json.result.like_count}\n`;
+            teks += `◦  *Dislikes*: ${json.result.dislike_count}\n`;
+            teks += `◦  *Keywords*: ${json.result.keyword}\n`;
+            teks += `◦  *Download Link*: ${json.result.url}\n\n`;
             teks += global.footer;
 
-            // Send the video file directly using the provided download link
-            await client.sendFile(m.chat, videoJson.result.url, '', teks, m);
-
-            // Optionally, clear the session after use
-            delete userSessions[m.chat];
-
+            // Send the formatted response to the user with the download link
+            client.reply(m.chat, teks, m);
          }
       } catch (e) {
          console.log(e);
