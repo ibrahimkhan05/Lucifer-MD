@@ -13,10 +13,11 @@ exports.run = {
 
             client.sendReact(m.chat, '🕒', m.key);
 
-            let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/search/xvideos?query=${text}&apikey=beta-Ibrahim1209`);
-            if (!json.status) return client.reply(m.chat, global.status.fail, m);
+            // Call the new API with the search query
+            let json = await Func.fetchJson(`https://lust.scathach.id/xvideos/search?key=${text}`);
+            if (!json.success) return client.reply(m.chat, global.status.fail, m);
 
-            const results = json.result; // Use all results from the API response
+            const results = json.data; // Use all results from the API response
 
             // Store the search results in the user's session
             userSessions[m.chat] = results;
@@ -26,7 +27,8 @@ exports.run = {
             responseText += `*Query:* _${text}_\n\n`;
             results.forEach((result, index) => {
                 responseText += `*${index + 1}. ${result.title}*\n`;
-                responseText += `  _Duration:_ ${result.duration} | _Views:_ ${result.views}\n\n`;
+                responseText += `  _Duration:_ ${result.duration}\n`;
+
             });
 
             responseText += `To download a video, type: /getxvideos <number>\nExample: /getxvideos 1 for the first video.`;
@@ -52,18 +54,15 @@ exports.run = {
 
             client.sendReact(m.chat, '🕒', m.key);
 
-            let videoJson = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/xvideosdl?url=${selectedVideo.url}&apikey=beta-Ibrahim1209`);
-            if (!videoJson.status) return client.reply(m.chat, Func.jsonFormat(videoJson), m);
-
             // Build the caption with video details
             let teks = `乂  *XVIDEOS VIDEO*\n\n`;
-            teks += '◦  *Name* : ' + videoJson.result.title + '\n';
-            teks += '◦  *Views* : ' + videoJson.result.views + '\n';
-            teks += '◦  *Keywords* : ' + videoJson.result.keyword + '\n';
+            teks += '◦  *Name* : ' + selectedVideo.title + '\n';
+            teks += '◦  *Duration* : ' + selectedVideo.duration + '\n';
+            teks += '◦  *Link* : ' + selectedVideo.link + '\n';
             teks += global.footer;
 
-            // Send the video file directly
-            await client.sendFile(m.chat, videoJson.result.url, '', teks, m);
+            // Send the video link directly (assuming we're sending the embed link)
+            await client.reply(m.chat, teks, m);
 
             // Optionally, clear the session after use
             delete userSessions[m.chat];
