@@ -35,37 +35,18 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
     if (result.error) return client.reply(m.chat, `Error fetching qualities: ${result.error}`, m);
 
     const formats = result;
-    const totalQualities = formats.length;
+    if (formats.length === 0) return client.reply(m.chat, "❌ No qualities found. Please try another video.", m);
 
-    // Default quality is always the next index after available qualities
-    const defaultIndex = totalQualities + 1;
-
-    // If no qualities are found, treat the first option as default
-    if (totalQualities === 0) {
-        global.videoSessions[m.chat] = {
-            url,
-            formats: [],
-            defaultIndex: 1,
-            timeout: setTimeout(() => {
-                delete global.videoSessions[m.chat]; // Just delete the session when it expires
-            }, 120000) // 2 minutes
-        };
-
-        // Directly inform the user about the default quality (option 1)
-        return client.reply(m.chat, "*❌ No qualities found. Downloading with default quality (option 1)...*", m);
-    }
-
-    // Store session data for later use with a 2-minute timeout
+    // Store session data for later use with 2-minute timeout
     global.videoSessions[m.chat] = {
         url,
         formats,
-        defaultIndex,
         timeout: setTimeout(() => {
             delete global.videoSessions[m.chat]; // Just delete the session when it expires
         }, 120000) // 2 minutes
     };
 
-    // Stylish quality selection menu with formatted output
+    // Stylish quality selection menu with cleaner, formatted output
     let qualityMessage = "*🎬 Quality Selector*\n\n";
 
     formats.forEach((format, index) => {
@@ -75,10 +56,8 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
         qualityMessage += `\n`;  // Add some space between entries
     });
 
-    // Add default quality as the next option
-    qualityMessage += `*${defaultIndex}**️⃣ - Default Quality (choose this if you want the default)\n\n`;
     qualityMessage += `💡 To select a quality, reply with \`/getytdl <number>\` (e.g., \`/getytdl 1\`).\n`;
-    qualityMessage += `⏳ You must choose the default quality or one of the available options.`;
+    qualityMessage += `⏳ You have 2 minutes to select a quality. Default quality will be used if no choice is made.`;
 
     client.reply(m.chat, qualityMessage, m);
 }
@@ -90,28 +69,22 @@ async function handleGetYtdlCommand(m, { client, text }) {
         return client.reply(m.chat, "❌ No active session. Please start with /ytdl command first.", m);
     }
 
-    let choice = text.trim();
+    // Handle default quality or user choice
+    let choice = text.trim().toLowerCase();
 
-    // If no qualities found, treat /getytdl 1 as download for the default quality
-    if (session.formats.length === 0 && choice === '1') {
-        choice = 1;  // Force choice to 1 as the default
-    }
-
-    // Ensure user provides a valid number, and that it matches a valid option
-    if (isNaN(choice) || choice < 1 || choice > session.formats.length + 1) {
-        return client.reply(m.chat, "⚠️ Invalid choice. Please reply with a valid number between 1 and " + (session.formats.length + 1) + ".", m);
-    }
-
-    // If the user selects the default index
-    if (choice == session.defaultIndex) {
-        choice = session.defaultIndex;
+    if (choice === 'default') {
+        choice = 1; // Use the first quality as default if no choice is made
     } else {
         choice = parseInt(choice, 10);
     }
 
+    if (isNaN(choice) || choice < 1 || choice > session.formats.length) {
+        return client.reply(m.chat, "⚠️ Invalid choice. Please reply with a valid number between 1 and 9, or type 'default'.", m);
+    }
+
     const selectedFormat = session.formats[choice - 1];
     const downloadUrl = session.url;
-    const quality = selectedFormat ? selectedFormat.id : "default"; // Fallback to default if no format is selected
+    const quality = selectedFormat.id;
 
     // Execute the download command
     execDownloadCommand(m, client, downloadUrl, quality);
