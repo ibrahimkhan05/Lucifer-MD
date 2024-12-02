@@ -35,8 +35,9 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
     if (result.error) return client.reply(m.chat, `Error fetching qualities: ${result.error}`, m);
 
     const formats = result;
-    if (formats.length === 0) return client.reply(m.chat, "No qualities found. Please try another video.", m);
+    if (formats.length === 0) return client.reply(m.chat, "❌ No qualities found. Please try another video.", m);
 
+    // Store session data for later use
     global.videoSessions[m.chat] = {
         url,
         formats,
@@ -46,10 +47,13 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
         }, 300000) // 5 minutes
     };
 
-    let qualityMessage = "🎥 *Select a quality by replying with the corresponding number using /getytdl:* \n\n";
+    // Stylish quality selection menu
+    let qualityMessage = "🎥 *Select a quality by replying with the corresponding number or type 'default' for the best quality:* \n\n";
     formats.forEach((format, index) => {
-        qualityMessage += `*${index + 1}*️⃣ - ${format.label} (${format.size || 'Size not available'})\n`;
+        qualityMessage += `*${index + 1}*️⃣ - ${format.label} ${format.size ? `(${format.size})` : ''}\n`;
     });
+
+    qualityMessage += `\n💡 Default quality will be used if no choice is made.`;
 
     client.reply(m.chat, qualityMessage, m);
 }
@@ -61,16 +65,24 @@ async function handleGetYtdlCommand(m, { client, text }) {
         return client.reply(m.chat, "❌ No active session. Please start with /ytdl command first.", m);
     }
 
-    const choice = parseInt(text.trim(), 10);
+    // Handle default quality or user choice
+    let choice = text.trim().toLowerCase();
+
+    if (choice === 'default') {
+        choice = 1; // Use the first quality as default if no choice is made
+    } else {
+        choice = parseInt(choice, 10);
+    }
+
     if (isNaN(choice) || choice < 1 || choice > session.formats.length) {
-        return client.reply(m.chat, "⚠️ Invalid choice. Please reply with a valid number between 1 and 9.", m);
+        return client.reply(m.chat, "⚠️ Invalid choice. Please reply with a valid number between 1 and 9, or type 'default'.", m);
     }
 
     const selectedFormat = session.formats[choice - 1];
     const downloadUrl = session.url;
     const quality = selectedFormat.id;
 
-    // Execute the /cvbi command (trigger download)
+    // Execute the download command
     execDownloadCommand(m, client, downloadUrl, quality);
 }
 
@@ -85,7 +97,7 @@ async function execDownloadCommand(m, client, url, quality) {
     }
 
     // Notify user that the download is starting
-    await client.reply(m.chat, 'Your file is being downloaded. This may take some time.', m);
+    await client.reply(m.chat, 'Your file is being downloaded. This may take some time...', m);
 
     exec(`python3 ${scriptPath} ${url} ${outputDir} ${quality}`, async (error, stdout, stderr) => {
         if (error) {
@@ -101,7 +113,7 @@ async function execDownloadCommand(m, client, url, quality) {
         }
 
         console.log(`stdout: ${stdout}`);
-        
+
         // Parse the stdout to get the original file name and path
         const output = JSON.parse(stdout.trim());
         if (output.error) {
