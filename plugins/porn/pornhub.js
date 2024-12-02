@@ -2,7 +2,6 @@ const { PornHub } = require('pornhub.js'); // Import the PornHub class
 const pornhub = new PornHub(); // Create an instance of the PornHub class
 const { exec } = require('child_process');
 const path = require('path');
-const fs = require('fs');
 const { promisify } = require('util');
 const execPromise = promisify(exec);
 
@@ -71,20 +70,27 @@ async function handleGetPornHubCommand(m, { client, text }) {
     if (result.error) return client.reply(m.chat, `Error fetching qualities: ${result.error}`, m);
 
     const formats = result;
-    if (formats.length === 0) return client.reply(m.chat, "❌ No qualities found. Please try another video.", m);
+    if (formats.length === 0) {
+        return client.reply(m.chat, "❌ No qualities found. Please use `/getytdl 1` to download with the default quality.", m);
+    }
 
     // Store session data for later use with 2-minute timeout
     global.videoSessions[m.chat] = {
         url,
         formats,
         timeout: setTimeout(() => {
-            delete global.videoSessions[m.chat]; // Just delete the session when it expires
+            delete global.videoSessions[m.chat]; // Delete session after timeout
         }, 120000) // 2 minutes
     };
 
-    // Stylish quality selection menu
+    // Send the quality options to the user, including default option
     let qualityMessage = "*🎬 Quality Selector*\n\n";
     qualityMessage += `*Please select a quality for the video.*\n\n`;
+
+    // Add the default quality option at the top
+    const defaultIndex = formats.length;  // The last quality in the list will be default
+    qualityMessage += `*${defaultIndex + 1}**️⃣ - Default Quality (choose this if you want the default)\n\n`;
+
     formats.forEach((format, index) => {
         qualityMessage += `*${index + 1}**️⃣ - ${format.label}\n`;
         qualityMessage += `  📦 *Size*: ${format.size ? format.size : "Not available"}\n`;
@@ -92,7 +98,7 @@ async function handleGetPornHubCommand(m, { client, text }) {
     });
 
     qualityMessage += `💡 To select a quality, reply with \`/getytdl <number>\` (e.g., \`/getytdl 1\`).\n`;
-    qualityMessage += `⏳ You have 2 minutes to select a quality. Default quality will be used if no choice is made.`;
+    qualityMessage += `⏳ You have 2 minutes to select a quality. If no choice is made, the download will not proceed.`;
 
     client.reply(m.chat, qualityMessage, m);
 }
@@ -101,23 +107,28 @@ async function handleGetPornHubCommand(m, { client, text }) {
 async function handleGetYtdlCommand(m, { client, text }) {
     const session = global.videoSessions[m.chat];
     if (!session) {
-        return client.reply(m.chat, "❌ No active session. Please start with /pornhub command first.", m);
+        return client.reply(m.chat, "❌ No active session. Please start with the /pornhub command first.", m);
     }
 
-    // Handle default quality or user choice
-    let choice = text.trim().toLowerCase();
+    let choice = text.trim();
 
-    if (choice === 'default') {
-        choice = 1; // Use the first quality as default if no choice is made
-    } else {
-        choice = parseInt(choice, 10);
+    // Validate the quality selection (ensure it's a number and within the correct range)
+    if (choice === '') {
+        return client.reply(m.chat, "❌ You must select a quality. Use `/getytdl <number>` to choose.", m);
     }
 
-    if (isNaN(choice) || choice < 1 || choice > session.formats.length) {
-        return client.reply(m.chat, "⚠️ Invalid choice. Please reply with a valid number between 1 and 9, or type 'default'.", m);
+    const qualityIndex = parseInt(choice, 10) - 1;
+
+    // If 'default' is selected, set to the last available quality
+    if (choice.toLowerCase() === 'default' || qualityIndex === session.formats.length) {
+        return client.reply(m.chat, "❌ You must explicitly select a valid quality number, not 'default'.", m);
     }
 
-    const selectedFormat = session.formats[choice - 1];
+    if (isNaN(qualityIndex) || qualityIndex < 0 || qualityIndex >= session.formats.length) {
+        return client.reply(m.chat, "⚠️ Invalid choice. Please reply with a valid number between 1 and " + session.formats.length + ".", m);
+    }
+
+    const selectedFormat = session.formats[qualityIndex];
     const downloadUrl = session.url;
     const quality = selectedFormat.id;
 
@@ -128,88 +139,18 @@ async function handleGetYtdlCommand(m, { client, text }) {
 // Function to execute the download command
 async function execDownloadCommand(m, client, url, quality) {
     const outputDir = path.resolve(__dirname, 'downloads'); // Directory to save the download
-    const scriptPath = path.resolve(__dirname, 'downloader.py'); // Path to Python script
+    const scriptPath = path.resolve(__dirname, 'downloader.py'); // Path to Python download script
 
-    // Ensure the downloads directory exists
-    if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir);
+    try {
+        // Call the Python script to start downloading
+        const command = `python3 ${scriptPath} --url "${url}" --quality "${quality}" --output "${outputDir}"`;
+        const { stdout, stderr } = await execPromise(command);
+
+        if (stderr) throw new Error(stderr);
+
+        client.reply(m.chat, "Download started successfully! 📥", m);
+    } catch (error) {
+        console.error(`Error executing download command: ${error.message}`);
+        client.reply(m.chat, `❌ Error: ${error.message}`, m);
     }
-
-    // Notify user that the download is starting
-    await client.reply(m.chat, 'Your file is being downloaded. This may take some time...', m);
-
-    exec(`python3 ${scriptPath} ${url} ${outputDir} ${quality}`, async (error, stdout, stderr) => {
-        if (error) {
-            console.error(`exec error: ${error.message}`);
-            await client.reply(m.chat, `Error downloading video: ${error.message}`, m);
-            return;
-        }
-
-        if (stderr) {
-            console.error(`stderr: ${stderr}`);
-            await client.reply(m.chat, `Error downloading video: ${stderr}`, m);
-            return;
-        }
-
-        console.log(`stdout: ${stdout}`);
-
-        // Parse the stdout to get the original file name and path
-        const output = JSON.parse(stdout.trim());
-        if (output.error) {
-            await client.reply(m.chat, `Download failed: ${output.message}`, m);
-            return;
-        }
-
-        const filePath = output.filePath; // The full path to the downloaded file
-        const fileName = path.basename(filePath); // Extract file name from path
-
-        // Handle file and send to user
-        try {
-            const fileSize = fs.statSync(filePath).size;
-            const fileSizeStr = `${(fileSize / (1024 * 1024)).toFixed(2)} MB`;
-
-            if (fileSize > 930 * 1024 * 1024) { // 930MB
-                await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 930MB`, m);
-                fs.unlinkSync(filePath); // Delete the file
-                return;
-            }
-
-            await client.reply(m.chat, `Your file (${fileSizeStr}) is being uploaded.`, m);
-
-            const extname = path.extname(fileName).toLowerCase();
-            const isVideo = ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(extname);
-            const isDocument = isVideo && fileSize / (1024 * 1024) > 99; // 99 MB threshold
-
-            await client.sendFile(m.chat, filePath, fileName, '', m, { document: isDocument });
-
-            // Delete session after sending the file
-            delete global.videoSessions[m.chat];
-            fs.unlinkSync(filePath); // Delete the file after sending
-        } catch (parseError) {
-            console.error(`Error handling file: ${parseError.message}`);
-            await client.reply(m.chat, `Error handling file: ${parseError.message}`, m);
-            if (fs.existsSync(filePath)) fs.unlinkSync(filePath); // Delete on error
-        }
-    });
 }
-
-// Main exportable handler
-exports.run = {
-    usage: ['pornhub'],
-    hidden: ['getpornhub'],
-    use: 'query <𝘱𝘳𝘦𝘮𝘪𝘶𝘮>',
-    category: 'porn',
-    async: async (m, { client, text, isPrefix, command, Func }) => {
-        try {
-            if (command === 'pornhub') {
-                await handlePornHubRequest(m, { client, text, isPrefix, command, Func });
-            } else if (command === 'getpornhub') {
-                await handleGetPornHubCommand(m, { client, text });
-            } else if (command === 'getytdl') {
-                await handleGetYtdlCommand(m, { client, text });
-            }
-        } catch (error) {
-            console.error(`Error in command execution: ${error.message}`);
-        }
-    }
-};
