@@ -47,7 +47,7 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
     };
 
     // Stylish quality selection menu with cleaner, formatted output
-    let qualityMessage = "🎥 *Select a quality by replying with the corresponding number (e.g., /getytdl 1) or type 'default' for the best quality:* \n\n";
+    let qualityMessage = "";
 
     formats.forEach((format, index) => {
         qualityMessage += `*${index + 1}**️⃣ - ${format.label}\n`;
