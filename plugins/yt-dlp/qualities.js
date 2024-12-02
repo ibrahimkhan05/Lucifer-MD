@@ -26,7 +26,7 @@ async function fetchQualities(url) {
 }
 
 // Function to handle the /ytdl command (Fetch and list qualities)
-async function handleUserRequest(m, { client, text, isPrefix, command }) {
+aasync function handleUserRequest(m, { client, text, isPrefix, command }) {
     if (!text) return client.reply(m.chat, `Usage: ${isPrefix}${command} <url>`, m);
 
     const url = text.trim();
@@ -47,7 +47,7 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
     };
 
     // Stylish quality selection menu with cleaner, formatted output
-    let qualityMessage = "";
+    let qualityMessage = "*🎬 Quality Selector*\n\n";
 
     formats.forEach((format, index) => {
         qualityMessage += `*${index + 1}**️⃣ - ${format.label}\n`;
@@ -57,7 +57,7 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
     });
 
     qualityMessage += `💡 To select a quality, reply with \`/getytdl <number>\` (e.g., \`/getytdl 1\`).\n`;
-    qualityMessage += `⏳ You have 2 minutes to select a quality. Default quality will be used if no choice is made.`;  // 2-minute message
+    qualityMessage += `⏳ You have 2 minutes to select a quality. Default quality will be used if no choice is made.`;
 
     client.reply(m.chat, qualityMessage, m);
 }
