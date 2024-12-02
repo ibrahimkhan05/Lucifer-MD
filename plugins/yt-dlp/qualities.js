@@ -50,7 +50,7 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
     // Stylish quality selection menu
     let qualityMessage = "🎥 *Select a quality by replying with the corresponding number or type 'default' for the best quality:* \n\n";
     formats.forEach((format, index) => {
-        qualityMessage += `*${index + 1}*️⃣ - ${format.label} ${format.size ? `(${format.size})` : ''}\n`;
+        qualityMessage += `${index + 1}  *️⃣ - ${format.label} ${format.size ? `(${format.size})` : ''}\n`;
     });
 
     qualityMessage += `\n💡 Default quality will be used if no choice is made.`;
