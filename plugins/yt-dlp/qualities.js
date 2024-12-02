@@ -7,7 +7,7 @@ const execPromise = promisify(exec);
 // Global object to manage video sessions
 global.videoSessions = {};
 
-// Function to fetch video qualities using a Python script
+// Function to fetch video qualities
 async function fetchQualities(url) {
     const scriptPath = path.resolve(__dirname, 'fetch_qualities.py');
     const command = `python3 ${scriptPath} ${url}`;
@@ -47,7 +47,7 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
         }, 300000) // 5 minutes
     };
 
-    let qualityMessage = "Select a quality by replying with the corresponding number:\n\n";
+    let qualityMessage = "Select a quality by replying with the corresponding number using /getytdl:\n\n";
     formats.forEach((format, index) => {
         qualityMessage += `*${index + 1}*. ${format.label} (${format.size || 'Size not available'})\n`;
     });
@@ -55,43 +55,40 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
     client.reply(m.chat, qualityMessage, m);
 }
 
-// Function to handle user selection of a quality
-async function handleQualitySelection(m, { client }) {
+// Function to handle /getytdl command and generate download link
+async function handleGetYtdlCommand(m, { client, text }) {
     const session = global.videoSessions[m.chat];
     if (!session) {
-        return client.reply(m.chat, "No active session. Please start with the command again.", m);
+        return client.reply(m.chat, "No active session. Please start with /ytdl command first.", m);
     }
 
-    // Parse user input and add debug logs
-    const choice = parseInt(m.body.trim(), 10);
-    console.log(`User selected choice: ${choice}`); // Debugging log
+    const choice = parseInt(text.trim(), 10);
+    console.log(`User selected choice for download link: ${choice}`); // Debugging log
 
     if (isNaN(choice) || choice < 1 || choice > session.formats.length) {
-        console.log(`Invalid choice: ${choice}`); // Debugging log
         return client.reply(m.chat, "Invalid choice. Please reply with a valid number.", m);
     }
 
     const selectedFormat = session.formats[choice - 1];
-    const downloadCommand = `/cvbi ${session.url} ${selectedFormat.id}`;
-    console.log(`Executing download command: ${downloadCommand}`); // Debugging log
+    const downloadLink = `/cvbi ${session.url} ${selectedFormat.id}`; // Simulate generating a download link
 
-    await client.reply(m.chat, `Download command: ${downloadCommand}`, m);
+    await client.reply(m.chat, `Here is your download link:\n\n${downloadLink}`, m);
 
     clearTimeout(session.timeout);
     delete global.videoSessions[m.chat];
 }
 
-// Main exportable handler for the bot
+// Main exportable handler
 exports.run = {
-    usage: ['ytdl'],
+    usage: ['ytdl', 'getytdl'],
     use: 'url',
     category: 'special',
     async: async (m, { client, text, isPrefix, command }) => {
         try {
-            if (global.videoSessions[m.chat]) {
-                await handleQualitySelection(m, { client });
-            } else {
+            if (command === 'ytdl') {
                 await handleUserRequest(m, { client, text, isPrefix, command });
+            } else if (command === 'getytdl') {
+                await handleGetYtdlCommand(m, { client, text });
             }
         } catch (e) {
             console.error('Error:', e);
