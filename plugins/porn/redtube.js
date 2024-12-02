@@ -69,14 +69,17 @@ async function handleGetRedTubeCommand(m, { client, text }) {
     if (result.error) return client.reply(m.chat, `Error fetching qualities: ${result.error}`, m);
 
     const formats = result;
-    if (formats.length === 0) return client.reply(m.chat, "❌ No qualities found. Please try another video.", m);
+    if (formats.length === 0) {
+        // If no qualities found, send a message instructing to use default download
+        return client.reply(m.chat, "❌ No qualities found. To download with the default quality, type `/redtube 1`.", m);
+    }
 
     // Store session data for later use with 2-minute timeout
     global.videoSessions[m.chat] = {
         url,
         formats,
         timeout: setTimeout(() => {
-            delete global.videoSessions[m.chat]; // Just delete the session when it expires
+            delete global.videoSessions[m.chat]; // Automatically delete session after 2 minutes
         }, 120000) // 2 minutes
     };
 
@@ -90,7 +93,7 @@ async function handleGetRedTubeCommand(m, { client, text }) {
     });
 
     qualityMessage += `💡 To select a quality, reply with \`/getytdl <number>\` (e.g., \`/getytdl 1\`).\n`;
-    qualityMessage += `⏳ You have 2 minutes to select a quality. Default quality will be used if no choice is made.`;
+    qualityMessage += `⏳ You have 2 minutes to select a quality. The session will expire if no choice is made.`;
 
     client.reply(m.chat, qualityMessage, m);
 }
