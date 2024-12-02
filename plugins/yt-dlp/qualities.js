@@ -37,28 +37,27 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
     const formats = result;
     if (formats.length === 0) return client.reply(m.chat, "❌ No qualities found. Please try another video.", m);
 
-    // Store session data for later use
+    // Store session data for later use with 2-minute timeout
     global.videoSessions[m.chat] = {
         url,
         formats,
         timeout: setTimeout(() => {
-            delete global.videoSessions[m.chat];
-            client.reply(m.chat, "⏰ Session expired. Please start again with the /ytdl command.", m);
-        }, 300000) // 5 minutes
+            delete global.videoSessions[m.chat]; // Just delete the session when it expires
+        }, 120000) // 2 minutes
     };
 
     // Stylish quality selection menu with cleaner, formatted output
     let qualityMessage = "🎥 *Select a quality by replying with the corresponding number (e.g., /getytdl 1) or type 'default' for the best quality:* \n\n";
 
     formats.forEach((format, index) => {
-        qualityMessage += `*${index + 1}*️⃣* - ${format.label}\n`;
+        qualityMessage += `*${index + 1}*️⃣ - ${format.label}\n`;
         qualityMessage += `  📦 *Size*: ${format.size ? format.size : "Not available"}\n`;
         qualityMessage += `  🖥️ *Type*: ${format.container}\n`;
         qualityMessage += `\n`;  // Add some space between entries
     });
 
     qualityMessage += `💡 To select a quality, reply with \`/getytdl <number>\` (e.g., \`/getytdl 1\`).\n`;
-    qualityMessage += `💡 Default quality will be used if no choice is made.`;
+    qualityMessage += `⏳ You have 2 minutes to select a quality. Default quality will be used if no choice is made.`;  // 2-minute message
 
     client.reply(m.chat, qualityMessage, m);
 }
