@@ -76,7 +76,7 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
     });
 
     // Add default quality as the next option
-    qualityMessage += `*${defaultIndex}**️⃣ - Default Quality (choose this if you want the default)\n`;
+    qualityMessage += `*${defaultIndex}**️⃣ - Default Quality (choose this if you want the default)\n\n`;
     qualityMessage += `💡 To select a quality, reply with \`/getytdl <number>\` (e.g., \`/getytdl 1\`).\n`;
     qualityMessage += `⏳ You must choose the default quality or one of the available options.`;
 
