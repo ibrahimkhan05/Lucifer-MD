@@ -58,6 +58,12 @@ exports.run = {
                 const filePath = output.filePath; // The full path to the downloaded file
                 const fileName = path.basename(filePath); // Extract file name from path
 
+                // Check if the file exists
+                if (!fs.existsSync(filePath)) {
+                    await client.reply(m.chat, `Download completed but the file is missing: ${filePath}`, m);
+                    return;
+                }
+
                 // Handle file and send to user
                 try {
                     const fileSize = fs.statSync(filePath).size;

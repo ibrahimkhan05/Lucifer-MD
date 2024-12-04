@@ -11,7 +11,7 @@ output_dir = sys.argv[2]
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
-# Set the output file path
+# Set the output file path (ensure it has a correct extension and name pattern)
 output_file = os.path.join(output_dir, "%(title)s.%(ext)s")
 
 # Run aria2c to download the file
@@ -27,12 +27,20 @@ try:
 
     # Parse aria2c output to get the file path
     stdout_str = stdout.decode()
+    # Extract filename from the output string or make sure it's generated properly
+    file_path = os.path.join(output_dir, stdout_str.split()[-1])  # Adjust if needed
+
+    # Check if the file exists
+    if not os.path.exists(file_path):
+        raise Exception(f"Downloaded file not found: {file_path}")
+
+    # Prepare download info
     download_info = {
-        'filePath': os.path.join(output_dir, stdout_str.split()[-1]),
+        'filePath': file_path,
         'error': None,
         'message': 'Download completed successfully'
     }
-    
+
     print(json.dumps(download_info))  # Output as JSON to JavaScript
 except Exception as e:
     download_info = {
