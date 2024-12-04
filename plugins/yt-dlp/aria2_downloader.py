@@ -8,19 +8,21 @@ from urllib.parse import urlparse
 url = sys.argv[1]
 output_dir = sys.argv[2]
 
-# Create the download directory if it doesn't exist
+# Ensure the download directory exists
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
 # Attempt to extract a valid filename from the URL
 filename = os.path.basename(urlparse(url).path)
-if not filename:
-    filename = "downloaded_file"  # Default filename if URL has no filename
 
-# Set the output file path with a valid name and extension
+# If filename extraction failed (empty), set a default name
+if not filename:
+    filename = "downloaded_file"
+
+# Set the output file path with the determined filename
 output_file = os.path.join(output_dir, filename)
 
-# Run aria2c to download the file
+# Run aria2c to download the file, handling any file type
 try:
     command = ['aria2c', '-d', output_dir, '-o', filename, url]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -31,7 +33,7 @@ try:
     if process.returncode != 0:
         raise Exception(stderr.decode())
 
-    # Prepare download info
+    # Prepare the file path
     file_path = os.path.join(output_dir, filename)
 
     # Check if the file exists
