@@ -3,7 +3,7 @@ const fs = require('fs');
 const { exec } = require('child_process');
 
 exports.run = {
-    usage: ['download'],
+    usage: ['cvbi'],
     use: 'url [quality]',
     category: 'special',
     async: async (m, { client, args, isPrefix, command, users, env, Func }) => {
