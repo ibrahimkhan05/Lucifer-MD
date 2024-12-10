@@ -19,7 +19,7 @@ exports.run = {
       Func
    }) => {
       try {
-         yt.play('wide awake', 'video', '480p').then(console.log)
+         yt.play('alan walker faded', 'video',).then(console.log)
       
       } catch (e) {
          client.reply(m.chat, FuncjsonFormat(e), m)
