@@ -7,7 +7,6 @@ from pathlib import Path
 def get_available_formats(url):
     ydl_opts = {
         'quiet': True,
-        'format': 'bestaudio/best',
         'noplaylist': True,
         'extract_flat': True
     }
@@ -17,28 +16,25 @@ def get_available_formats(url):
             info_dict = ydl.extract_info(url, download=False)
             formats = info_dict.get('formats', [])
             format_list = [
-                f"{fmt['format_id']}: {fmt['height']}p" if 'height' in fmt else f"{fmt['format_id']}: Audio"
+                f"{fmt['format_id']}: {fmt['height']}p" if 'height' in fmt else f"{fmt['format_id']}: {fmt['ext']}"
                 for fmt in formats
             ]
             return format_list, None
     except Exception as e:
         return None, str(e)
 
-def download_video(url, output_path, quality='best', start_time=None):
-    formats, error = get_available_formats(url)
-    if error:
-        return "Format check failed", error, None, 0, 0
-    
-    format_code = next((fmt.split(':')[0] for fmt in formats if quality in fmt), 'best')
-
+def download_file(url, output_path, format_code=''):
     ydl_opts = {
         'outtmpl': str(output_path),
-        'format': format_code,
         'quiet': True,
         'noprogress': True,
         'noplaylist': True,
         'concurrent_fragment_downloads': 4
     }
+
+    # Add format selection only for video files
+    if format_code:
+        ydl_opts['format'] = format_code
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -50,18 +46,26 @@ def download_video(url, output_path, quality='best', start_time=None):
         return "Download failed", "File not found after download", None, 0, 0
 
     file_size = Path(output_path).stat().st_size
-    if start_time is None:
-        start_time = time.time()
     download_speed = file_size / (time.time() - start_time)
 
     return None, None, output_path, download_speed, file_size
 
-def main(url, output_dir, quality='best'):
-    file_name = f"video_{int(time.time())}.mp4"  # Customize your file name logic here
+def main(url, output_dir, quality=None):
+    file_name = f"file_{int(time.time())}"  # Auto-generate file name
     output_path = Path(output_dir) / file_name
     start_time = time.time()
 
-    error, error_message, output_path, download_speed, file_size = download_video(url, output_path, quality, start_time)
+    formats, error = get_available_formats(url)
+    if error:
+        print(json.dumps({"error": "Format check failed", "message": error}))
+        return
+
+    # Determine the file extension based on formats
+    format_code = ''
+    if any('mp4' in fmt for fmt in formats):
+        format_code = next((fmt.split(':')[0] for fmt in formats if quality in fmt), '')
+
+    error, error_message, output_path, download_speed, file_size = download_file(url, output_path, format_code)
 
     if error:
         print(json.dumps({"error": error, "message": error_message}))
@@ -76,5 +80,5 @@ if __name__ == "__main__":
 
     url = sys.argv[1]
     output_dir = sys.argv[2]
-    quality = sys.argv[3] if len(sys.argv) > 3 else 'best'
+    quality = sys.argv[3] if len(sys.argv) > 3 else None
     main(url, output_dir, quality)
