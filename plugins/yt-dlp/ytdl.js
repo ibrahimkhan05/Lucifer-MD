@@ -9,7 +9,7 @@ exports.run = {
     async: async (m, { client, args, isPrefix, command, users, env, Func, Scraper }) => {
         if (!args || !args[0]) return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), m);
 
-        const url = args[0];
+        const url = args[0]; // URL provided by the user
         const quality = args[1]; // Get quality from args if provided
         const outputDir = path.resolve(__dirname, 'downloads'); // Directory to save the download
         const scriptPath = path.resolve(__dirname, 'downloader.py'); // Path to Python script
@@ -23,12 +23,12 @@ exports.run = {
         await client.reply(m.chat, 'Your file is being downloaded. This may take some time.', m);
 
         // Construct the command based on whether quality is provided
-        let command = `python3 ${scriptPath} ${url} ${outputDir}`;
+        let commandStr = `python3 ${scriptPath} ${url} ${outputDir}`;
         if (quality) {
-            command += ` ${quality}`; // Only append quality if it's provided
+            commandStr += ` ${quality}`; // Only append quality if it's provided
         }
 
-        exec(command, async (error, stdout, stderr) => {
+        exec(commandStr, async (error, stdout, stderr) => {
             if (error) {
                 console.error(`exec error: ${error.message}`);
                 await client.reply(m.chat, `Error downloading video: ${error.message}`, m);
