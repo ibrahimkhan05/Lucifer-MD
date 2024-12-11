@@ -16,94 +16,21 @@ exports.run = {
 
         // Ensure the downloads directory exists
         if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir);
+            fs.mkdirSync(outputDir, { recursive: true }); // Ensure directory and its parent exists
         }
 
-        // Check if the URL is a magnet link
-        if (url.startsWith('magnet:')) {
-            // If it's a magnet link, skip the HTTP request to check file size and directly start the download with aria2c
+        // Properly quote URL and outputDir to avoid special characters being misinterpreted
+        const safeUrl = `'${url}'`; // Single-quote to protect special characters in URL
+        const safeOutputDir = `'${outputDir}'`;
+
+        const executeDownload = async () => {
             try {
-                await client.reply(m.chat, 'Starting download for magnet link...', m);
-                exec(`python3 ${scriptPath} ${url} ${outputDir}`, async (error, stdout, stderr) => {
-                    if (error) {
-                        console.error(`exec error: ${error.message}`);
-                        await client.reply(m.chat, `Error downloading file: ${error.message}`, m);
-                        return;
-                    }
-
-                    if (stderr) {
-                        console.error(`stderr: ${stderr}`);
-                        await client.reply(m.chat, `Error downloading file: ${stderr}`, m);
-                        return;
-                    }
-
-                    console.log(`stdout: ${stdout}`);
-
-                    // Parse the stdout to get the file details
-                    const output = JSON.parse(stdout.trim());
-                    if (output.error) {
-                        await client.reply(m.chat, `Download failed: ${output.message}`, m);
-                        return;
-                    }
-
-                    const filePath = output.filePath; // The full path to the downloaded file
-                    const fileName = path.basename(filePath); // Extract file name from path
-
-                    // Handle file and send to user
-                    try {
-                        const fileSize = fs.statSync(filePath).size;
-                        const fileSizeStr = `${(fileSize / (1024 * 1024)).toFixed(2)} MB`;
-
-                        if (fileSize > 930 * 1024 * 1024) { // 930MB size limit
-                            await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 930MB`, m);
-                            fs.unlinkSync(filePath); // Delete the file
-                            return;
-                        }
-
-                        const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
-                        const chSize = Func.sizeLimit(fileSize.toString(), maxUpload.toString());
-
-                        if (chSize.oversize) {
-                            await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit`, m);
-                            fs.unlinkSync(filePath); // Delete the file
-                            return;
-                        }
-
-                        await client.reply(m.chat, `Your file (${fileSizeStr}) is being uploaded.`, m);
-
-                        const extname = path.extname(fileName).toLowerCase();
-                        const isVideo = ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(extname);
-                        const isDocument = isVideo && fileSize / (1024 * 1024) > 99; // 99 MB threshold
-
-                        await client.sendFile(m.chat, filePath, fileName, '', m, { document: isDocument });
-
-                        fs.unlinkSync(filePath); // Delete the file after sending
-                    } catch (parseError) {
-                        console.error(`Error handling file: ${parseError.message}`);
-                        await client.reply(m.chat, `Error handling file: ${parseError.message}`, m);
-                        if (fs.existsSync(filePath)) fs.unlinkSync(filePath); // Delete on error
-                    }
-                });
-            } catch (err) {
-                console.error('Error fetching file size:', err);
-                await client.reply(m.chat, `Error starting download: ${err.message}`, m);
-            }
-        } else {
-            // Handle non-magnet URL as before (file size check)
-            try {
-                const response = await axios.head(url);
-                const fileSize = parseInt(response.headers['content-length']); // Content-Length is in bytes
-                const fileSizeMB = fileSize / (1024 * 1024); // Convert to MB
-
-                if (fileSizeMB > 930) { // Check if file size exceeds 930 MB
-                    await client.reply(m.chat, `💀 The file size (${fileSizeMB.toFixed(2)} MB) exceeds the maximum limit of 930 MB`, m);
-                    return;
-                }
-
-                // Notify user that the download is starting
                 await client.reply(m.chat, 'Your file is being downloaded. This may take some time.', m);
 
-                exec(`python3 ${scriptPath} ${url} ${outputDir}`, async (error, stdout, stderr) => {
+                const command = `python3 "${scriptPath}" ${safeUrl} ${safeOutputDir}`;
+                console.log(`Running command: ${command}`);
+
+                exec(command, async (error, stdout, stderr) => {
                     if (error) {
                         console.error(`exec error: ${error.message}`);
                         await client.reply(m.chat, `Error downloading file: ${error.message}`, m);
@@ -118,22 +45,20 @@ exports.run = {
 
                     console.log(`stdout: ${stdout}`);
 
-                    // Parse the stdout to get the file details
                     const output = JSON.parse(stdout.trim());
                     if (output.error) {
                         await client.reply(m.chat, `Download failed: ${output.message}`, m);
                         return;
                     }
 
-                    const filePath = output.filePath; // The full path to the downloaded file
+                    const filePath = output.filePath; // Full path to the downloaded file
                     const fileName = path.basename(filePath); // Extract file name from path
 
-                    // Handle file and send to user
                     try {
                         const fileSize = fs.statSync(filePath).size;
                         const fileSizeStr = `${(fileSize / (1024 * 1024)).toFixed(2)} MB`;
 
-                        if (fileSize > 930 * 1024 * 1024) { // 930MB size limit
+                        if (fileSize > 930 * 1024 * 1024) {
                             await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 930MB`, m);
                             fs.unlinkSync(filePath); // Delete the file
                             return;
@@ -152,7 +77,7 @@ exports.run = {
 
                         const extname = path.extname(fileName).toLowerCase();
                         const isVideo = ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(extname);
-                        const isDocument = isVideo && fileSize / (1024 * 1024) > 99; // 99 MB threshold
+                        const isDocument = isVideo && fileSize / (1024 * 1024) > 99;
 
                         await client.sendFile(m.chat, filePath, fileName, '', m, { document: isDocument });
 
@@ -160,19 +85,15 @@ exports.run = {
                     } catch (parseError) {
                         console.error(`Error handling file: ${parseError.message}`);
                         await client.reply(m.chat, `Error handling file: ${parseError.message}`, m);
-                        if (fs.existsSync(filePath)) fs.unlinkSync(filePath); // Delete on error
+                        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
                     }
                 });
             } catch (err) {
-                console.error('Error fetching file size:', err);
-                await client.reply(m.chat, `Error fetching file size: ${err.message}`, m);
+                console.error('Error starting download:', err);
+                await client.reply(m.chat, `Error starting download: ${err.message}`, m);
             }
-        }
-    },
-    error: false,
-    limit: true,
-    cache: true,
-    premium: true,
-    verified: true,
-    location: __filename
+        };
+
+        executeDownload();
+    }
 };
