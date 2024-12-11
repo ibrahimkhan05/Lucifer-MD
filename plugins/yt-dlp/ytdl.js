@@ -22,9 +22,9 @@ exports.run = {
         await client.reply(m.chat, 'Your file is being downloaded. This may take some time.', m);
 
         // Ensure only one "command" declaration exists
-        const command = `python3 ${scriptPath} ${url} ${outputDir} ${quality}`;
-        
-        exec(command, async (error, stdout, stderr) => {
+        const downloadCommand = `python3 ${scriptPath} ${url} ${outputDir} ${quality}`;  // Changed variable name to avoid conflicts
+
+        exec(downloadCommand, async (error, stdout, stderr) => {
             if (error) {
                 console.error(`exec error: ${error.message}`);
                 await client.reply(m.chat, `Error downloading video: ${error.message}`, m);
