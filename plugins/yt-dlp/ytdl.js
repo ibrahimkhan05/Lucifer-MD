@@ -15,22 +15,15 @@ exports.run = {
         const outputDir = path.resolve(__dirname, 'downloads'); 
         const scriptPath = path.resolve(__dirname, 'downloader.py'); 
 
-        // Ensure the downloads directory exists
         if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir, { recursive: true }); 
+            fs.mkdirSync(outputDir);
         }
 
-        // Escape the URL, paths, and arguments
-        const safeUrl = `'${url.replace(/'/g, "'\\''")}'`; 
-        const safeOutputDir = `'${outputDir.replace(/'/g, "'\\''")}'`; 
-        const safeQuality = quality ? `'${quality.replace(/'/g, "'\\''")}'` : '';
-
-        // Notify user that the download is starting
         await client.reply(m.chat, 'Your file is being downloaded. This may take some time.', m);
 
-        const command = `python3 ${scriptPath} ${safeUrl} ${safeOutputDir} ${safeQuality}`;
-        console.log(`Running command: ${command}`);
-
+        // Ensure only one "command" declaration exists
+        const command = `python3 ${scriptPath} ${url} ${outputDir} ${quality}`;
+        
         exec(command, async (error, stdout, stderr) => {
             if (error) {
                 console.error(`exec error: ${error.message}`);
@@ -44,26 +37,18 @@ exports.run = {
                 return;
             }
 
-            let output;
-            try {
-                output = JSON.parse(stdout.trim());
-            } catch (e) {
-                console.error('JSON parse error:', e.message);
-                await client.reply(m.chat, `Error parsing download response: ${e.message}`, m);
-                return;
-            }
-
+            const output = JSON.parse(stdout.trim());
             if (output.error) {
                 await client.reply(m.chat, `Download failed: ${output.message}`, m);
                 return;
             }
 
-            const filePath = output.filePath;
-            const fileName = path.basename(filePath);
+            const filePath = output.filePath; 
+            const fileName = path.basename(filePath); 
             const fileSize = fs.statSync(filePath).size;
             const fileSizeStr = `${(fileSize / (1024 * 1024)).toFixed(2)} MB`;
 
-            if (fileSize > 930 * 1024 * 1024) {
+            if (fileSize > 930 * 1024 * 1024) { 
                 await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 930MB`, m);
                 fs.unlinkSync(filePath);
                 return;
@@ -88,5 +73,11 @@ exports.run = {
 
             fs.unlinkSync(filePath); 
         });
-    }
+    },
+    error: false,
+    limit: true,
+    cache: true,
+    premium: true,
+    verified: true,
+    location: __filename
 };
