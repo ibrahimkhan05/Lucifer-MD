@@ -10,7 +10,7 @@ exports.run = {
         if (!args || !args[0]) return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), m);
 
         const url = args[0];
-        const quality = args[1] || 'best'; // Get quality from args or use default
+        const quality = args[1]; // Get quality from args or use default
         const outputDir = path.resolve(__dirname, 'downloads'); // Directory to save the download
         const scriptPath = path.resolve(__dirname, 'downloader.py'); // Path to Python script
 
