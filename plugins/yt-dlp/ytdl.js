@@ -11,20 +11,19 @@ exports.run = {
             return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), m);
 
         const url = args[0];
-        const quality = args[1] || ''; 
-        const outputDir = path.resolve(__dirname, 'downloads'); 
-        const scriptPath = path.resolve(__dirname, 'downloader.py'); 
+        const quality = args[1] || ''; // Get quality from args or use default (no default for non-video)
+        const outputDir = path.resolve(__dirname, 'downloads'); // Directory to save the download
+        const scriptPath = path.resolve(__dirname, 'downloader.py'); // Path to Python script
 
+        // Ensure the downloads directory exists
         if (!fs.existsSync(outputDir)) {
             fs.mkdirSync(outputDir);
         }
 
+        // Notify user that the download is starting
         await client.reply(m.chat, 'Your file is being downloaded. This may take some time.', m);
 
-        // Ensure only one "command" declaration exists
-        const downloadCommand = `python3 ${scriptPath} ${url} ${outputDir} ${quality}`;  // Changed variable name to avoid conflicts
-
-        exec(downloadCommand, async (error, stdout, stderr) => {
+        exec(`python3 ${scriptPath} ${url} ${outputDir} ${quality}`, async (error, stdout, stderr) => {
             if (error) {
                 console.error(`exec error: ${error.message}`);
                 await client.reply(m.chat, `Error downloading video: ${error.message}`, m);
@@ -43,12 +42,12 @@ exports.run = {
                 return;
             }
 
-            const filePath = output.filePath; 
-            const fileName = path.basename(filePath); 
+            const filePath = output.filePath; // The full path to the downloaded file
+            const fileName = path.basename(filePath); // Extract file name from path
             const fileSize = fs.statSync(filePath).size;
             const fileSizeStr = `${(fileSize / (1024 * 1024)).toFixed(2)} MB`;
 
-            if (fileSize > 930 * 1024 * 1024) { 
+            if (fileSize > 930 * 1024 * 1024) { // 930 MB file size limit
                 await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 930MB`, m);
                 fs.unlinkSync(filePath);
                 return;
@@ -67,11 +66,11 @@ exports.run = {
 
             const extname = path.extname(fileName).toLowerCase();
             const isVideo = ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(extname);
-            const isDocument = isVideo && fileSize / (1024 * 1024) > 99; 
+            const isDocument = isVideo && fileSize / (1024 * 1024) > 99; // Send large video as document
 
             await client.sendFile(m.chat, filePath, fileName, '', m, { document: isDocument });
 
-            fs.unlinkSync(filePath); 
+            fs.unlinkSync(filePath); // Delete the file after sending
         });
     },
     error: false,
