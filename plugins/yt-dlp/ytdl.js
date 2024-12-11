@@ -7,11 +7,10 @@ exports.run = {
     use: 'url [quality]',
     category: 'special',
     async: async (m, { client, args, isPrefix, command, users, env, Func, Scraper }) => {
-        if (!args || !args[0]) 
-            return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), m);
+        if (!args || !args[0]) return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), m);
 
         const url = args[0];
-        const quality = args[1] || ''; // Get quality from args or use default (no default for non-video)
+        const quality = args[1] || 'best'; // Get quality from args or use default
         const outputDir = path.resolve(__dirname, 'downloads'); // Directory to save the download
         const scriptPath = path.resolve(__dirname, 'downloader.py'); // Path to Python script
 
@@ -36,7 +35,18 @@ exports.run = {
                 return;
             }
 
-            const output = JSON.parse(stdout.trim());
+            console.log(`stdout: ${stdout}`);
+            
+            // Parse the stdout to get the original file name and path
+            let output;
+            try {
+                output = JSON.parse(stdout.trim());
+            } catch (parseError) {
+                console.error(`Error parsing JSON: ${parseError.message}`);
+                await client.reply(m.chat, `Error parsing download information: ${parseError.message}`, m);
+                return;
+            }
+
             if (output.error) {
                 await client.reply(m.chat, `Download failed: ${output.message}`, m);
                 return;
@@ -44,33 +54,41 @@ exports.run = {
 
             const filePath = output.filePath; // The full path to the downloaded file
             const fileName = path.basename(filePath); // Extract file name from path
-            const fileSize = fs.statSync(filePath).size;
-            const fileSizeStr = `${(fileSize / (1024 * 1024)).toFixed(2)} MB`;
 
-            if (fileSize > 930 * 1024 * 1024) { // 930 MB file size limit
-                await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 930MB`, m);
-                fs.unlinkSync(filePath);
-                return;
+            // Handle file and send to user
+            try {
+                const fileSize = fs.statSync(filePath).size;
+                const fileSizeStr = `${(fileSize / (1024 * 1024)).toFixed(2)} MB`;
+
+                if (fileSize > 930 * 1024 * 1024) { // 930 MB
+                    await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 930MB`, m);
+                    fs.unlinkSync(filePath); // Delete the file
+                    return;
+                }
+                
+                const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
+                const chSize = Func.sizeLimit(fileSize.toString(), maxUpload.toString());
+
+                if (chSize.oversize) {
+                    await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit`, m);
+                    fs.unlinkSync(filePath); // Delete the file
+                    return;
+                }
+
+                await client.reply(m.chat, `Your file (${fileSizeStr}) is being uploaded.`, m);
+
+                const extname = path.extname(fileName).toLowerCase();
+                const isVideo = ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(extname);
+                const isDocument = isVideo && fileSize / (1024 * 1024) > 99; // 99 MB threshold
+
+                await client.sendFile(m.chat, filePath, fileName, '', m, { document: isDocument });
+
+                fs.unlinkSync(filePath); // Delete the file after sending
+            } catch (fileError) {
+                console.error(`Error handling file: ${fileError.message}`);
+                await client.reply(m.chat, `Error handling file: ${fileError.message}`, m);
+                if (fs.existsSync(filePath)) fs.unlinkSync(filePath); // Delete on error
             }
-
-            const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
-            const chSize = Func.sizeLimit(fileSize.toString(), maxUpload.toString());
-
-            if (chSize.oversize) {
-                await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit`, m);
-                fs.unlinkSync(filePath);
-                return;
-            }
-
-            await client.reply(m.chat, `Your file (${fileSizeStr}) is being uploaded.`, m);
-
-            const extname = path.extname(fileName).toLowerCase();
-            const isVideo = ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(extname);
-            const isDocument = isVideo && fileSize / (1024 * 1024) > 99; // Send large video as document
-
-            await client.sendFile(m.chat, filePath, fileName, '', m, { document: isDocument });
-
-            fs.unlinkSync(filePath); // Delete the file after sending
         });
     },
     error: false,
