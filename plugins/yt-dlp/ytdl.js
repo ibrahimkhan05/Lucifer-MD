@@ -10,7 +10,7 @@ exports.run = {
         if (!args || !args[0]) return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), m);
 
         const url = args[0];
-        const quality = args[1]; // Get quality from args or use default
+        const quality = args[1]; // Get quality from args if provided
         const outputDir = path.resolve(__dirname, 'downloads'); // Directory to save the download
         const scriptPath = path.resolve(__dirname, 'downloader.py'); // Path to Python script
 
@@ -22,7 +22,13 @@ exports.run = {
         // Notify user that the download is starting
         await client.reply(m.chat, 'Your file is being downloaded. This may take some time.', m);
 
-        exec(`python3 ${scriptPath} ${url} ${outputDir} ${quality}`, async (error, stdout, stderr) => {
+        // Construct the command based on whether quality is provided
+        let command = `python3 ${scriptPath} ${url} ${outputDir}`;
+        if (quality) {
+            command += ` ${quality}`; // Only append quality if it's provided
+        }
+
+        exec(command, async (error, stdout, stderr) => {
             if (error) {
                 console.error(`exec error: ${error.message}`);
                 await client.reply(m.chat, `Error downloading video: ${error.message}`, m);
