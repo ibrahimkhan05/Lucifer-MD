@@ -1,4 +1,4 @@
-const { ndown } = require("nayan-video-downloader");
+const {instagram} = require("nayan-video-downloader");
 
 exports.run = {
    usage: ['ig'],
@@ -23,7 +23,7 @@ exports.run = {
          client.sendReact(m.chat, '🕒', m.key);
          let old = new Date();
 
-         let URL = await ndown(args[0]);
+         let URL = await instagram(args[0]);
          if (!URL.status) {
             return client.reply(m.chat, Func.jsonFormat(URL), m);
          }
