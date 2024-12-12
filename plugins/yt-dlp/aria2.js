@@ -70,9 +70,8 @@ exports.run = {
                     console.log(`📦 File Name: ${fileName}`);
                     console.log(`📦 File Size: ${fileSizeStr}`);
 
-                    // Handle large file size limit (increased to 2048MB)
-                    if (fileSize > 2048 * 1024 * 1024) { // 2GB limit
-                        await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 2048MB.`, m);
+                    if (fileSize > 1980 * 1024 * 1024) { // Maximum file size limit
+                        await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 1980MB.`, m);
                         fs.unlinkSync(resolvedPath); // Delete the file
                         return;
                     }
@@ -86,11 +85,14 @@ exports.run = {
                         return;
                     }
 
-                    await client.reply(m.chat, `✅ Your file (${fileSizeStr}) is ready for upload.`, m);
+                    await client.reply(m.chat, `✅ Your file (${fileSizeStr}) is being uploaded.`, m);
 
-                    // Once the file is fully downloaded, send it to the client
+                    const extname = path.extname(fileName).toLowerCase();
+                    const isVideo = ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(extname);
+                    const isDocument = isVideo && fileSize / (1024 * 1024) > 99;
+
                     try {
-                        await client.sendFile(m.chat, resolvedPath, fileName, '', m);
+                        await client.sendFile(m.chat, resolvedPath, fileName, '', m, { document: isDocument });
                         console.log('✅ File sent successfully.');
                     } catch (sendError) {
                         console.error(`❌ Error sending file: ${sendError.message}`);
