@@ -2,7 +2,23 @@ import sys
 import json
 import os
 import subprocess
-from urllib.parse import urlparse
+import requests
+from urllib.parse import urlparse, parse_qs
+
+def get_filename_from_headers(url):
+    try:
+        # Send a HEAD request to get headers without downloading the file
+        response = requests.head(url, allow_redirects=True)
+        # Check if content-disposition is available to infer filename
+        content_disposition = response.headers.get('Content-Disposition', '')
+        if 'filename=' in content_disposition:
+            filename = content_disposition.split('filename=')[1].strip('"')
+            return filename
+        # Otherwise, use the last part of the URL as the fallback filename
+        return os.path.basename(urlparse(url).path) or "downloaded_file"
+    except Exception as e:
+        print(f"Error getting filename from headers: {e}")
+        return "downloaded_file"
 
 try:
     # Get URL and output directory from command-line arguments
@@ -13,8 +29,8 @@ try:
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    # Extract the filename from the URL
-    filename = os.path.basename(urlparse(url).path) or "downloaded_file"
+    # Extract the filename, trying to use the headers if possible
+    filename = get_filename_from_headers(url)
 
     # Set the full path for the downloaded file
     output_file = os.path.join(output_dir, filename)
