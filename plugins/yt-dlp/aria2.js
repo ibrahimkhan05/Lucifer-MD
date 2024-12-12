@@ -2,7 +2,6 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 
-// Custom logger to log all important events to the console
 const log = (message) => {
     const timestamp = new Date().toISOString();
     const formattedMessage = `[${timestamp}] ${message}`;
@@ -23,7 +22,6 @@ exports.run = {
         const outputDir = path.resolve(__dirname, 'downloads'); 
         const scriptPath = path.resolve(__dirname, 'aria2_downloader.py'); 
 
-        // Ensure the downloads directory exists
         if (!fs.existsSync(outputDir)) {
             log(`📂 Creating downloads directory at ${outputDir}`);
             fs.mkdirSync(outputDir, { recursive: true });
@@ -40,18 +38,14 @@ exports.run = {
                 const command = `python3 "${scriptPath}" ${safeUrl} ${safeOutputDir}`;
                 log(`📜 Running command: ${command}`);
 
-                const startTime = Date.now();
-
                 exec(command, { maxBuffer: 1024 * 1024 * 50 }, async (error, stdout, stderr) => { 
                     if (error) {
                         log(`❌ exec error: ${error.message}`);
                         await client.reply(m.chat, `❌ Error downloading file: ${error.message}`, m);
-                        return;
+                        return; // Exit early
                     }
 
-                    if (stderr) {
-                        log(`⚠️ stderr: ${stderr}`);
-                    }
+                    if (stderr) log(`⚠️ stderr: ${stderr}`);
 
                     log(`📜 stdout: ${stdout}`);
 
@@ -61,13 +55,13 @@ exports.run = {
                     } catch (err) {
                         log(`❌ Failed to parse JSON: ${err.message}`);
                         await client.reply(m.chat, `❌ Unexpected response from download script.`, m);
-                        return;
+                        return; // Exit early
                     }
 
                     if (!output.filePath) {
                         log('❌ Downloaded file path is undefined or missing.');
                         await client.reply(m.chat, '❌ Downloaded file path is undefined or missing.', m);
-                        return;
+                        return; // Exit early
                     }
 
                     const resolvedPath = path.resolve(output.filePath);
@@ -76,7 +70,7 @@ exports.run = {
                     if (!fs.existsSync(resolvedPath)) {
                         log('❌ Downloaded file does not exist.');
                         await client.reply(m.chat, '❌ Downloaded file does not exist.', m);
-                        return;
+                        return; // Exit early
                     }
 
                     const fileName = path.basename(resolvedPath);
@@ -85,33 +79,23 @@ exports.run = {
 
                     log(`📦 File Name: ${fileName}`);
                     log(`📦 File Size: ${fileSizeStr}`);
+                    log(`⏳ Starting file processing at ${new Date().toISOString()}`);
 
-                    if (fileSize > 4096 * 1024 * 1024) { 
+                    if (fileSize > 4096 * 1024 * 1024) { // 4GB size limit
                         log(`💀 File size (${fileSizeStr}) exceeds the maximum limit of 4GB.`);
                         await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 4GB.`, m);
                         fs.unlinkSync(resolvedPath); 
-                        log(`🗑️ File deleted due to size limit.`);
-                        return;
+                        log('🗑️ File deleted due to size limit.');
+                        return; // Exit early
                     }
 
-                    log(`⏳ Starting file processing at ${new Date().toISOString()}`);
-                    
+                    log('📤 Preparing file for upload...');
                     try {
-                        log('📤 Preparing file for upload...');
-                        const startProcessTime = Date.now();
-
-                        const extname = path.extname(fileName).toLowerCase();
-                        const isVideo = ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(extname);
-                        const isDocument = isVideo && fileSize / (1024 * 1024) > 99;
-
                         const stream = fs.createReadStream(resolvedPath);
-                        await client.sendFile(m.chat, stream, fileName, '', m, { document: isDocument });
-
-                        const processTime = ((Date.now() - startProcessTime) / 1000).toFixed(2);
-                        log(`✅ File sent successfully in ${processTime}s.`);
+                        await client.sendFile(m.chat, stream, fileName, '', m, { document: true });
+                        log('✅ File sent successfully.');
                     } catch (sendError) {
                         log(`❌ Error sending file: ${sendError.message}`);
-                        log(`🔍 Stack trace: ${sendError.stack}`);
                         await client.reply(m.chat, `❌ Failed to upload file.`, m);
                     } finally {
                         if (fs.existsSync(resolvedPath)) {
@@ -120,19 +104,18 @@ exports.run = {
                         }
                     }
 
-                    const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
-                    log(`🏁 Total process time: ${totalTime}s.`);
+                    log(`🏁 Total process time: ${(Date.now() - startTime) / 1000}s`);
+                    return; // Exit after success
                 });
             } catch (err) {
-                log(`❌ Error starting download: ${err.message}`);
-                log(`🔍 Stack trace: ${err.stack}`);
+                log('❌ Unhandled error:', err);
                 await client.reply(m.chat, `❌ Error starting download: ${err.message}`, m);
             }
         };
 
         executeDownload().catch((err) => {
-            log(`❌ Unhandled error: ${err.message}`);
-            log(`🔍 Stack trace: ${err.stack}`);
+            log(`❌ Unhandled rejection: ${err.message}`);
+            client.reply(m.chat, '❌ Failed to process file.', m);
         });
     }
 };
