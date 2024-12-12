@@ -17,8 +17,9 @@ const client = new Baileys({
    plugsdir: 'plugins',
    sf: 'session',
    online: true,
-   // To see the latest version : https://web.whatsapp.com/check-update?version=1&platform=web
-   version: [2, 2413, 51]
+   version: [2, 3000, 1017531287]
+}, {
+   browser: ['Ubuntu', 'Firefox', '20.0.00']
 })
 
 /* starting to connect */
