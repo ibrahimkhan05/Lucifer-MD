@@ -1,8 +1,6 @@
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
-const { Readable } = require('stream');
-const stream = require('stream');
 
 exports.run = {
     usage: ['aria2'],
@@ -72,8 +70,8 @@ exports.run = {
                     console.log(`📦 File Name: ${fileName}`);
                     console.log(`📦 File Size: ${fileSizeStr}`);
 
-                    // Handle large file size limit
-                    if (fileSize > 2048 * 1024 * 1024) { // Increased max size to 2048MB
+                    // Handle large file size limit (increased to 2048MB)
+                    if (fileSize > 2048 * 1024 * 1024) { // 2GB limit
                         await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 2048MB.`, m);
                         fs.unlinkSync(resolvedPath); // Delete the file
                         return;
@@ -88,16 +86,11 @@ exports.run = {
                         return;
                     }
 
-                    await client.reply(m.chat, `✅ Your file (${fileSizeStr}) is being uploaded.`, m);
+                    await client.reply(m.chat, `✅ Your file (${fileSizeStr}) is ready for upload.`, m);
 
-                    const extname = path.extname(fileName).toLowerCase();
-                    const isVideo = ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(extname);
-                    const isDocument = isVideo && fileSize / (1024 * 1024) > 99;
-
-                    // Stream large files to prevent memory overload
+                    // Once the file is fully downloaded, send it to the client
                     try {
-                        const readStream = fs.createReadStream(resolvedPath);
-                        await client.sendFile(m.chat, readStream, fileName, '', m, { document: isDocument });
+                        await client.sendFile(m.chat, resolvedPath, fileName, '', m);
                         console.log('✅ File sent successfully.');
                     } catch (sendError) {
                         console.error(`❌ Error sending file: ${sendError.message}`);
