@@ -2,120 +2,115 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 
-const log = (message) => {
-    const timestamp = new Date().toISOString();
-    const formattedMessage = `[${timestamp}] ${message}`;
-    console.log(formattedMessage);
-};
-
 exports.run = {
     usage: ['aria2'],
     use: 'url',
     category: 'special',
     async: async (m, { client, args, isPrefix, command, users, env, Func, Scraper }) => {
-        if (!args || !args[0]) {
-            log('❌ No URL provided.');
-            return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), m);
-        }
+        if (!args || !args[0]) return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), m);
 
-        const url = args[0]; 
-        const outputDir = path.resolve(__dirname, 'downloads'); 
-        const scriptPath = path.resolve(__dirname, 'aria2_downloader.py'); 
+        const url = args[0]; // Get URL from args
+        const outputDir = path.resolve(__dirname, 'downloads'); // Directory to save the download
+        const scriptPath = path.resolve(__dirname, 'aria2_downloader.py'); // Path to Python script
 
+        // Ensure the downloads directory exists
         if (!fs.existsSync(outputDir)) {
-            log(`📂 Creating downloads directory at ${outputDir}`);
-            fs.mkdirSync(outputDir, { recursive: true });
+            fs.mkdirSync(outputDir, { recursive: true }); // Ensure directory and its parent exists
         }
 
-        const safeUrl = `'${url}'`; 
+        const safeUrl = `'${url}'`; // Single-quote to protect special characters in URL
         const safeOutputDir = `'${outputDir}'`;
 
         const executeDownload = async () => {
             try {
-                log('📡 Starting the download process...');
-                await client.reply(m.chat, '📥 Your file is being downloaded. This may take some time.', m);
+                await client.reply(m.chat, 'Your file is being downloaded. This may take some time.', m);
 
                 const command = `python3 "${scriptPath}" ${safeUrl} ${safeOutputDir}`;
-                log(`📜 Running command: ${command}`);
+                console.log(`📜 Running command: ${command}`);
 
-                exec(command, { maxBuffer: 1024 * 1024 * 50 }, async (error, stdout, stderr) => { 
+                exec(command, async (error, stdout, stderr) => {
                     if (error) {
-                        log(`❌ exec error: ${error.message}`);
+                        console.error(`❌ exec error: ${error.message}`);
                         await client.reply(m.chat, `❌ Error downloading file: ${error.message}`, m);
-                        return; // Exit early
+                        return;
                     }
 
-                    if (stderr) log(`⚠️ stderr: ${stderr}`);
+                    if (stderr) {
+                        console.error(`⚠️ stderr: ${stderr}`);
+                    }
 
-                    log(`📜 stdout: ${stdout}`);
+                    console.log(`📜 stdout: ${stdout}`);
 
                     let output;
                     try {
                         output = JSON.parse(stdout.trim());
                     } catch (err) {
-                        log(`❌ Failed to parse JSON: ${err.message}`);
+                        console.error(`❌ Failed to parse JSON: ${err.message}`);
                         await client.reply(m.chat, `❌ Unexpected response from download script.`, m);
-                        return; // Exit early
+                        return;
                     }
 
                     if (!output.filePath) {
-                        log('❌ Downloaded file path is undefined or missing.');
                         await client.reply(m.chat, '❌ Downloaded file path is undefined or missing.', m);
-                        return; // Exit early
+                        return;
                     }
 
                     const resolvedPath = path.resolve(output.filePath);
-                    log(`📦 File Path: ${resolvedPath}`);
 
                     if (!fs.existsSync(resolvedPath)) {
-                        log('❌ Downloaded file does not exist.');
                         await client.reply(m.chat, '❌ Downloaded file does not exist.', m);
-                        return; // Exit early
+                        return;
                     }
 
                     const fileName = path.basename(resolvedPath);
                     const fileSize = fs.statSync(resolvedPath).size;
                     const fileSizeStr = `${(fileSize / (1024 * 1024)).toFixed(2)} MB`;
 
-                    log(`📦 File Name: ${fileName}`);
-                    log(`📦 File Size: ${fileSizeStr}`);
-                    log(`⏳ Starting file processing at ${new Date().toISOString()}`);
+                    console.log(`📦 File Path: ${resolvedPath}`);
+                    console.log(`📦 File Name: ${fileName}`);
+                    console.log(`📦 File Size: ${fileSizeStr}`);
 
-                    if (fileSize > 4096 * 1024 * 1024) { // 4GB size limit
-                        log(`💀 File size (${fileSizeStr}) exceeds the maximum limit of 4GB.`);
-                        await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 4GB.`, m);
-                        fs.unlinkSync(resolvedPath); 
-                        log('🗑️ File deleted due to size limit.');
-                        return; // Exit early
+                    // Update the file size limit to 2048MB (2GB)
+                    if (fileSize > 2048 * 1024 * 1024) { // Maximum file size limit
+                        await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 2048MB.`, m);
+                        fs.unlinkSync(resolvedPath); // Delete the file
+                        return;
                     }
 
-                    log('📤 Preparing file for upload...');
+                    const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
+                    const chSize = Func.sizeLimit(fileSize.toString(), maxUpload.toString());
+
+                    if (chSize.oversize) {
+                        await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit.`, m);
+                        fs.unlinkSync(resolvedPath); // Delete the file
+                        return;
+                    }
+
+                    await client.reply(m.chat, `✅ Your file (${fileSizeStr}) is being uploaded.`, m);
+
+                    const extname = path.extname(fileName).toLowerCase();
+                    const isVideo = ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(extname);
+                    const isDocument = isVideo && fileSize / (1024 * 1024) > 99;
+
                     try {
-                        const stream = fs.createReadStream(resolvedPath);
-                        await client.sendFile(m.chat, stream, fileName, '', m, { document: true });
-                        log('✅ File sent successfully.');
+                        await client.sendFile(m.chat, resolvedPath, fileName, '', m, { document: isDocument });
+                        console.log('✅ File sent successfully.');
                     } catch (sendError) {
-                        log(`❌ Error sending file: ${sendError.message}`);
+                        console.error(`❌ Error sending file: ${sendError.message}`);
                         await client.reply(m.chat, `❌ Failed to upload file.`, m);
                     } finally {
                         if (fs.existsSync(resolvedPath)) {
-                            fs.unlinkSync(resolvedPath); 
-                            log('🗑️ File deleted after sending.');
+                            fs.unlinkSync(resolvedPath); // Delete the file after sending
+                            console.log('🗑️ File deleted after sending.');
                         }
                     }
-
-                    log(`🏁 Total process time: ${(Date.now() - startTime) / 1000}s`);
-                    return; // Exit after success
                 });
             } catch (err) {
-                log('❌ Unhandled error:', err);
+                console.error('❌ Error starting download:', err);
                 await client.reply(m.chat, `❌ Error starting download: ${err.message}`, m);
             }
         };
 
-        executeDownload().catch((err) => {
-            log(`❌ Unhandled rejection: ${err.message}`);
-            client.reply(m.chat, '❌ Failed to process file.', m);
-        });
+        executeDownload();
     }
 };
