@@ -1,4 +1,4 @@
-const {instagram} = require("nayan-video-downloader");
+// const {instagram} = require("nayan-video-downloader");
 
 exports.run = {
    usage: ['ig'],
