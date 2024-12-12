@@ -6,9 +6,9 @@ exports.run = {
     usage: ['aria2'],
     use: 'url',
     category: 'special',
-    async: async (m, { client, args, isPrefix, command, users, env, Func, Scraper }) => {
+    async: async (m, { client, args, isPrefix, command }) => {
         if (!args || !args[0]) 
-            return client.reply(m.chat, Func.example(isPrefix, command, 'https://example.com/file.mp4'), m);
+            return client.reply(m.chat, `❌ Please provide a URL.\nExample: ${isPrefix}${command} https://example.com/file.mp4`, m);
 
         const url = args[0]; 
         const outputDir = path.resolve(__dirname, 'downloads'); 
@@ -18,36 +18,45 @@ exports.run = {
             fs.mkdirSync(outputDir, { recursive: true }); 
         }
 
-        // Start the Python process with arguments
-        const process = spawn('python3', [scriptPath, url, outputDir]); 
+        const process = spawn('python3', [scriptPath, url, outputDir]);
 
-        process.stdout.on('data', async (data) => {
+        process.stdout.on('data', (data) => {
             console.log(`stdout: ${data}`);
             try {
                 const output = JSON.parse(data.toString().trim());
                 if (output.error) {
-                    await client.reply(m.chat, `❌ Download failed: ${output.message}`, m);
+                    client.reply(m.chat, `❌ Download failed: ${output.message}`, m);
                 } else {
                     const filePath = output.filePath;
                     const fileSize = fs.statSync(filePath).size;
                     const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
 
-                    if (fileSize > 1980 * 1024 * 1024) {  // 1980 MB limit
-                        await client.reply(m.chat, `💀 File size (${fileSizeMB} MB) exceeds the maximum limit of 1980 MB.`, m);
-                        fs.unlinkSync(filePath); // Delete the file
+                    if (fileSize > 1980 * 1024 * 1024) {  // File limit check (1980 MB)
+                        client.reply(m.chat, `❌ File size (${fileSizeMB} MB) exceeds the 1980 MB limit.`, m);
+                        fs.unlinkSync(filePath); // Delete file
                         return;
                     }
 
-                    await client.reply(m.chat, `✅ Your file (${fileSizeMB} MB) is being uploaded.`, m);
+                    client.reply(m.chat, `✅ Your file (${fileSizeMB} MB) is being uploaded. Please wait...`, m);
+
+                    const readStream = fs.createReadStream(filePath);
                     const extname = path.extname(filePath).toLowerCase();
                     const isVideo = ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(extname);
-                    const isDocument = isVideo && fileSize / (1024 * 1024) > 99;
+                    const isDocument = fileSize / (1024 * 1024) > 99; // If file is > 99 MB, send as document
 
-                    await client.sendFile(m.chat, filePath, path.basename(filePath), '', m, { document: isDocument });
-                    fs.unlinkSync(filePath); // Delete the file after sending
+                    client.sendMessage(m.chat, {
+                        document: readStream,
+                        fileName: path.basename(filePath),
+                        caption: `Here is your file: ${path.basename(filePath)}`,
+                    }).then(() => {
+                        fs.unlinkSync(filePath); // Delete file after sending
+                    }).catch((err) => {
+                        console.error(`❌ Error sending file: ${err.message}`);
+                        client.reply(m.chat, '❌ Failed to upload file.', m);
+                    });
                 }
-            } catch (jsonError) {
-                console.error(`Error parsing JSON: ${jsonError.message}`);
+            } catch (err) {
+                console.error(`❌ JSON Parsing Error: ${err.message}`);
             }
         });
 
@@ -58,11 +67,16 @@ exports.run = {
         process.on('close', (code) => {
             if (code === null) {
                 console.error('❌ Process exited with code: null');
-                client.reply(m.chat, '❌ Error: Download process was terminated unexpectedly.', m);
+                client.reply(m.chat, '❌ Download process terminated unexpectedly.', m);
             } else if (code !== 0) {
                 console.error(`❌ Process exited with code: ${code}`);
                 client.reply(m.chat, `❌ Download failed with exit code: ${code}`, m);
             }
+        });
+
+        process.on('error', (err) => {
+            console.error(`❌ Process error: ${err.message}`);
+            client.reply(m.chat, '❌ Download process failed.', m);
         });
     }
 };
