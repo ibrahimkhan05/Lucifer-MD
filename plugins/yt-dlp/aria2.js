@@ -7,7 +7,8 @@ exports.run = {
     use: 'url',
     category: 'special',
     async: async (m, { client, args, isPrefix, command, users, env, Func, Scraper }) => {
-        if (!args || !args[0]) return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), m);
+        if (!args || !args[0]) 
+            return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), m);
 
         const url = args[0]; // Get URL from args
         const outputDir = path.resolve(__dirname, 'downloads'); // Directory to save the download
@@ -28,7 +29,7 @@ exports.run = {
                 const command = `python3 "${scriptPath}" ${safeUrl} ${safeOutputDir}`;
                 console.log(`📜 Running command: ${command}`);
 
-                exec(command, async (error, stdout, stderr) => {
+                exec(command, { maxBuffer: 1024 * 1024 * 50 }, async (error, stdout, stderr) => { // 50 MB buffer to handle large output
                     if (error) {
                         console.error(`❌ exec error: ${error.message}`);
                         await client.reply(m.chat, `❌ Error downloading file: ${error.message}`, m);
@@ -70,17 +71,8 @@ exports.run = {
                     console.log(`📦 File Name: ${fileName}`);
                     console.log(`📦 File Size: ${fileSizeStr}`);
 
-                    if (fileSize > 1980 * 1024 * 1024) { // Maximum file size limit
-                        await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 1980MB.`, m);
-                        fs.unlinkSync(resolvedPath); // Delete the file
-                        return;
-                    }
-
-                    const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
-                    const chSize = Func.sizeLimit(fileSize.toString(), maxUpload.toString());
-
-                    if (chSize.oversize) {
-                        await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit.`, m);
+                    if (fileSize > 4096 * 1024 * 1024) { // Maximum file size limit of 4GB
+                        await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 4GB.`, m);
                         fs.unlinkSync(resolvedPath); // Delete the file
                         return;
                     }
@@ -92,7 +84,8 @@ exports.run = {
                     const isDocument = isVideo && fileSize / (1024 * 1024) > 99;
 
                     try {
-                        await client.sendFile(m.chat, resolvedPath, fileName, '', m, { document: isDocument });
+                        const stream = fs.createReadStream(resolvedPath);
+                        await client.sendFile(m.chat, stream, fileName, '', m, { document: isDocument });
                         console.log('✅ File sent successfully.');
                     } catch (sendError) {
                         console.error(`❌ Error sending file: ${sendError.message}`);
@@ -110,6 +103,8 @@ exports.run = {
             }
         };
 
-        executeDownload();
+        executeDownload().catch((err) => {
+            console.error('❌ Unhandled error:', err);
+        });
     }
 };
