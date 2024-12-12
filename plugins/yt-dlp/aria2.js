@@ -62,7 +62,7 @@ exports.run = {
                         return;
                     }
 
-                    const fileName = path.basename(resolvedPath);
+                    const fileName = path.basename(resolvedPath).replace(/\s+/g, '-'); // Replace spaces with dashes
                     const fileSize = fs.statSync(resolvedPath).size;
                     const fileSizeStr = `${(fileSize / (1024 * 1024)).toFixed(2)} MB`;
 
