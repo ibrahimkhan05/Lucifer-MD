@@ -12,13 +12,11 @@ def get_filename_from_headers(url):
         
         # If the request was successful, check the headers for a filename
         if response.status_code == 200:
-            # Look for 'Content-Disposition' to extract the filename
             content_disposition = response.headers.get('Content-Disposition', '')
             if 'filename=' in content_disposition:
                 filename = content_disposition.split('filename=')[1].strip('"')
                 return filename
         
-        # If we can't find a filename in the headers, use the last part of the URL
         return os.path.basename(urlparse(url).path) or "downloaded_file"
     
     except Exception as e:
@@ -26,36 +24,27 @@ def get_filename_from_headers(url):
         return "downloaded_file"
 
 try:
-    # Get URL and output directory from command-line arguments
     url = sys.argv[1]
     output_dir = sys.argv[2]
 
-    # Ensure the output directory exists
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    # Extract the filename, trying to use the headers if possible
     filename = get_filename_from_headers(url)
-
-    # Set the full path for the downloaded file
     output_file = os.path.join(output_dir, filename)
 
-    # Download the file using aria2c
-    command = ['aria2c', '-d', output_dir, '-o', filename, url]
+    # Use aria2c for large file downloads
+    command = ['aria2c', '--continue', '--max-connection-per-server=4', '--split=4', '--dir', output_dir, '--out', filename, url]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    # Capture the output and error streams
     stdout, stderr = process.communicate()
 
-    # Check if the process exited with an error code
     if process.returncode != 0:
         raise Exception(f"aria2c failed with exit code {process.returncode}: {stderr.decode().strip()}")
 
-    # Check if the file exists after the download
     if not os.path.exists(output_file):
         raise Exception(f"Downloaded file not found: {output_file}")
 
-    # Prepare success response
     download_info = {
         'filePath': output_file,
         'error': None,
@@ -63,13 +52,12 @@ try:
     }
 
     print(json.dumps(download_info))
-    sys.exit(0)  # Explicitly exit with success code
+    sys.exit(0)
 
 except Exception as e:
-    # Prepare error response
     download_info = {
         'error': True,
         'message': str(e)
     }
     print(json.dumps(download_info))
-    sys.exit(1)  # Explicitly exit with error code
+    sys.exit(1)
