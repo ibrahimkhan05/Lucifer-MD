@@ -3,19 +3,24 @@ import json
 import os
 import subprocess
 import requests
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse
 
 def get_filename_from_headers(url):
     try:
         # Send a HEAD request to get headers without downloading the file
         response = requests.head(url, allow_redirects=True)
-        # Check if content-disposition is available to infer filename
-        content_disposition = response.headers.get('Content-Disposition', '')
-        if 'filename=' in content_disposition:
-            filename = content_disposition.split('filename=')[1].strip('"')
-            return filename
-        # Otherwise, use the last part of the URL as the fallback filename
+        
+        # If the request was successful, check the headers for a filename
+        if response.status_code == 200:
+            # Look for 'Content-Disposition' to extract the filename
+            content_disposition = response.headers.get('Content-Disposition', '')
+            if 'filename=' in content_disposition:
+                filename = content_disposition.split('filename=')[1].strip('"')
+                return filename
+        
+        # If we can't find a filename in the headers, use the last part of the URL
         return os.path.basename(urlparse(url).path) or "downloaded_file"
+    
     except Exception as e:
         print(f"Error getting filename from headers: {e}")
         return "downloaded_file"
@@ -39,13 +44,14 @@ try:
     command = ['aria2c', '-d', output_dir, '-o', filename, url]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+    # Capture the output and error streams
     stdout, stderr = process.communicate()
 
     # Check if the process exited with an error code
     if process.returncode != 0:
         raise Exception(f"aria2c failed with exit code {process.returncode}: {stderr.decode().strip()}")
 
-    # Check if the file exists
+    # Check if the file exists after the download
     if not os.path.exists(output_file):
         raise Exception(f"Downloaded file not found: {output_file}")
 
@@ -58,6 +64,7 @@ try:
 
     print(json.dumps(download_info))
     sys.exit(0)  # Explicitly exit with success code
+
 except Exception as e:
     # Prepare error response
     download_info = {
