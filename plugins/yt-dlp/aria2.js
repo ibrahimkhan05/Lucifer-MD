@@ -37,6 +37,7 @@ exports.run = {
 
                     if (stderr) {
                         console.error(`⚠️ stderr: ${stderr}`);
+                        await client.reply(m.chat, `⚠️ Download warning: ${stderr}`, m);
                     }
 
                     console.log(`📜 stdout: ${stdout}`);
@@ -70,16 +71,16 @@ exports.run = {
                     console.log(`📦 File Name: ${fileName}`);
                     console.log(`📦 File Size: ${fileSizeStr}`);
 
-                    // Update the file size limit to 2048MB (2GB)
-                    if (fileSize > 2048 * 1024 * 1024) { // Maximum file size limit
-                        await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 2048MB.`, m);
+                    // Check if file size exceeds the limit
+                    const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
+                    const maxFileSize = 2048 * 1024 * 1024; // Allow up to 2GB
+                    if (fileSize > maxFileSize) {
+                        await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 2GB.`, m);
                         fs.unlinkSync(resolvedPath); // Delete the file
                         return;
                     }
 
-                    const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
                     const chSize = Func.sizeLimit(fileSize.toString(), maxUpload.toString());
-
                     if (chSize.oversize) {
                         await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit.`, m);
                         fs.unlinkSync(resolvedPath); // Delete the file
@@ -93,14 +94,16 @@ exports.run = {
                     const isDocument = isVideo && fileSize / (1024 * 1024) > 99;
 
                     try {
+                        // Send file to the user via WhatsApp
                         await client.sendFile(m.chat, resolvedPath, fileName, '', m, { document: isDocument });
                         console.log('✅ File sent successfully.');
                     } catch (sendError) {
                         console.error(`❌ Error sending file: ${sendError.message}`);
-                        await client.reply(m.chat, `❌ Failed to upload file.`, m);
+                        await client.reply(m.chat, `❌ Failed to upload file: ${sendError.message}`, m);
                     } finally {
+                        // Clean up by deleting the file after sending
                         if (fs.existsSync(resolvedPath)) {
-                            fs.unlinkSync(resolvedPath); // Delete the file after sending
+                            fs.unlinkSync(resolvedPath);
                             console.log('🗑️ File deleted after sending.');
                         }
                     }
