@@ -20,7 +20,7 @@ exports.run = {
          client.sendReact(m.chat, '🕒', m.key);
 
          // Fetch the download link from the API
-         let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/capcut?url=${args[0]}&apikey=beta-Ibrahim1209`);
+         let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/capcut?url=${args[0]}&apikey=${global.betabotz}`);
 
          // Handle unsuccessful API response
          if (!json.status) {

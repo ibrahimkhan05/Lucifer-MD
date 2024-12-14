@@ -8,7 +8,7 @@ exports.run = {
  
             client.sendReact(m.chat, '🕒', m.key);
  
-            let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/snackvideo?url=${args[0]}&apikey=beta-Ibrahim1209`);
+            let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/snackvideo?url=${args[0]}&apikey=${global.betabotz}`);
             
             if (!json.status) return client.reply(m.chat, global.status.fail, m)
           let teks = `乂  *S N A K  V I D E O  D O W N L O A D E R *\n\n`

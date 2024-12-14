@@ -17,7 +17,7 @@ exports.run = {
            	client.sendReact(m.chat, '🕒', m.key)
                let img = await client.downloadMediaMessage(q)
                let image = await Scraper.uploadImageV2(img)
-               const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/tools/remini-v2?url=${image.data.url}&apikey=beta-Ibrahim1209`)
+               const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/tools/remini-v2?url=${image.data.url}&apikey=${global.betabotz}`)
                if (!json.status) return m.reply(Func.jsonFormat(json))
                client.sendFile(m.chat, json.url, 'image.jpg', '', m)
             } else client.reply(m.chat, Func.texted('bold', `🚩 Only for photo.`), m)
@@ -29,7 +29,7 @@ exports.run = {
             client.sendReact(m.chat, '🕒', m.key)
             let img = await q.download()
             let image = await Scraper.uploadImageV2(img)
-            const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/tools/remini-v2?url=${image.data.url}&apikey=beta-Ibrahim1209`)
+            const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/tools/remini-v2?url=${image.data.url}&apikey=${global.betabotz}`)
             if (!json.status) return m.reply(Func.jsonFormat(json))
             client.sendFile(m.chat, json.url, 'image.jpg', '', m)
          }

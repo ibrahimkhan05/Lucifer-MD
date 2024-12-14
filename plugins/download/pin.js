@@ -20,7 +20,7 @@ exports.run = {
          client.sendReact(m.chat, '🕒', m.key);
          
          // Fetch media details from the provided Pinterest URL
-         const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/pinterest?url=${encodeURIComponent(args[0])}&apikey=beta-Ibrahim1209`);
+         const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/pinterest?url=${encodeURIComponent(args[0])}&apikey=${global.betabotz}`);
          
          // Check if the response is valid and contains the expected data
          if (!json || !json.result || !json.result.success) {

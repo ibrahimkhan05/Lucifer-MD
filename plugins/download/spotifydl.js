@@ -19,10 +19,10 @@ exports.run = {
 
             if (urlPattern.test(input)) {
                 // If it's a URL, download directly
-                downloadResponse = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/spotify?url=${encodeURIComponent(input)}&apikey=beta-Ibrahim1209`);
+                downloadResponse = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/spotify?url=${encodeURIComponent(input)}&apikey=${global.betabotz}`);
             } else {
                 // If it's not a URL, search for the song
-                const searchResponse = await axios.get(`https://api.betabotz.eu.org/api/search/spotify?query=${encodeURIComponent(input)}&apikey=beta-Ibrahim1209`);
+                const searchResponse = await axios.get(`https://api.betabotz.eu.org/api/search/spotify?query=${encodeURIComponent(input)}&apikey=${global.betabotz}`);
                 
                 if (!searchResponse.data.status) return client.reply(m.chat, global.status.fail, m);
                 

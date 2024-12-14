@@ -11,7 +11,7 @@ exports.run = {
             client.sendReact(m.chat, '🕒', m.key);
  
             let old = new Date();
-            const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/tiktok?url=${encodeURIComponent(args[0])}&apikey=beta-Ibrahim1209`);
+            const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/tiktok?url=${encodeURIComponent(args[0])}&apikey=${global.betabotz}`);
             if (!json.status) return m.reply(Func.jsonFormat(json));
  
             // If the command is 'tiktok' or 'tt' (download video)

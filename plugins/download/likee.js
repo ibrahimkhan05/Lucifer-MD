@@ -8,7 +8,7 @@ exports.run = {
  
             client.sendReact(m.chat, '🕒', m.key);
  
-            let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/likee?url=${args[0]}&apikey=beta-Ibrahim1209`);
+            let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/likee?url=${args[0]}&apikey=${global.betabotz}`);
             
             if (!json.status) return client.reply(m.chat, global.status.fail, m)
           

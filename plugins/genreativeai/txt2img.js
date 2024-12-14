@@ -13,7 +13,7 @@ exports.run = {
        try {
         if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'cat,fish'), m)
         client.sendReact(m.chat, '🕒', m.key)
-        const aii = await Func.fetchBuffer(`https://api.betabotz.eu.org/api/maker/text2img?text=${text}&apikey=beta-Ibrahim1209`)
+        const aii = await Func.fetchBuffer(`https://api.betabotz.eu.org/api/maker/text2img?text=${text}&apikey=${global.betabotz}`)
        client.sendFile(m.chat, aii, '', `◦  *Prompt* : ${text}`, m)
         } catch (e) {
       return client.reply(m.chat, global.status.error, m)

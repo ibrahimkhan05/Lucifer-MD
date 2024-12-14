@@ -10,7 +10,7 @@ exports.run = {
             client.sendReact(m.chat, '🕒', m.key);
 
             // Fetch data from the API
-            const response = await axios.get(`https://api.betabotz.eu.org/api/download/terabox?url=${encodeURIComponent(text)}&apikey=beta-Ibrahim1209`);
+            const response = await axios.get(`https://api.betabotz.eu.org/api/download/terabox?url=${encodeURIComponent(text)}&apikey=${global.betabotz}`);
             const jsonData = response.data;
 
             // Check if the response contains valid files

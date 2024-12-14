@@ -16,7 +16,7 @@ exports.run = {
          await client.reply(m.chat, '⏳ Downloading your file... Please wait a moment.', m);
 
          // Use the new API to fetch the download link
-         const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/gdrive?url=${text}&apikey=beta-Ibrahim1209`);
+         const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/gdrive?url=${text}&apikey=${global.betabotz}`);
 
          if (!json.status) {
             return client.reply(m.chat, 'Failed to retrieve the download link from Google Drive.', m);

@@ -28,7 +28,7 @@ exports.run = {
          
          client.sendReact(m.chat, '🕒', m.key);
          
-         const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/mediafire?url=${encodeURIComponent(args[0])}&apikey=beta-Ibrahim1209`);
+         const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/mediafire?url=${encodeURIComponent(args[0])}&apikey=${global.betabotz}`);
          if (!json.status) {
             return client.reply(m.chat, Func.jsonFormat(json), m);
          }

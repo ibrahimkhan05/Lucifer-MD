@@ -16,7 +16,7 @@ exports.run = {
             client.sendReact(m.chat, '🕒', m.key);
 
             // Make a GET request using Axios
-            const response = await axios.get(`https://api.betabotz.eu.org/api/search/yts?query=${text}&apikey=beta-Ibrahim1209`);
+            const response = await axios.get(`https://api.betabotz.eu.org/api/search/yts?query=${text}&apikey=${global.betabotz}`);
 
             // Check if the request was successful
             if (!response.data.status) {

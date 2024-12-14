@@ -22,7 +22,7 @@ exports.run = {
          client.sendReact(m.chat, '🕒', m.key);
          
          // Fetch the video download link using the provided API
-         const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/fbdown?url=${encodeURIComponent(args[0])}&apikey=beta-Ibrahim1209`);
+         const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/fbdown?url=${encodeURIComponent(args[0])}&apikey=${global.betabotz}`);
          if (json.status !== true || !json.result || json.result.length === 0) return client.reply(m.chat, global.status.fail, m);
 
          // Sort the results by resolution in descending order (from highest to lowest resolution)

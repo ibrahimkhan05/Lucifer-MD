@@ -55,7 +55,7 @@ exports.run = {
             client.sendReact(m.chat, '🕒', m.key);
 
             // Call the download API for the selected video
-            let videoJson = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/xnxxdl?url=${selectedVideo.link}&apikey=beta-Ibrahim1209`);
+            let videoJson = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/xnxxdl?url=${selectedVideo.link}&apikey=${global.betabotz}`);
             if (!videoJson.status) return client.reply(m.chat, Func.jsonFormat(videoJson), m);
 
             // Build the caption with video details

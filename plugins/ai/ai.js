@@ -15,7 +15,7 @@ exports.run = {
          if (command == 'ai') {
             if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'hi'), m)
             client.sendReact(m.chat, '🕒', m.key)
-            const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/search/openai-chat?text=${text}&apikey=beta-Ibrahim1209`)
+            const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/search/openai-chat?text=${text}&apikey=beta-${global.betabotz}`)
             if (!json.status) return client.reply(m.chat, Func.jsonFormat(json), m)
             client.reply(m.chat, json.message, m)
          } 
