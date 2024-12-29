@@ -1,3 +1,4 @@
+
 const { Function: Func, Scraper, Cooldown, Spam, InvCloud, Config: env } = new (require('@neoxr/wb'))
 const cron = require('node-cron')
 const cooldown = new Cooldown(env.cooldown)
@@ -11,8 +12,6 @@ const spam = new Spam({
 
 module.exports = async (client, ctx) => {
    var { store, m, body, prefix, plugins, commands, args, command, text, prefixes, core } = ctx
-   // const context = m.message[m.mtype] || m.message.viewOnceMessageV2.message[m.mtype]
-   // process.env['E_MSG'] = context.contextInfo ? Number(context.contextInfo.expiration) : 0
    try {
       // "InvCloud" reduces RAM usage and minimizes errors during rewrite (according to recommendations/suggestions from Baileys)
       require('./lib/system/schema')(m, env), InvCloud(store)
@@ -98,31 +97,10 @@ module.exports = async (client, ctx) => {
          users.afk = -1
          users.afkReason = ''
       }
-      cron.schedule('00 00 1 * *', () => { // Run at midnight on the first day of each month
-         setting.lastReset = new Date * 1;
-      
-         // Iterate through all users
-         global.db.users.forEach(user => {
-            // Reset the user's limit if they are not premium
-            if (user.limit < env.limit && !user.premium) {
-               // Check if the user used a referral code
-               if (user.referralUsed) {
-                  user.limit = env.limit + 5; // Add 5 if they used a referral code
-               } else {
-                  user.limit = env.limit; // Otherwise just set to the default limit
-               }
-      
-               // Multiply the user's limit by 10 for each referral
-               if (user.referrals && Array.isArray(user.referrals)) {
-                  user.limit += user.referrals.length * 10; // Add 10 for each referral
-               }
-            }
-      
-            // Reset daily statistics
-            Object.entries(global.db.statistic).forEach(([_, prop]) => {
-               prop.today = 0;
-            });
-         });
+      cron.schedule('00 00 * * *', () => {
+         setting.lastReset = new Date * 1
+         global.db.users.filter(v => v.limit < env.limit && !v.premium).map(v => v.limit = env.limit)
+         Object.entries(global.db.statistic).map(([_, prop]) => prop.today = 0)
       }, {
          scheduled: true,
          timezone: process.env.TZ
@@ -225,7 +203,7 @@ module.exports = async (client, ctx) => {
          const is_events = Object.fromEntries(Object.entries(plugins).filter(([name, prop]) => !prop.run.usage))
          for (let name in is_events) {
             let event = is_events[name].run
-            if (m.fromMe || m.chat.endsWith('broadcast') || /pollUpdate/.test(m.mtype)) continue
+            if ((m.fromMe && m.isBot) || m.chat.endsWith('broadcast') || /pollUpdate/.test(m.mtype)) continue
             if (!m.isGroup && env.blocks.some(no => m.sender.startsWith(no))) return client.updateBlockStatus(m.sender, 'block')
             if (setting.self && !['menfess_ev', 'anti_link', 'anti_tagall', 'anti_virtex', 'filter'].includes(event.pluginName) && !isOwner && !m.fromMe) continue
             if (!['anti_link', 'anti_tagall', 'anti_virtex', 'filter'].includes(name) && users && (users.banned || new Date - users.ban_temporary < env.timeout)) continue
