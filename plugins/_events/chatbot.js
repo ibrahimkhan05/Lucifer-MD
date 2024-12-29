@@ -85,7 +85,7 @@ exports.run = {
                     const response = data?.gpt || 'No response from GPT-4 API';
 
                     // Reply to user and store assistant response
-                    client.reply(m.chat, response, m);
+                    client.sendFromAI(m.chat, response, m);
                     userConversations[userId].conversations.push({
                         role: "assistant",
                         content: response,
