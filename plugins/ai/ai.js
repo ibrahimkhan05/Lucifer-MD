@@ -1,7 +1,7 @@
 const { RsnChat } = require("rsnchat");
 const rsnchat = new RsnChat(process.env.RSGPT);
 exports.run = {
-   usage: ['ai', 'ai2'],
+   usage: ['ai'],
    use: 'prompt',
    category: 'ai',
    async: async (m, {
