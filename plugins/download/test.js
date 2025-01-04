@@ -1,7 +1,7 @@
 const { BingImageClient } = require('bing-images')
 
 exports.run = {
-    usage: ['test'],
+    usage: ['bb'],
     use: 'query',
     category: 'downloader',
     async: async (m, { client, text, isPrefix, command, Func }) => {
