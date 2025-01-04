@@ -129,6 +129,7 @@ exports.run = {
                   content: 'Hi!'
                })
                break
+
          }
       } catch (e) {
          client.reply(m.chat, Func.jsonFormat(e), m)

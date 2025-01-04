@@ -1,10 +1,9 @@
-
 "use strict";
 // process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
 require('events').EventEmitter.defaultMaxListeners = 500
 const { Baileys, MongoDB, PostgreSQL, Function: Func, Config: env } = new (require('@neoxr/wb'))
-const spinnies = new (require('spinnies'))(),
-   fs = require('fs'),
+require('./lib/system/functions'), require('./lib/system/scraper')
+const fs = require('fs'),
    path = require('path'),
    colors = require('@colors/colors'),
    { platform } = require('os')
@@ -16,7 +15,8 @@ const machine = (process.env.DATABASE_URL && /mongo/.test(process.env.DATABASE_U
 const client = new Baileys({
    type: '--neoxr-v1',
    plugsdir: 'plugins',
-   sf: 'session',
+   // To see documentation : https://github.com/neoxr/session
+   session: 'session',
    online: true,
    bypass_disappearing: true,
    // To see the latest version : https://web.whatsapp.com/check-update?version=1&platform=web
@@ -89,8 +89,6 @@ client.once('ready', async () => {
 client.register('message', ctx => {
    require('./handler')(client.sock, ctx)
    require('./lib/system/baileys')(client.sock)
-   require('./lib/system/functions')
-   require('./lib/system/scraper')
 })
 
 /* print deleted message object */
