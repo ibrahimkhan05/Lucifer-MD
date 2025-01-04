@@ -18,7 +18,7 @@ exports.run = {
       Scraper
    }) => {
       try {
-         yt.play('wide awake').then(console.log)
+         yt.play('cherry cherry lady').then(console.log)
 
 
       } catch (e) {
