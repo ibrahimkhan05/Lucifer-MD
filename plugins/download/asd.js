@@ -1,4 +1,4 @@
-const { ytsearch } = require('ruhend-scraper')
+const { ytmp3 } = require('ruhend-scraper')
 
 exports.run = {
    usage: ['hello'],
@@ -15,31 +15,8 @@ exports.run = {
       Scraper
    }) => {
       try {
-         let { video, channel } = await ytsearch("Cheery cherey lady")
-      let teks = [...video, ...
-         channel
-      ].map(v => {
-         switch (v.type) {
-            case 'video':
-               return `
-       *${v.title}* 
-       *${v.url}*
-       Duration: ${v.durationH}
-       Uploaded ${v.publishedTime}
-       ${v.view} views`.trim()
-            case 'channel':
-               return `
-      ╭──────━• *CHANNEL*
-      │🎀 *${v.channelName}* 
-      │🔗 *${v.url}*
-      │📛 _${v.subscriberH} Subscriber_
-      │🎥 ${v.videoCount} video
-      ┗──────━•`.trim()
-         }
-      }).filter(v => v).join(
-         '\n\n─────────────━─────────────\n\n'
-      )
-      console.log(teks)
+         const data = await ytmp3("http://youtu.be/e1X7jr96C6E")
+         console.log(data)
 
 
       } catch (e) {
