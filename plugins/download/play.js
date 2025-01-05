@@ -1,5 +1,5 @@
-const axios = require('axios'); // Import axios for making HTTP requests
-const { ytsearch } = require('ruhend-scraper'); // Import ytsearch from 'ruhend-scraper'
+const { ytsearch } = require('ruhend-scraper');
+const axios = require('axios'); // Make sure to import axios for API requests
 
 exports.run = {
     usage: ['play'],
@@ -14,21 +14,23 @@ exports.run = {
             client.sendReact(m.chat, '🕒', m.key);
 
             // Search for the song using the 'ruhend-scraper' API
-            const searchResults = await ytsearch(text);
-            if (!searchResults || searchResults.length === 0) {
+            const result = await ytsearch(text);
+
+            // Ensure we have search results
+            if (!result || !result.video || result.video.length === 0) {
                 return client.reply(m.chat, "No results found for your search.", m);
             }
 
-            // Get the first search result
-            const firstResult = searchResults[0];
-            const youtubeUrl = firstResult.url; // Get the YouTube URL from the result
+            // Get the first video result
+            const firstResult = result.video[0];
 
             // Format the response with the desired structure
-            let caption = `${javi} *${firstResult.title}*\n`;
-            caption += `${java} *${firstResult.url}*\n`;
-            caption += `${java} Duration: ${firstResult.duration}\n`;
-            caption += `${java} Uploaded ${firstResult.publishedTime}\n`;
-            caption += `${java} ${firstResult.views} views`.trim();
+            let caption = `乂  *Y T - P L A Y*\n\n`;
+            caption += `◦  *Title* : ${firstResult.title}\n`;
+            caption += `◦  *URL* : ${firstResult.url}\n`;
+            caption += `◦  *Duration* : ${firstResult.duration}\n`;
+            caption += `◦  *Uploaded* : ${firstResult.publishedTime}\n`;
+            caption += `◦  *Views* : ${firstResult.view}\n`;
 
             // Send the formatted message with video details
             client.sendMessageModify(m.chat, caption, m, {
@@ -36,7 +38,7 @@ exports.run = {
                 thumbnail: firstResult.thumbnail
             }).then(async () => {
                 // Use BetaBotz API to get the audio file for download
-                const response = await axios.get(`https://api.betabotz.eu.org/api/download/yt?url=${youtubeUrl}&apikey=hehenowcopy`);
+                const response = await axios.get(`https://api.betabotz.eu.org/api/download/yt?url=${firstResult.url}&apikey=hehenowcopy`);
                 if (!response.data.status) {
                     return client.reply(m.chat, "Failed to fetch the audio. Please try again later.", m);
                 }
