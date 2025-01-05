@@ -27,7 +27,7 @@ exports.run = {
             // Format the caption with audio details
             let caption = `乂  *Y T - A U D I O*\n\n`;
             caption += `◦  *Title* : ${audioData.title}\n`;
-            caption += `◦  *Duration* : ${videoData.duration} seconds\n\n`;
+            caption += `◦  *Duration* : ${audioData.duration} seconds\n`;
             caption += global.footer;
 
             // Send the thumbnail first
@@ -60,7 +60,9 @@ exports.run = {
             // Format the caption with video details
             let caption = `乂  *Y T - V I D E O*\n\n`;
             caption += `◦  *Title* : ${videoData.title}\n`;
-            caption += `◦  *Duration* : ${videoData.duration} seconds\n\n`;
+            caption += `◦  *Duration* : ${videoData.duration} seconds\n`;
+            caption += `◦  *Uploaded* : ${videoData.uploaded}\n`;
+            caption += `◦  *Views* : ${videoData.views}\n\n`;
             caption += global.footer;
 
             // Download video and check the size
