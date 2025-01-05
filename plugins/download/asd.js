@@ -1,4 +1,5 @@
-import { youtube } from "@xct007/frieren-scraper";
+const { youtube } = require("@xct007/frieren-scraper");
+
 exports.run = {
    usage: ['hello'],
    use: 'query',
