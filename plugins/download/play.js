@@ -21,30 +21,29 @@ exports.run = {
 
             // Get the first search result
             const firstResult = searchResults[0];
-            const youtubeUrl = firstResult.URL; // Get the YouTube URL from the result
+            const youtubeUrl = firstResult.url; // Get the YouTube URL from the result
 
-            // Make a request to the BetaBotz API to fetch the audio data
-            const response = await axios.get(`https://api.betabotz.eu.org/api/download/yt?url=${youtubeUrl}&apikey=hehenowcopy`);
-            if (!response.data.status) {
-                return client.reply(m.chat, "Failed to fetch the audio. Please try again later.", m);
-            }
+            // Format the response with the desired structure
+            let caption = `${javi} *${firstResult.title}*\n`;
+            caption += `${java} *${firstResult.url}*\n`;
+            caption += `${java} Duration: ${firstResult.duration}\n`;
+            caption += `${java} Uploaded ${firstResult.publishedTime}\n`;
+            caption += `${java} ${firstResult.views} views`.trim();
 
-            // Get the result from the API response
-            const data = response.data.result;
-
-            // Format the response message with audio details
-            let caption = `乂  *Y T - P L A Y*\n\n`;
-            caption += `	◦  *Title* : ${data.title}\n`;
-            caption += `	◦  *Author* : ${data.creator}\n`;
-            caption += `	◦  *Duration* : ${Func.formatDuration(data.duration)}\n`;
-            caption += `	◦  *Description* : ${data.description}\n\n`;
-            caption += global.footer;
-
-            // Send the search result message with the thumbnail
+            // Send the formatted message with video details
             client.sendMessageModify(m.chat, caption, m, {
                 largeThumb: true,
-                thumbnail: data.thumb
+                thumbnail: firstResult.thumbnail
             }).then(async () => {
+                // Use BetaBotz API to get the audio file for download
+                const response = await axios.get(`https://api.betabotz.eu.org/api/download/yt?url=${youtubeUrl}&apikey=hehenowcopy`);
+                if (!response.data.status) {
+                    return client.reply(m.chat, "Failed to fetch the audio. Please try again later.", m);
+                }
+
+                // Get the result from the API response
+                const data = response.data.result;
+
                 // Send the audio file to the user
                 client.sendFile(m.chat, data.mp3, `${data.title}.mp3`, '', m, {
                     document: true,
