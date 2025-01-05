@@ -3,13 +3,7 @@ exports.run = {
    hidden: ['igstory'],
    use: 'link',
    category: 'downloader',
-   async: async (m, {
-      client,
-      args,
-      isPrefix,
-      command,
-      Func
-   }) => {
+   async: async (m, { client, args, isPrefix, command, Func }) => {
       try {
          if (!args || !args[0]) {
             return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.instagram.com/p/CK0tLXyAzEI'), m);
@@ -19,44 +13,34 @@ exports.run = {
          }
 
          client.sendReact(m.chat, '🕒', m.key);
-         let old = new Date();
-
-         let URL = await ndown(args[0]);
-         if (!URL.status) {
-            return client.reply(m.chat, Func.jsonFormat(URL), m);
+         const startTime = Date.now();
+         const apiUrl = `https://api.betabotz.eu.org/api/download/igdowloader?url=${args[0]}&apikey=${global.betabotz}`;
+         
+         const response = await Func.fetchJson(apiUrl);
+         if (!response.status || !response.message.length) {
+            return client.reply(m.chat, 'Unable to fetch the content. Please try again.', m);
          }
 
-         // Process each file only once
          const processedUrls = new Set();
-         
-         for (let item of URL.data) {
-            // Check if the URL has already been processed
-            if (processedUrls.has(item.url)) {
-               continue; // Skip if already processed
-            }
+         for (const item of response.message) {
+            if (processedUrls.has(item._url)) continue;
 
-            processedUrls.add(item.url);
+            processedUrls.add(item._url);
+            const file = await Func.getFile(item._url);
+            const filename = `file_${Date.now()}.${file.extension}`;
+            const message = `🍟 *Fetching* : ${Date.now() - startTime} ms`;
 
-            // Get file details
-            const file = await Func.getFile(item.url);
-            const fileExtension = file.extension; // Get the file extension
-            const filename = `file.${fileExtension}`; // Construct the filename with the correct extension
-
-            // Determine if the file is an image or a video
-            if (['jpg', 'jpeg', 'png', 'webp'].includes(fileExtension)) {
-               // Send image
-               await client.sendFile(m.chat, item.url, filename, `🍟 *Fetching* : ${((new Date() - old) * 1)} ms`, m);
+            if (['jpg', 'jpeg', 'png', 'webp'].includes(file.extension)) {
+               await client.sendFile(m.chat, item._url, filename, message, m);
             } else {
-               // Send video
-               await client.sendFile(m.chat, item.url, 'video.mp4', `🍟 *Fetching* : ${((new Date() - old) * 1)} ms`, m);
+               await client.sendFile(m.chat, item._url, 'video.mp4', message, m);
             }
 
-            // Ensure delay between sends
             await Func.delay(1500);
          }
-      } catch (e) {
-         console.log(e);
-         return client.reply(m.chat, Func.jsonFormat(e), m);
+      } catch (error) {
+         console.error('Error:', error);
+         client.reply(m.chat, 'An error occurred while processing your request.', m);
       }
    },
    error: false,
@@ -64,5 +48,4 @@ exports.run = {
    cache: true,
    verified: true,
    location: __filename
-}
-
+};
