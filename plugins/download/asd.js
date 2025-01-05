@@ -22,7 +22,7 @@ exports.run = {
          switch (v.type) {
             case 'video':
                return `
-      ${javi} *${v.title}* 
+      ${java} *${v.title}* 
       ${java} *${v.url}*
       ${java} Duration: ${v.durationH}
       ${java} Uploaded ${v.publishedTime}
