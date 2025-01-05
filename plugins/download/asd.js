@@ -22,11 +22,11 @@ exports.run = {
          switch (v.type) {
             case 'video':
                return `
-      ${java} *${v.title}* 
-      ${java} *${v.url}*
-      ${java} Duration: ${v.durationH}
-      ${java} Uploaded ${v.publishedTime}
-      ${java} ${v.view} views`.trim()
+       *${v.title}* 
+       *${v.url}*
+       Duration: ${v.durationH}
+       Uploaded ${v.publishedTime}
+       ${v.view} views`.trim()
             case 'channel':
                return `
       ╭──────━• *CHANNEL*
