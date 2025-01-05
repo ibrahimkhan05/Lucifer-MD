@@ -39,8 +39,7 @@ exports.run = {
          // Format the caption with video details
          let caption = `乂  *Y T - V I D E O*\n\n`;
          caption += `◦  *Title* : ${videoData.title}\n`;
-         caption += `◦  *Duration* : ${videoData.duration} seconds\n`;
-         caption += `◦  *Description* : ${videoData.description.slice(0, 100)}...\n`; // Shortened description
+         caption += `◦  *Duration* : ${videoData.duration} seconds\n`; // Shortened description
          caption += `◦  *Uploaded* : ${firstResult.publishedTime}\n`;
          caption += `◦  *Views* : ${firstResult.view}\n\n`;
 
