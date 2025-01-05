@@ -1,58 +1,69 @@
+const { ytsearch } = require('ruhend-scraper');
+const axios = require('axios'); // Ensure axios is imported for making API requests
 
-const { Youtube } = require('@neoxr/youtube-scraper')
-const yt = new Youtube({
-   fileAsUrl: false
-})
 exports.run = {
    usage: ['video'],
    hidden: ['playvid', 'playvideo'],
    use: 'query',
    category: 'feature',
-   async: async (m, {
-      client,
-      text,
-      isPrefix,
-      command,
-      env,
-      users,
-      Scraper,
-      Func
-   }) => {
+   async: async (m, { client, text, isPrefix, command, users, env, Scraper, Func }) => {
       try {
-         if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'lathi'), m)
-         client.sendReact(m.chat, '🕒', m.key)
-         var json = await yt.play(text, 'video', '720p')
-         if (!json.status) {
-            var json = await yt.play(text, 'video', '480p')
-            if (!json.status) {
-               var json = await Api.neoxr('/video', {
-                  q: text
-               })
-            }
+         // If no query is provided, return an example usage
+         if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'song name'), m);
+
+         // Send a reaction to indicate the process is running
+         client.sendReact(m.chat, '🕒', m.key);
+
+         // Search for the video using 'ruhend-scraper' API
+         const result = await ytsearch(text);
+
+         // If no results are found, return a message indicating the same
+         if (!result || !result.video || result.video.length === 0) {
+            return client.reply(m.chat, "No results found for your search.", m);
          }
-         if (!json.status) return client.reply(m.chat, Func.jsonFormat(json), m)
-         let caption = `乂  *Y T - V I D E O*\n\n`
-         caption += `	◦  *Title* : ${json.title}\n`
-         caption += `	◦  *Size* : ${json.data.size}\n`
-         caption += `	◦  *Duration* : ${json.duration}\n`
-         caption += `	◦  *Bitrate* : ${json.data.quality}\n\n`
-         caption += global.footer   
-         const chSize = Func.sizeLimit(json.data.size, users.premium ? env.max_upload : env.max_upload_free)
-         const isOver = users.premium ? `💀 File size (${json.data.size}) exceeds the maximum limit.` : `⚠️ File size (${json.data.size}), you can only download files with a maximum size of ${env.max_upload_free} MB and for premium users a maximum of ${env.max_upload} MB.`
-         if (chSize.oversize) return client.reply(m.chat, isOver, m)
-         let isSize = (json.data.size).replace(/MB/g, '').trim()
-         if (isSize > 99) return client.sendFile(m.chat, json.data.url, json.data.filename, caption, m, {
-            document: true
-         }, {
-            jpegThumbnail: await Func.createThumb(json.thumbnail)
-         })
-         client.sendFile(m.chat, json.data.url, json.data.filename, caption, m)
+
+         // Get the first video from the search result
+         const firstResult = result.video[0];
+
+         // Use the BetaBotz API to fetch the MP4 download link
+         const response = await axios.get(`https://api.betabotz.eu.org/api/download/ytmp4?url=${firstResult.url}&apikey=hehenowcopy`);
+
+         // If the API call fails, return an error message
+         if (!response.data.status) {
+            return client.reply(m.chat, "Failed to fetch the video. Please try again later.", m);
+         }
+
+         // Extract video details from the response
+         const videoData = response.data.result;
+
+         // Format the caption with video details
+         let caption = `乂  *Y T - V I D E O*\n\n`;
+         caption += `◦  *Title* : ${videoData.title}\n`;
+         caption += `◦  *Duration* : ${videoData.duration} seconds\n`;
+         caption += `◦  *Description* : ${videoData.description.slice(0, 100)}...\n`; // Shortened description
+         caption += `◦  *Uploaded* : ${firstResult.publishedTime}\n`;
+         caption += `◦  *Views* : ${firstResult.view}\n\n`;
+
+         // If the video file size exceeds 99 MB, send it as a document
+         let isSize = (videoData.mp4Size).replace(/MB/g, '').trim();
+         if (parseFloat(isSize) > 99) {
+            // Send the video as a document
+            client.sendFile(m.chat, videoData.mp4, videoData.title + '.mp4', caption, m, {
+               document: true,
+               jpegThumbnail: videoData.thumb
+            });
+         } else {
+            // If the file size is less than 99 MB, send the video directly
+            client.sendFile(m.chat, videoData.mp4, videoData.title + '.mp4', caption, m);
+         }
+
       } catch (e) {
-         client.reply(m.chat, FuncjsonFormat(e), m)
+         console.error(e); // Log the error for debugging
+         client.reply(m.chat, Func.jsonFormat(e), m);
       }
    },
    error: false,
    restrict: true,
    cache: true,
    location: __filename
-}
+};
