@@ -44,16 +44,21 @@ exports.run = {
          caption += `◦  *Uploaded* : ${firstResult.publishedTime}\n`;
          caption += `◦  *Views* : ${firstResult.view}\n\n`;
 
-         // If the video file size exceeds 99 MB, send it as a document
-         let isSize = (videoData.mp4Size).replace(/MB/g, '').trim();
-         if (parseFloat(isSize) > 99) {
-            // Send the video as a document
-            client.sendFile(m.chat, videoData.mp4, videoData.title + '.mp4', caption, m, {
-               document: true,
-               jpegThumbnail: videoData.thumb
-            });
+         // Check if the mp4Size is available and valid
+         if (videoData.mp4Size) {
+            let isSize = videoData.mp4Size.replace(/MB/g, '').trim();
+            if (parseFloat(isSize) > 99) {
+               // Send the video as a document if file size exceeds 99 MB
+               client.sendFile(m.chat, videoData.mp4, videoData.title + '.mp4', caption, m, {
+                  document: true,
+                  jpegThumbnail: videoData.thumb
+               });
+            } else {
+               // Send the video directly if file size is less than 99 MB
+               client.sendFile(m.chat, videoData.mp4, videoData.title + '.mp4', caption, m);
+            }
          } else {
-            // If the file size is less than 99 MB, send the video directly
+            // If mp4Size is not available, fallback to direct video download
             client.sendFile(m.chat, videoData.mp4, videoData.title + '.mp4', caption, m);
          }
 
