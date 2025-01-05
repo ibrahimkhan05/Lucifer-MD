@@ -28,6 +28,7 @@ exports.run = {
             let caption = `乂  *Y T - A U D I O*\n\n`;
             caption += `◦  *Title* : ${audioData.title}\n`;
             caption += `◦  *Duration* : ${audioData.duration} seconds\n`;
+           
             caption += global.footer;
 
             // Send the thumbnail first
@@ -36,7 +37,7 @@ exports.run = {
                thumbnail: audioData.thumb
             }).then(async () => {
                 // Now send the audio file
-                client.sendFile(m.chat, audioData.mp3, `${audioData.title}.mp3`, m, {
+                client.sendFile(m.chat, audioData.mp3, `${audioData.title}.mp3`, '', m, {
                    document: true,
                    APIC: await axios.get(audioData.thumb) // Fetch image thumbnail
                 });
