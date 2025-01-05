@@ -15,7 +15,7 @@ exports.run = {
 
             // Search for the song using the 'ruhend-scraper' API
             const searchResults = await ytsearch(text);
-            if (searchResults.length === 0) {
+            if (!searchResults || searchResults.length === 0) {
                 return client.reply(m.chat, "No results found for your search.", m);
             }
 
@@ -24,7 +24,7 @@ exports.run = {
             const youtubeUrl = firstResult.url; // Get the YouTube URL from the result
 
             // Make a request to the BetaBotz API to fetch the audio data
-            const response = await axios.get(`https://api.betabotz.eu.org/api/download/yt?url=${youtubeUrl}&apikey=${global.betabotz}`);
+            const response = await axios.get(`https://api.betabotz.eu.org/api/download/yt?url=${youtubeUrl}&apikey=hehenowcopy`);
             if (!response.data.status) {
                 return client.reply(m.chat, "Failed to fetch the audio. Please try again later.", m);
             }
