@@ -21,7 +21,7 @@ exports.run = {
 
             // Get the first search result
             const firstResult = searchResults[0];
-            const youtubeUrl = firstResult.url; // Get the YouTube URL from the result
+            const youtubeUrl = firstResult.URL; // Get the YouTube URL from the result
 
             // Make a request to the BetaBotz API to fetch the audio data
             const response = await axios.get(`https://api.betabotz.eu.org/api/download/yt?url=${youtubeUrl}&apikey=hehenowcopy`);
