@@ -1,65 +1,94 @@
-const { ytsearch } = require('ruhend-scraper');
-const axios = require('axios'); // Make sure to import axios for API requests
+const axios = require('axios');
+const fs = require('fs'); // Used to check file size locally after download
 
 exports.run = {
-    usage: ['play'],
-    use: 'query',
-    category: 'downloader',
-    async: async (m, { client, text, isPrefix, command, users, env, Func, Scraper }) => {
-        try {
-            // Check if a query is provided
-            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'song name'), m);
-
-            // Send a reaction to indicate processing
+   usage: ['ytmp3', 'ytmp4'],
+   hidden: ['yta', 'ytv'],
+   use: 'link',
+   category: 'downloader',
+   async: async (m, { client, args, isPrefix, command, users, env }) => {
+      try {
+         if (/yt?(a|mp3)/i.test(command)) {
+            if (!args || !args[0]) return client.reply(m.chat, 'Example: ' + isPrefix + command + ' https://youtu.be/zaRFmdtLhQ8', m);
+            if (!/^(?:https?:\/\/)?(?:www\.|m\.|music\.)?youtu\.?be(?:\.com)?\/?.*(?:watch|embed)?(?:.*v=|v\/|\/)([\w\-_]+)\&?/.test(args[0])) return client.reply(m.chat, global.status.invalid, m);
             client.sendReact(m.chat, '🕒', m.key);
 
-            // Search for the song using the 'ruhend-scraper' API
-            const result = await ytsearch(text);
+            // Use BetaBotz API to get the audio download link
+            const response = await axios.get(`https://api.betabotz.eu.org/api/download/ytmp3?url=${args[0]}&apikey=hehenowcopy`);
 
-            // Ensure we have search results
-            if (!result || !result.video || result.video.length === 0) {
-                return client.reply(m.chat, "No results found for your search.", m);
+            // If API response fails
+            if (!response.data.status) {
+               return client.reply(m.chat, "Failed to fetch the audio. Please try again later.", m);
             }
 
-            // Get the first video result
-            const firstResult = result.video[0];
+            // Extract audio data from API response
+            const audioData = response.data.result;
 
-            // Format the response with the desired structure
-            let caption = `乂  *Y T - P L A Y*\n\n`;
-            caption += `◦  *Title* : ${firstResult.title}\n`;
-            caption += `◦  *URL* : ${firstResult.url}\n`;
-            caption += `◦  *Duration* : ${firstResult.duration}\n`;
-            caption += `◦  *Uploaded* : ${firstResult.publishedTime}\n`;
-            caption += `◦  *Views* : ${firstResult.view}\n`;
+            // Format the caption with audio details
+            let caption = `乂  *Y T - A U D I O*\n\n`;
+            caption += `◦  *Title* : ${audioData.title}\n`;
+            caption += `◦  *Duration* : ${audioData.duration} seconds\n`;
+            caption += `◦  *Description* : ${audioData.description}\n\n`;
+            caption += global.footer;
 
-            // Send the formatted message with video details
+            // Send the thumbnail first
             client.sendMessageModify(m.chat, caption, m, {
-                largeThumb: true,
-                thumbnail: firstResult.thumbnail
+               largeThumb: true,
+               thumbnail: audioData.thumb
             }).then(async () => {
-                // Use BetaBotz API to get the audio file for download
-                const response = await axios.get(`https://api.betabotz.eu.org/api/download/yt?url=${firstResult.url}&apikey=${global.betabotz}`);
-                if (!response.data.status) {
-                    return client.reply(m.chat, "Failed to fetch the audio. Please try again later.", m);
-                }
-
-                // Get the result from the API response
-                const data = response.data.result;
-
-                // Send the audio file to the user
-                client.sendFile(m.chat, data.mp3, `${data.title}.mp3`, '', m, {
-                    document: true,
-                    APIC: await Func.fetchBuffer(data.thumb)
+                // Now send the audio file
+                client.sendFile(m.chat, audioData.mp3, `${audioData.title}.mp3`, caption, m, {
+                   document: true,
+                   APIC: await axios.get(audioData.thumb) // Fetch image thumbnail
                 });
             });
+         } else if (/yt?(v|mp4)/i.test(command)) {
+            if (!args || !args[0]) return client.reply(m.chat, 'Example: ' + isPrefix + command + ' https://youtu.be/zaRFmdtLhQ8', m);
+            if (!/^(?:https?:\/\/)?(?:www\.|m\.|music\.)?youtu\.?be(?:\.com)?\/?.*(?:watch|embed)?(?:.*v=|v\/|\/)([\w\-_]+)\&?/.test(args[0])) return client.reply(m.chat, global.status.invalid, m);
+            client.sendReact(m.chat, '🕒', m.key);
 
-        } catch (e) {
-            console.error(e); // Log the error for debugging
-            client.reply(m.chat, Func.jsonFormat(e), m);
-        }
-    },
-    error: false,
-    restrict: true,
-    cache: true,
-    location: __filename
+            // Use BetaBotz API to get the video download link
+            const response = await axios.get(`https://api.betabotz.eu.org/api/download/ytmp4?url=${args[0]}&apikey=hehenowcopy`);
+
+            // If API response fails
+            if (!response.data.status) {
+               return client.reply(m.chat, "Failed to fetch the video. Please try again later.", m);
+            }
+
+            // Extract video data from API response
+            const videoData = response.data.result;
+
+            // Format the caption with video details
+            let caption = `乂  *Y T - V I D E O*\n\n`;
+            caption += `◦  *Title* : ${videoData.title}\n`;
+            caption += `◦  *Duration* : ${videoData.duration} seconds\n`;
+            caption += `◦  *Uploaded* : ${videoData.uploaded}\n`;
+            caption += `◦  *Views* : ${videoData.views}\n\n`;
+            caption += global.footer;
+
+            // Download video and check the size
+            const videoFile = await axios.get(videoData.mp4, { responseType: 'stream' });
+
+            // Get the content-length from the headers to check the size
+            const videoSize = videoFile.headers['content-length'];
+            if (videoSize > 104857600) { // 100 MB in bytes
+                // Send as a document if size is larger than 100MB
+                client.sendFile(m.chat, videoData.mp4, `${videoData.title}.mp4`, caption, m, {
+                    document: true,
+                    jpegThumbnail: videoData.thumb
+                });
+            } else {
+                // Send video normally if it's under the size limit
+                client.sendFile(m.chat, videoData.mp4, `${videoData.title}.mp4`, caption, m);
+            }
+         }
+      } catch (e) {
+         console.error(e); // Log the error for debugging
+         client.reply(m.chat, "An error occurred. Please try again later.", m);
+      }
+   },
+   error: false,
+   limit: true,
+   cache: true,
+   location: __filename
 };
