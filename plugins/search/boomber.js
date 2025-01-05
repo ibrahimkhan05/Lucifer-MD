@@ -52,7 +52,7 @@ exports.run = {
                         "device": devices[deviceIndex % devices.length], // Rotate devices
                         "telco": "jazz",
                         "device_id": "web",
-                        "mobile": `+${mobileNumber}`,
+                        "mobile": `92${mobileNumber}`,
                         "other_telco": "jazz",
                         "phone_details": "web"
                     };
