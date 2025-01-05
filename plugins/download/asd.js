@@ -1,8 +1,4 @@
-
-const { Youtube } = require('@neoxr/youtube-scraper')
-const yt = new Youtube({
-   fileAsUrl: false
-})
+import { youtube } from "@xct007/frieren-scraper";
 exports.run = {
    usage: ['hello'],
    use: 'query',
@@ -18,7 +14,8 @@ exports.run = {
       Scraper
    }) => {
       try {
-         yt.play('cherry cherry lady').then(console.log)
+         const ArrObj = await youtube.search("rose gone mv");
+console.log(ArrObj);
 
 
       } catch (e) {

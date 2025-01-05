@@ -54,7 +54,7 @@
       "custom-google-play-scraper": "1.0.5",
       "pornhub.js": "1.12.1",
       "aptoide-scraper": "1.0.1",
-      "@xct007/frieren-scraper": "0.0.2",
+      "@xct007/frieren-scraper": "^0.0.2",
       "yt-search": "2.11.1"
    }
 }
