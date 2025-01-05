@@ -26,7 +26,7 @@ exports.run = {
          const firstResult = result.video[0];
 
          // Use the BetaBotz API to fetch the MP4 download link
-         const response = await axios.get(`https://api.betabotz.eu.org/api/download/ytmp4?url=${firstResult.url}&apikey=hehenowcopy`);
+         const response = await axios.get(`https://api.betabotz.eu.org/api/download/ytmp4?url=${firstResult.url}&apikey=${global.betabotz}`);
 
          // If the API call fails, return an error message
          if (!response.data.status) {

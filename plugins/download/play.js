@@ -38,7 +38,7 @@ exports.run = {
                 thumbnail: firstResult.thumbnail
             }).then(async () => {
                 // Use BetaBotz API to get the audio file for download
-                const response = await axios.get(`https://api.betabotz.eu.org/api/download/yt?url=${firstResult.url}&apikey=hehenowcopy`);
+                const response = await axios.get(`https://api.betabotz.eu.org/api/download/yt?url=${firstResult.url}&apikey=${global.betabotz}`);
                 if (!response.data.status) {
                     return client.reply(m.chat, "Failed to fetch the audio. Please try again later.", m);
                 }
