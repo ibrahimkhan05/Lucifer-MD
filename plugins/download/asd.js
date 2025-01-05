@@ -1,4 +1,4 @@
-const { ytmp3 } = require('ruhend-scraper')
+const { ytsearch } = require('ruhend-scraper')
 
 exports.run = {
    usage: ['hello'],
@@ -15,7 +15,7 @@ exports.run = {
       Scraper
    }) => {
       try {
-         const data = await ytmp3("http://youtu.be/e1X7jr96C6E")
+         const data = await ytsearch("Cherey chery lady")
          console.log(data)
 
 
