@@ -1,4 +1,5 @@
 const axios = require('axios');
+const fs = require('fs'); // Used to check file size locally after download
 
 exports.run = {
    usage: ['ytmp3', 'ytmp4'],
@@ -13,7 +14,7 @@ exports.run = {
             client.sendReact(m.chat, '🕒', m.key);
 
             // Use BetaBotz API to get the audio download link
-            const response = await axios.get(`https://api.betabotz.eu.org/api/download/ytmp3?url=${args[0]}&apikey=${global.betabotz}`);
+            const response = await axios.get(`https://api.betabotz.eu.org/api/download/ytmp3?url=${args[0]}&apikey=hehenowcopy`);
 
             // If API response fails
             if (!response.data.status) {
@@ -26,13 +27,20 @@ exports.run = {
             // Format the caption with audio details
             let caption = `乂  *Y T - A U D I O*\n\n`;
             caption += `◦  *Title* : ${audioData.title}\n`;
-            caption += `◦  *Duration* : ${audioData.duration} seconds\n\n`;
+            caption += `◦  *Duration* : ${audioData.duration} seconds\n`;
+           
             caption += global.footer;
 
-            // Send the audio file
-            client.sendFile(m.chat, audioData.mp3, `${audioData.title}.mp3`, caption, m, {
-               document: true,
-               APIC: await axios.get(audioData.thumb) // Fetch image thumbnail
+            // Send the thumbnail first
+            client.sendMessageModify(m.chat, caption, m, {
+               largeThumb: true,
+               thumbnail: audioData.thumb
+            }).then(async () => {
+                // Now send the audio file
+                client.sendFile(m.chat, audioData.mp3, `${audioData.title}.mp3`, '', m, {
+                   document: true,
+                   APIC: await axios.get(audioData.thumb) // Fetch image thumbnail
+                });
             });
          } else if (/yt?(v|mp4)/i.test(command)) {
             if (!args || !args[0]) return client.reply(m.chat, 'Example: ' + isPrefix + command + ' https://youtu.be/zaRFmdtLhQ8', m);
@@ -40,7 +48,7 @@ exports.run = {
             client.sendReact(m.chat, '🕒', m.key);
 
             // Use BetaBotz API to get the video download link
-            const response = await axios.get(`https://api.betabotz.eu.org/api/download/ytmp4?url=${args[0]}&apikey=${global.betabotz}`);
+            const response = await axios.get(`https://api.betabotz.eu.org/api/download/ytmp4?url=${args[0]}&apikey=hehenowcopy`);
 
             // If API response fails
             if (!response.data.status) {
@@ -58,17 +66,20 @@ exports.run = {
             caption += `◦  *Views* : ${videoData.views}\n\n`;
             caption += global.footer;
 
-            // Check if the file size is larger than 99 MB
-            let isSize = videoData.mp4Size.replace(/MB/g, '').trim();
-            if (parseFloat(isSize) > 99) {
-               // Send video as a document if file size exceeds 99 MB
-               client.sendFile(m.chat, videoData.mp4, `${videoData.title}.mp4`, caption, m, {
-                  document: true,
-                  jpegThumbnail: videoData.thumb
-               });
+            // Download video and check the size
+            const videoFile = await axios.get(videoData.mp4, { responseType: 'stream' });
+
+            // Get the content-length from the headers to check the size
+            const videoSize = videoFile.headers['content-length'];
+            if (videoSize > 104857600) { // 100 MB in bytes
+                // Send as a document if size is larger than 100MB
+                client.sendFile(m.chat, videoData.mp4, `${videoData.title}.mp4`, caption, m, {
+                    document: true,
+                    jpegThumbnail: videoData.thumb
+                });
             } else {
-               // Send video normally
-               client.sendFile(m.chat, videoData.mp4, `${videoData.title}.mp4`, caption, m);
+                // Send video normally if it's under the size limit
+                client.sendFile(m.chat, videoData.mp4, `${videoData.title}.mp4`, caption, m);
             }
          }
       } catch (e) {
