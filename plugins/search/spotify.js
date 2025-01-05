@@ -4,11 +4,11 @@ exports.run = {
     usage: ['spotify'],
     use: 'query',
     category: 'search',
-    async: async (m, { client, text, Func }) => {
+    async: async (m, { client, text, Func, isPrefix, command }) => {
         try {
             // Check if a query is provided
             if (!text) {
-                return client.reply(m.chat, Func.example(m.prefix, 'spotify', 'dj dalinda'), m);
+                return client.reply(m.chat, Func.example(isPrefix, isPrefix, 'dj dalinda'), m);
             }
 
             // Send a reaction to indicate processing

@@ -5,11 +5,11 @@ exports.run = {
     hidden: ['ytsearch'],
     use: 'query',
     category: 'search',
-    async: async (m, { client, text, Func }) => {
+    async: async (m, { client, text, Func, command, isPrefix }) => {
         try {
             // Check if a query is provided
             if (!text) {
-                return client.reply(m.chat, Func.example(m.prefix, 'ytsearch', 'kia bat ha'), m);
+                return client.reply(m.chat, Func.example(isPrefix, command, 'kia bat ha'), m);
             }
 
             // Send a reaction to indicate processing
