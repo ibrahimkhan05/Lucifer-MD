@@ -9,14 +9,13 @@ exports.run = {
 
         m.reply('Fetching images, please wait...');
 
-        const apiKey = `${global.betabotz}` ; // API Key
+        const apiKey = `${global.betabotz}`; // API Key
         const query = encodeURIComponent(text); // URL encode the query
         const apiUrl = `https://api.betabotz.eu.org/api/search/bing-img?text=${query}&apikey=${apiKey}`;
 
         try {
-            // Fetch images
-            const response = await fetch(apiUrl);
-            const data = await response.json();
+            // Fetch images using Func.fetchJson
+            const data = await Func.fetchJson(apiUrl);
 
             if (!data.status || !data.result || data.result.length === 0) {
                 return client.reply(m.chat, 'No images found', m);
