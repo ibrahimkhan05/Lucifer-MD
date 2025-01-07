@@ -23,21 +23,36 @@ exports.run = {
             }
 
             // Prepare carousel cards for the images
-            const cards = data.result.map((imageUrl, index) => ({
-                header: {
-                    imageMessage: imageUrl, // Use imageUrl here
-                    hasMediaAttachment: true,
-                },
-                body: {
-                    text: `Image ${index + 1} of ${data.result.length}\nQuery: ${text}`,
-                },
-                nativeFlowMessage: {
-                    // Add custom fields if needed
+            const cards = await Promise.all(data.result.map(async (imageUrl, index) => {
+                try {
+                    // Fetch the image from the URL as a buffer
+                    const imageBuffer = await Func.downloadImage(imageUrl);
+
+                    return {
+                        header: {
+                            imageMessage: imageBuffer, // Image as buffer
+                            hasMediaAttachment: true,
+                        },
+                        body: {
+                            text: `Image ${index + 1} of ${data.result.length}\nQuery: ${text}`,
+                        },
+                        nativeFlowMessage: {}
+                    };
+                } catch (err) {
+                    console.error(`Failed to download image ${index + 1}:`, err);
+                    return null; // Skip this image if download fails
                 }
             }));
 
+            // Filter out any null results (failed downloads)
+            const validCards = cards.filter(card => card !== null);
+
+            if (validCards.length === 0) {
+                return client.reply(m.chat, 'No valid images to send.', m);
+            }
+
             // Send carousel of images
-            await client.sendCarousel(m.chat, cards, m, {
+            await client.sendCarousel(m.chat, validCards, m, {
                 content: 'Here are the images generated based on your query:',
             });
 
