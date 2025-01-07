@@ -11,11 +11,11 @@ exports.run = {
                // Reset referral-related points
                if (user.referralCodeUsed) {
                    // User redeemed a code: add points from redeeming (default 5)
-                   user.limit += env.redeemPoints || 5; // env.redeemPoints is configurable
+                   user.limit += 5; // env.redeemPoints is configurable
                }
                if (user.referredUsers && user.referredUsers.length > 0) {
                    // Referrer: add points for all successful referrals (default 10 per referral)
-                   user.limit += (env.referralPoints || 10) * user.referredUsers.length;
+                   user.limit += (10) * user.referredUsers.length;
                }
            });
 
@@ -23,7 +23,7 @@ exports.run = {
            setting.lastReset = new Date().getTime();
 
            // Notify the owner/admin about the successful reset
-           client.reply(m.chat, Func.texted('bold', `🚩 Successfully reset limits for free users and adjusted points for referral/redeem relationships.`), m);
+           client.reply(m.chat, Func.texted('bold', `🚩 Successfully reset limits`), m);
        } catch (e) {
            // Handle and display errors
            client.reply(m.chat, Func.jsonFormat(e), m);
