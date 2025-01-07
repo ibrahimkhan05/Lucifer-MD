@@ -17,14 +17,22 @@ exports.run = {
             // Fetch images using Func.fetchJson
             const data = await Func.fetchJson(apiUrl);
 
+            // Validate the response structure
             if (!data.status || !data.result || data.result.length === 0) {
                 return client.reply(m.chat, 'No images found', m);
             }
 
-            // Prepare carousel cards
+            // Loop through the result array and send images
+            for (let i = 0; i < data.result.length; i++) {
+                const imageUrl = data.result[i]; // Extract the current image URL
+                const caption = `Image ${i + 1} of ${data.result.length}\nQuery: ${text}`;
+                await client.sendFile(m.chat, imageUrl, 'image.jpg', caption, m);
+            }
+
+            // Alternatively, if carousel view is supported, prepare carousel cards
             const cards = data.result.map((imageUrl, index) => ({
                 header: {
-                    imageMessage: imageUrl, // Image URL from API response
+                    imageMessage: imageUrl, // Use imageUrl here
                     hasMediaAttachment: true,
                 },
                 body: {
