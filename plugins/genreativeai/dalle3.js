@@ -14,20 +14,21 @@ exports.run = {
         const apiUrl = `https://api.betabotz.eu.org/api/search/bing-img?text=${query}&apikey=${apiKey}`;
 
         try {
-            // Fetch images using Func.fetchJson
+            // Fetch images using Func.fetchJson from the API URL
             const data = await Func.fetchJson(apiUrl);
 
-            // Validate the response structure
+            // Check if the API response contains valid data
             if (!data.status || !data.result || data.result.length === 0) {
                 return client.reply(m.chat, 'No images found', m);
             }
 
-            // Prepare carousel cards for the images without buttons
+            // Process the image URLs from the response and create carousel cards
             const cards = await Promise.all(data.result.map(async (imageUrl, index) => {
                 try {
-                    // Fetch the image buffer from the URL using Func.fetchBuffer
+                    // Fetch the image buffer from each image URL
                     const imageBuffer = await Func.fetchBuffer(imageUrl);
 
+                    // Prepare the carousel card with the image and text
                     return {
                         header: {
                             imageMessage: imageBuffer, // Image as buffer
@@ -39,19 +40,20 @@ exports.run = {
                         nativeFlowMessage: {}
                     };
                 } catch (err) {
+                    // If an error occurs while fetching the image, log the error and skip this image
                     console.error(`Failed to fetch image ${index + 1}:`, err);
                     return null; // Skip this image if fetch fails
                 }
             }));
 
-            // Filter out any null results (failed fetches)
+            // Filter out any null cards (failed image fetches)
             const validCards = cards.filter(card => card !== null);
 
             if (validCards.length === 0) {
                 return client.reply(m.chat, 'No valid images to send.', m);
             }
 
-            // Send carousel of images without buttons
+            // Send carousel of valid images
             await client.sendCarousel(m.chat, validCards, m, {
                 content: 'Here are the images generated based on your query:',
             });
