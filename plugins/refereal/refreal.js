@@ -45,7 +45,7 @@ exports.run = {
        }
     },
     error: false,
-    limit: true,
+    limit: false,
     restrict: true,
     cache: true,
     location: __filename
