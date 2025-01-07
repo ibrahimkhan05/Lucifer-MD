@@ -22,14 +22,7 @@ exports.run = {
                 return client.reply(m.chat, 'No images found', m);
             }
 
-            // Loop through the result array and send images
-            for (let i = 0; i < data.result.length; i++) {
-                const imageUrl = data.result[i]; // Extract the current image URL
-                const caption = `Image ${i + 1} of ${data.result.length}\nQuery: ${text}`;
-                await client.sendFile(m.chat, imageUrl, 'image.jpg', caption, m);
-            }
-
-            // Alternatively, if carousel view is supported, prepare carousel cards
+            // Prepare carousel cards for the images
             const cards = data.result.map((imageUrl, index) => ({
                 header: {
                     imageMessage: imageUrl, // Use imageUrl here
@@ -47,6 +40,7 @@ exports.run = {
             await client.sendCarousel(m.chat, cards, m, {
                 content: 'Here are the images generated based on your query:',
             });
+
         } catch (error) {
             console.error('Error fetching images:', error);
             m.reply('An error occurred while fetching images. Please try again later.');
