@@ -22,41 +22,25 @@ exports.run = {
                 return client.reply(m.chat, 'No images found', m);
             }
 
-            // Process the image URLs from the response and create carousel cards
-            const cards = await Promise.all(data.result.map(async (imageUrl, index) => {
+            // Send each image one by one with a delay
+            for (let index = 0; index < data.result.length; index++) {
+                const imageUrl = data.result[index];
                 try {
                     // Fetch the image buffer from each image URL
                     const imageBuffer = await Func.fetchBuffer(imageUrl);
 
-                    // Prepare the carousel card with the image and text
-                    return {
-                        header: {
-                            imageMessage: imageBuffer, // Image as buffer
-                            hasMediaAttachment: true,
-                        },
-                        body: {
-                            text: `Image ${index + 1} of ${data.result.length}\nQuery: ${text}`,
-                        },
-                        nativeFlowMessage: {}
-                    };
+                    // Send the image with the formatted message
+                    const caption = `◦  *Prompt* : ${text}\nImage ${index + 1} of ${data.result.length}`;
+                    await client.sendFile(m.chat, imageBuffer, '', caption, m);
+
+                    // Add a half-second (500ms) delay between each image
+                    await new Promise(resolve => setTimeout(resolve, 500)); // 500ms = 0.5 seconds
+
                 } catch (err) {
-                    // If an error occurs while fetching the image, log the error and skip this image
+                    // If an error occurs while fetching the image, log the error and continue with the next image
                     console.error(`Failed to fetch image ${index + 1}:`, err);
-                    return null; // Skip this image if fetch fails
                 }
-            }));
-
-            // Filter out any null cards (failed image fetches)
-            const validCards = cards.filter(card => card !== null);
-
-            if (validCards.length === 0) {
-                return client.reply(m.chat, 'No valid images to send.', m);
             }
-
-            // Send carousel of valid images
-            await client.sendCarousel(m.chat, validCards, m, {
-                content: 'Here are the images generated based on your query:',
-            });
 
         } catch (error) {
             console.error('Error fetching images:', error);
