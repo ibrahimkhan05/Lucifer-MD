@@ -3,19 +3,19 @@ exports.run = {
    category: 'owner',
    async: async (m, { client, args, command, setting, env, Func }) => {
       try {
-         // Reset limits for free users and adjust referral points
-         global.db.users.filter(v => v.limit < env.limit && !v.premium).map(user => {
-            // Reset user limit to the default or specified value
+         // Process each user in the database
+         global.db.users.filter(v => v.limit < env.limit && !v.premium).forEach(user => {
+            // Reset user limit to the default or provided value
             user.limit = args[0] ? parseInt(args[0]) : env.limit;
 
-            // Adjust points for users who have redeemed a referral code
+            // Add points for users who redeemed a referral code
             if (user.referralCodeUsed) {
-               user.limit += env.redeemPoints || 5; // Add 5 points (or custom value from env)
+               user.limit += 5; // Add points for redeeming (default 5)
             }
 
-            // Adjust points for users who referred others
+            // Add points for users who referred others
             if (user.referredUsers && user.referredUsers.length > 0) {
-               user.limit += (env.referralPoints || 10) * user.referredUsers.length; // Add 10 points per referral
+               user.limit += 10 * user.referredUsers.length; // Add points for referrals (default 10 per referral)
             }
          });
 
@@ -23,9 +23,14 @@ exports.run = {
          setting.lastReset = new Date().getTime();
 
          // Notify success
-         client.reply(m.chat, Func.texted('bold', `🚩 Successfully reset limits for free users `), m);
+         client.reply(
+            m.chat,
+            Func.texted('bold', `🚩 Successfully reset limits for free users and adjusted referral-related points.`),
+            m
+         );
       } catch (e) {
-         // Handle errors
+         // Log and send error details
+         console.error('Error during reset:', e);
          client.reply(m.chat, Func.jsonFormat(e), m);
       }
    },
