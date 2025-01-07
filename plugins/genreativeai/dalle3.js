@@ -22,7 +22,7 @@ exports.run = {
                 return client.reply(m.chat, 'No images found', m);
             }
 
-            // Prepare carousel cards for the images
+            // Prepare carousel cards for the images without buttons
             const cards = await Promise.all(data.result.map(async (imageUrl, index) => {
                 try {
                     // Fetch the image buffer from the URL using Func.fetchBuffer
@@ -51,7 +51,7 @@ exports.run = {
                 return client.reply(m.chat, 'No valid images to send.', m);
             }
 
-            // Send carousel of images
+            // Send carousel of images without buttons
             await client.sendCarousel(m.chat, validCards, m, {
                 content: 'Here are the images generated based on your query:',
             });
