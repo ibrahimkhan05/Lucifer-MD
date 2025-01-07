@@ -25,8 +25,8 @@ exports.run = {
             // Prepare carousel cards for the images
             const cards = await Promise.all(data.result.map(async (imageUrl, index) => {
                 try {
-                    // Fetch the image from the URL as a buffer
-                    const imageBuffer = await Func.downloadImage(imageUrl);
+                    // Fetch the image buffer from the URL using Func.fetchBuffer
+                    const imageBuffer = await Func.fetchBuffer(imageUrl);
 
                     return {
                         header: {
@@ -39,12 +39,12 @@ exports.run = {
                         nativeFlowMessage: {}
                     };
                 } catch (err) {
-                    console.error(`Failed to download image ${index + 1}:`, err);
-                    return null; // Skip this image if download fails
+                    console.error(`Failed to fetch image ${index + 1}:`, err);
+                    return null; // Skip this image if fetch fails
                 }
             }));
 
-            // Filter out any null results (failed downloads)
+            // Filter out any null results (failed fetches)
             const validCards = cards.filter(card => card !== null);
 
             if (validCards.length === 0) {
