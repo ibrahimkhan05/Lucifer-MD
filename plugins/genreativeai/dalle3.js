@@ -22,9 +22,6 @@ exports.run = {
                 return client.reply(m.chat, 'No images found', m);
             }
 
-            // Log the fetched data
-            console.log('Fetched images data:', data);
-
             // Prepare cards for the carousel
             const cards = data.result.map((imageUrl, index) => ({
                 header: {
@@ -36,12 +33,7 @@ exports.run = {
                 },
                 nativeFlowMessage: {
                     buttons: [{
-                        name: "cta_url",
-                        buttonParamsJson: JSON.stringify({
-                            display_text: 'Community',
-                            url: global.db.setting.link,
-                            webview_presentation: null
-                        })
+                        
                     }]
                 }
             }));
