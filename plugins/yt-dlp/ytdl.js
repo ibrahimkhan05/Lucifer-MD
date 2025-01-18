@@ -1,85 +1,101 @@
-const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
-const { promisify } = require('util');
-const execPromise = promisify(exec);
+const { exec } = require('child_process');
 
-global.videoSessions = {}; // Global storage for video sessions
-
-// Function to fetch video qualities
-async function fetchQualities(url) {
-    const scriptPath = path.resolve(__dirname, 'fetch_qualities.py');
-    const command = `python3 ${scriptPath} ${url}`;
-
-    try {
-        const { stdout, stderr } = await execPromise(command, { shell: true });
-        if (stderr) throw new Error(stderr);
-
-        const result = JSON.parse(stdout);
-        if (Array.isArray(result)) return result;
-        if (result.error) throw new Error(result.error);
-        throw new Error('Unexpected response format');
-    } catch (error) {
-        console.error(`Error fetching qualities: ${error.message}`);
-        return { error: error.message };
-    }
-}
-
-// Function to handle /ytdl command (Fetch and list qualities)
-async function handleUserRequest(m, { client, text, isPrefix, command }) {
-    const url = text.trim();
-    const result = await fetchQualities(url);
-
-    if (result.error) {
-        return client.reply(m.chat, `Error fetching qualities: ${result.error}`, m);
-    }
-
-    const formats = result;
-    if (formats.length === 0) {
-        client.replyButton(m.chat, [{
-            text: 'Download',
-            command: `${isPrefix}cvbi ${url}`
-        }], m, {
-            content: "Sorry, no qualities found for this video. You can still download it directly:",
-            footer: global.footer,
-            media: global.db.setting.cover
-        });
-    } else {
-        const buttons = formats.map((format, index) => ({
-            name: 'single_select',
-            buttonParamsJson: JSON.stringify({
-                title: 'Select from below',
-                sections: [{
-                    rows: [{
-                        title: `${format.label} - Size: ${format.size ? format.size : 'Not available'}`,
-                        id: `${isPrefix}cvbi ${url}`
-                    }]
-                }]
-            })
-        }));
-
-        client.sendIAMessage(m.chat, buttons, m, {
-            content: "Here are the qualities for the videos you can download with. Select from the list:",
-            footer: global.footer,
-            media: global.db.setting.cover
-        });
-    }
-}
-
-// Main exportable handler
 exports.run = {
-    usage: ['ytdl'],
-    use: 'url',
+    usage: ['cvbi'],
+    use: 'url [quality]',
     category: 'special',
-    async: async (m, { client, text, isPrefix, command }) => {
-        try {
-            if (command === 'ytdl') {
-                await handleUserRequest(m, { client, text, isPrefix, command });
-            }
-        } catch (e) {
-            console.error('Error:', e);
-            client.reply(m.chat, "❌ An error occurred. Please try again later.", m);
+    async: async (m, { client, args, isPrefix, command, users, env, Func, Scraper }) => {
+        if (!args || !args[0]) return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), m);
+
+        const url = args[0]; // URL provided by the user
+        const quality = args[1]; // Get quality from args if provided
+        const outputDir = path.resolve(__dirname, 'downloads'); // Directory to save the download
+        const scriptPath = path.resolve(__dirname, 'downloader.py'); // Path to Python script
+
+        // Ensure the downloads directory exists
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir);
         }
+
+        // Notify user that the download is starting
+        await client.reply(m.chat, 'Your file is being downloaded. This may take some time.', m);
+
+        // Construct the command based on whether quality is provided
+        let commandStr = `python3 ${scriptPath} ${url} ${outputDir}`;
+        if (quality) {
+            commandStr += ` ${quality}`; // Only append quality if it's provided
+        }
+
+        exec(commandStr, async (error, stdout, stderr) => {
+            if (error) {
+                console.error(`exec error: ${error.message}`);
+                await client.reply(m.chat, `Error downloading video: ${error.message}`, m);
+                return;
+            }
+
+            if (stderr) {
+                console.error(`stderr: ${stderr}`);
+                await client.reply(m.chat, `Error downloading video: ${stderr}`, m);
+                return;
+            }
+
+            console.log(`stdout: ${stdout}`);
+            
+            // Parse the stdout to get the original file name and path
+            let output;
+            try {
+                output = JSON.parse(stdout.trim());
+            } catch (parseError) {
+                console.error(`Error parsing JSON: ${parseError.message}`);
+                await client.reply(m.chat, `Error parsing download information: ${parseError.message}`, m);
+                return;
+            }
+
+            if (output.error) {
+                await client.reply(m.chat, `Download failed: ${output.message}`, m);
+                return;
+            }
+
+            const filePath = output.filePath; // The full path to the downloaded file
+            const fileName = path.basename(filePath); // Extract file name from path
+
+            // Handle file and send to user
+            try {
+                const fileSize = fs.statSync(filePath).size;
+                const fileSizeStr = `${(fileSize / (1024 * 1024)).toFixed(2)} MB`;
+
+                if (fileSize > 930 * 1024 * 1024) { // 930 MB
+                    await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 930MB`, m);
+                    fs.unlinkSync(filePath); // Delete the file
+                    return;
+                }
+                
+                const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
+                const chSize = Func.sizeLimit(fileSize.toString(), maxUpload.toString());
+
+                if (chSize.oversize) {
+                    await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit`, m);
+                    fs.unlinkSync(filePath); // Delete the file
+                    return;
+                }
+
+                await client.reply(m.chat, `Your file (${fileSizeStr}) is being uploaded.`, m);
+
+                const extname = path.extname(fileName).toLowerCase();
+                const isVideo = ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(extname);
+                const isDocument = isVideo && fileSize / (1024 * 1024) > 99; // 99 MB threshold
+
+                await client.sendFile(m.chat, filePath, fileName, '', m, { document: isDocument });
+
+                fs.unlinkSync(filePath); // Delete the file after sending
+            } catch (fileError) {
+                console.error(`Error handling file: ${fileError.message}`);
+                await client.reply(m.chat, `Error handling file: ${fileError.message}`, m);
+                if (fs.existsSync(filePath)) fs.unlinkSync(filePath); // Delete on error
+            }
+        });
     },
     error: false,
     limit: true,
