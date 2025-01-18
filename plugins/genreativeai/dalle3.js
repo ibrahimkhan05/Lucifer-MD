@@ -25,11 +25,6 @@ exports.run = {
             // Log the fetched data
             console.log('Fetched images data:', data);
 
-            // Log each image URL separately
-            data.result.forEach((imageUrl, index) => {
-                console.log(`Image URL ${index + 1}:`, imageUrl);
-            });
-
             // Prepare cards for the carousel
             const cards = data.result.map((imageUrl, index) => ({
                 header: {
@@ -39,6 +34,16 @@ exports.run = {
                 body: {
                     text: `◦  *Prompt* : ${text}\nImage ${index + 1} of ${data.result.length}`,
                 },
+                nativeFlowMessage: {
+                    buttons: [{
+                        name: "cta_url",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: 'Community',
+                            url: global.db.setting.link,
+                            webview_presentation: null
+                        })
+                    }]
+                }
             }));
 
             // Send carousel with the prepared cards
