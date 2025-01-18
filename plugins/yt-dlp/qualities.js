@@ -43,22 +43,23 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
             media: global.db.setting.cover
         });
     } else {
-        const buttonList = formats.map((format, index) => ({
+        const button = {
             name: 'single_select',
             buttonParamsJson: JSON.stringify({
-                title: 'Select from below',
-                sections: [ {
-                    rows: [ {
+                title: 'Tap Here',
+                sections: [{
+                    rows: formats.map(format => ({
                         title: `${format.label} - Size: ${format.size ? format.size : 'Not available'}`,
                         id: `${isPrefix}cvbi ${url}`
-                    }]
+                    }))
                 }]
             })
-        }));
+        };
 
-        client.sendIAMessage(m.chat, buttonList, m, {
-            content: "Here are the qualities for the videos you can download. Select from the list:",
+        client.sendIAMessage(m.chat, [button], m, {
+            content: "Here are the qualities for this video. Select from the list:",
             footer: global.footer,
+            media: global.db.setting.cover
         });
     }
 }
