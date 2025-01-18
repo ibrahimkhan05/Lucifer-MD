@@ -4,8 +4,6 @@ const fs = require('fs');
 const { promisify } = require('util');
 const execPromise = promisify(exec);
 
-global.videoSessions = {}; // Global storage for video sessions
-
 // Function to fetch video qualities
 async function fetchQualities(url) {
     const scriptPath = path.resolve(__dirname, 'fetch_qualities.py');
@@ -45,12 +43,12 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
             media: global.db.setting.cover
         });
     } else {
-        const buttons = formats.map((format, index) => ({
+        const buttonList = formats.map((format, index) => ({
             name: 'single_select',
             buttonParamsJson: JSON.stringify({
                 title: 'Select from below',
-                sections: [{
-                    rows: [{
+                sections: [ {
+                    rows: [ {
                         title: `${format.label} - Size: ${format.size ? format.size : 'Not available'}`,
                         id: `${isPrefix}cvbi ${url}`
                     }]
@@ -58,10 +56,10 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
             })
         }));
 
-        client.sendIAMessage(m.chat, buttons, m, {
+        client.sendIAMessage(m.chat, buttonList, m, {
             content: "Here are the qualities for the videos you can download. Select from the list:",
             footer: global.footer,
-            media: global.db.setting.cover
+            media: NULL
         });
     }
 }
