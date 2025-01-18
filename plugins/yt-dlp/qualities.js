@@ -9,6 +9,7 @@ async function fetchQualities(url) {
     const scriptPath = path.resolve(__dirname, 'fetch_qualities.py');
     const command = `python3 ${scriptPath} ${url}`;
 
+
     try {
         const { stdout, stderr } = await execPromise(command, { shell: true });
         if (stderr) throw new Error(stderr);
@@ -59,7 +60,6 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
         client.sendIAMessage(m.chat, [button], m, {
             content: "Here are the qualities for this video. Select from the list:",
             footer: global.footer,
-            media: global.db.setting.cover
         });
     }
 }
@@ -72,7 +72,9 @@ exports.run = {
     async: async (m, { client, text, isPrefix, command }) => {
         try {
             if (command === 'ytdl') {
+                client.sendReact(m.chat, '🕒', m.key)
                 await handleUserRequest(m, { client, text, isPrefix, command });
+                
             }
         } catch (e) {
             console.error('Error:', e);
