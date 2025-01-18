@@ -59,7 +59,6 @@ async function handleUserRequest(m, { client, text, isPrefix, command }) {
         client.sendIAMessage(m.chat, buttonList, m, {
             content: "Here are the qualities for the videos you can download. Select from the list:",
             footer: global.footer,
-            media: NULL
         });
     }
 }
