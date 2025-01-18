@@ -22,25 +22,21 @@ exports.run = {
                 return client.reply(m.chat, 'No images found', m);
             }
 
-            // Send each image one by one with a delay
-            for (let index = 0; index < data.result.length; index++) {
-                const imageUrl = data.result[index];
-                try {
-                    // Fetch the image buffer from each image URL
-                    const imageBuffer = await Func.fetchBuffer(imageUrl);
+            // Prepare cards for the carousel
+            const cards = data.result.map((imageUrl, index) => ({
+                header: {
+                    imageMessage: imageUrl,
+                    hasMediaAttachment: true,
+                },
+                body: {
+                    text: `◦  *Prompt* : ${text}\nImage ${index + 1} of ${data.result.length}`,
+                },
+            }));
 
-                    // Send the image with the formatted message
-                    const caption = `◦  *Prompt* : ${text}\nImage ${index + 1} of ${data.result.length}`;
-                    await client.sendFile(m.chat, imageBuffer, '', caption, m);
-
-                    // Add a half-second (500ms) delay between each image
-                    await new Promise(resolve => setTimeout(resolve, 500)); // 500ms = 0.5 seconds
-
-                } catch (err) {
-                    // If an error occurs while fetching the image, log the error and continue with the next image
-                    console.error(`Failed to fetch image ${index + 1}:`, err);
-                }
-            }
+            // Send carousel with the prepared cards
+            client.sendCarousel(m.chat, cards, m, {
+                content: 'Here are your images:',
+            });
 
         } catch (error) {
             console.error('Error fetching images:', error);
