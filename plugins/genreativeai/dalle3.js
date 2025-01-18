@@ -22,6 +22,14 @@ exports.run = {
                 return client.reply(m.chat, 'No images found', m);
             }
 
+            // Log the fetched data
+            console.log('Fetched images data:', data);
+
+            // Log each image URL separately
+            data.result.forEach((imageUrl, index) => {
+                console.log(`Image URL ${index + 1}:`, imageUrl);
+            });
+
             // Prepare cards for the carousel
             const cards = data.result.map((imageUrl, index) => ({
                 header: {
