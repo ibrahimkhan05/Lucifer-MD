@@ -17,7 +17,7 @@ exports.run = {
             client.sendReact(m.chat, '🕒', m.key)
             const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/search/openai-chat?text=${text}&apikey=beta-${global.betabotz}`)
             if (!json.status) return client.reply(m.chat, Func.jsonFormat(json), m)
-            client.sendFromAI(m.chat, json.message, m)
+            client.reply(m.chat, json.message, m)
          } 
       } catch (e) {
          client.reply(m.chat, Func.jsonFormat(e), m)

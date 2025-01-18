@@ -1,3 +1,4 @@
+
 const fs = require('fs')
 exports.run = {
    usage: ['menu', 'help', 'command'],
@@ -308,7 +309,7 @@ exports.run = {
                   header: '',
                   content: print,
                   footer: global.footer,
-                  media: global.db.setting.cover
+                  media: setting.cover
                })
             }
          }
