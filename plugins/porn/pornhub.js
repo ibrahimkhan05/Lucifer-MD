@@ -40,6 +40,7 @@ async function handlePornHubRequest(m, { client, text, isPrefix }) {
 
         await client.sendIAMessage(m.chat, buttons, m, {
             content: "Here are the search results. Please select a video from the list:",
+            footer: global.footer,
         });
     } catch (error) {
         console.error(`Error fetching data: ${error.message}`);
