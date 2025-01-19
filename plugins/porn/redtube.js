@@ -28,10 +28,10 @@ async function handleRedTubeRequest(m, { client, text, isPrefix }) {
             name: 'single_select',
             buttonParamsJson: JSON.stringify({
                 title: 'Select a video',
-                sections: [{
+                sections: [ {
                     rows: data.data.map((v, index) => ({
                         title: `${index + 1}. ${v.title}`,
-                        id: `${isPrefix}ytdl${v.video}`,  // Format URL for ytdl   // Displaying video URL
+                        id: `${isPrefix}ytdl${v.video}`  // Format URL for ytdl
                     }))
                 }]
             })
@@ -46,3 +46,20 @@ async function handleRedTubeRequest(m, { client, text, isPrefix }) {
         return client.reply(m.chat, 'Error fetching RedTube search results. Please try again later.', m);
     }
 }
+
+// Main exportable handler
+exports.run = {
+    usage: ['redtube'],
+    hidden: ['getredtube'],
+    use: 'query <search term>',
+    category: 'porn',
+    async: async (m, { client, text, isPrefix, command }) => {
+        try {
+            if (command === 'redtube') {
+                await handleRedTubeRequest(m, { client, text, isPrefix });
+            }
+        } catch (error) {
+            console.error(`Error in command execution: ${error.message}`);
+        }
+    }
+};
