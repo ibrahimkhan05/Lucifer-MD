@@ -14,7 +14,6 @@ exports.run = {
 
         const scriptPath = path.join(__dirname, 'generate_image.py'); // Path to your Python script
 
-        console.log("Executing Python script...");
         // Execute Python script to generate image
         exec(`python3 ${scriptPath} '${text}'`, async (error, stdout, stderr) => {
             if (error) {
@@ -27,19 +26,17 @@ exports.run = {
 
             console.log("Python script output:", stdout); // Log raw output for debugging
 
-            // Extract JSON part using a regular expression
-            const jsonMatch = stdout.match(/{.*}/);
-            if (!jsonMatch) {
-                return m.reply('Failed to find valid JSON in the output.');
-            }
-
             let data;
             try {
                 // Parse the JSON part of the output
-                data = JSON.parse(jsonMatch[0]);
+                data = JSON.parse(stdout);
             } catch (err) {
                 console.error("Failed to parse image data:", err);
                 return m.reply(`Failed to parse image data. Raw output: ${stdout}`);
+            }
+
+            if (data.error) {
+                return m.reply(`Error: ${data.error}`);
             }
 
             if (!data.images || data.images.length === 0) {
