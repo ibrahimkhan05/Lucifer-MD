@@ -14,8 +14,14 @@ exports.run = {
         
         const scriptPath = path.join(__dirname, 'generate_image.py'); // Path to your Python script
 
+        console.log(`Script path: ${scriptPath}`);
+        
+        // Log the exact command being run
+        const command = `python3 ${scriptPath} '${text}'`;
+        console.log(`Executing command: ${command}`);
+
         // Execute Python script to generate image
-        exec(`python3 ${scriptPath} '${text}'`, async (error, stdout, stderr) => {
+        exec(command, async (error, stdout, stderr) => {
             console.log("Executing Python script...");
 
             if (error) {
