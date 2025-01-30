@@ -1,52 +1,55 @@
+const { exec } = require('child_process');
+const path = require('path');
+
 exports.run = {
-    usage: ['bingimg'],
+    usage: ['bingart'],
     use: 'query',
     category: 'generativeai',
     async: async (m, { client, text, Func }) => {
         if (!text) {
-            return client.reply(m.chat, Func.example(isPrefix, command, 'cute cats'), m);
+            return client.reply(m.chat, Func.example(isPrefix, command, 'a cat painting in Picasso style'), m);
         }
+        
+        m.reply('Generating image, please wait...');
+        
+        const scriptPath = path.join(__dirname, 'generate_image.py');
 
-        m.reply('Fetching images, please wait...');
-
-        const apiKey = `${global.betabotz}`; // API Key
-        const query = encodeURIComponent(text); // URL encode the query
-        const apiUrl = `https://api.betabotz.eu.org/api/search/bing-img?text=${query}&apikey=${apiKey}`;
-
-        try {
-            // Fetch images using Func.fetchJson from the API URL
-            const data = await Func.fetchJson(apiUrl);
-
-            // Check if the API response contains valid data
-            if (!data.status || !data.result || data.result.length === 0) {
-                return client.reply(m.chat, 'No images found', m);
+        // Execute Python script to generate image
+        exec(`python3 ${scriptPath} '${text}'`, async (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Error: ${error.message}`);
+                return m.reply('An error occurred while generating the image.');
             }
-
-            // Prepare cards for the carousel
-            const cards = data.result.map((imageUrl, index) => ({
+            if (stderr) {
+                console.error(`stderr: ${stderr}`);
+            }
+            
+            let data;
+            try {
+                data = JSON.parse(stdout);
+            } catch (err) {
+                return m.reply('Failed to parse image data.');
+            }
+            
+            if (!data.images || data.images.length === 0) {
+                return client.reply(m.chat, 'No images found.', m);
+            }
+            
+            // Prepare carousel for images
+            const cards = data.images.map((image, index) => ({
                 header: {
-                    imageMessage: imageUrl,
+                    imageMessage: image.url,
                     hasMediaAttachment: true,
                 },
                 body: {
-                    text: `◦  *Prompt* : ${text}\nImage ${index + 1} of ${data.result.length}`,
-                },
-                nativeFlowMessage: {
-                    buttons: [{
-                        
-                    }]
+                    text: `◦ *Prompt* : ${data.prompt}\nImage ${index + 1} of ${data.images.length}`,
                 }
             }));
-
-            // Send carousel with the prepared cards
+            
             client.sendCarousel(m.chat, cards, m, {
-                content: 'Here are your images:',
+                content: 'Here are your generated images:',
             });
-
-        } catch (error) {
-            console.error('Error fetching images:', error);
-            m.reply('An error occurred while fetching images. Please try again later.');
-        }
+        });
     },
     error: false,
     limit: true,
