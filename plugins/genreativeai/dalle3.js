@@ -25,14 +25,16 @@ exports.run = {
                 console.error(`stderr: ${stderr}`);
             }
 
+            console.log("Python script output:", stdout); // Log raw output for debugging
+
             let data;
             try {
-                // Parse the output JSON
+                // Try to parse the output JSON
                 data = JSON.parse(stdout);
-                console.log("Python script output:", data);
             } catch (err) {
                 console.error("Failed to parse image data:", err);
-                return m.reply('Failed to parse image data.');
+                // Log the raw output to help debug
+                return m.reply(`Failed to parse image data. Raw output: ${stdout}`);
             }
 
             if (!data.images || data.images.length === 0) {
