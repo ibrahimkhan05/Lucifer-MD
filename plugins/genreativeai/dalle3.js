@@ -7,10 +7,10 @@ exports.run = {
     category: 'generativeai',
     async: async (m, { client, text, Func }) => {
         if (!text) {
-            return client.reply(m.chat, Func.example(isPrefix, command, 'a cat painting in Picasso style'), m);
+            return client.reply(m.chat, Func.example(isPrefix, command, 'a cat painting'), m);
         }
 
-        m.reply('Generating image, please wait...');
+        m.reply('Generating images, please wait...');
 
         const scriptPath = path.join(__dirname, 'generate_image.py'); // Path to your Python script
 
@@ -43,11 +43,11 @@ exports.run = {
                 return client.reply(m.chat, 'No images found.', m);
             }
 
-            // Prepare carousel for images, ensure valid URLs
+            // Prepare cards for the carousel, ensuring valid URLs
             const cards = data.images.map((image, index) => {
-                if (!image.url || !image.url.startsWith('http')) {
+                if (!image.url || typeof image.url !== 'string' || !image.url.startsWith('http')) {
                     console.warn(`Skipping invalid image URL: ${image.url}`);
-                    return null;  // Skip invalid URLs
+                    return null; // Skip invalid image URLs
                 }
 
                 return {
@@ -59,7 +59,7 @@ exports.run = {
                     },
                     body: {
                         text: `◦ *Prompt* : ${data.prompt}\nImage ${index + 1} of ${data.images.length}`,
-                    }
+                    },
                 };
             }).filter(card => card !== null); // Remove null values from the array
 
