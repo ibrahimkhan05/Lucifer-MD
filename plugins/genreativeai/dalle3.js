@@ -33,14 +33,18 @@ exports.run = {
                 console.error(`stderr: ${stderr}`);
             }
 
-            // Log stdout to see the raw output from the Python script
+            // Log the raw output
             console.log("Python script output:");
             console.log(stdout);
 
+            // Extract JSON part from the stdout (assuming JSON is at the end)
+            const jsonStartIndex = stdout.indexOf("{");
+            const jsonString = stdout.substring(jsonStartIndex);
+
             let data;
             try {
-                // Parse the output JSON
-                data = JSON.parse(stdout);
+                // Parse the cleaned-up JSON string
+                data = JSON.parse(jsonString);
                 console.log("Parsed image data:", data);
             } catch (err) {
                 console.error('Failed to parse image data:', err);
