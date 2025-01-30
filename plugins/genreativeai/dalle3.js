@@ -37,14 +37,17 @@ exports.run = {
             console.log("Python script output:");
             console.log(stdout);
 
-            // Extract JSON part from the stdout (assuming JSON is at the end)
-            const jsonStartIndex = stdout.indexOf("{");
-            const jsonString = stdout.substring(jsonStartIndex);
+            // Use regex to extract the JSON part of the stdout
+            const jsonMatch = stdout.match(/{.*}/s); // Match everything between the first '{' and the last '}'
+            if (!jsonMatch) {
+                console.error('No valid JSON found in the output.');
+                return m.reply('Failed to find image data in the response.');
+            }
 
             let data;
             try {
-                // Parse the cleaned-up JSON string
-                data = JSON.parse(jsonString);
+                // Parse the extracted JSON string
+                data = JSON.parse(jsonMatch[0]);
                 console.log("Parsed image data:", data);
             } catch (err) {
                 console.error('Failed to parse image data:', err);
