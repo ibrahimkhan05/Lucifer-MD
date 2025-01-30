@@ -27,13 +27,18 @@ exports.run = {
 
             console.log("Python script output:", stdout); // Log raw output for debugging
 
+            // Extract JSON part using a regular expression
+            const jsonMatch = stdout.match(/{.*}/);
+            if (!jsonMatch) {
+                return m.reply('Failed to find valid JSON in the output.');
+            }
+
             let data;
             try {
-                // Try to parse the output JSON
-                data = JSON.parse(stdout);
+                // Parse the JSON part of the output
+                data = JSON.parse(jsonMatch[0]);
             } catch (err) {
                 console.error("Failed to parse image data:", err);
-                // Log the raw output to help debug
                 return m.reply(`Failed to parse image data. Raw output: ${stdout}`);
             }
 
