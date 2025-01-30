@@ -17,21 +17,14 @@ exports.run = {
         // Execute Python script to generate image
         exec(`python3 ${scriptPath} '${text}'`, async (error, stdout, stderr) => {
             if (error) {
-                console.error(`Error: ${error.message}`);
                 return m.reply('An error occurred while generating the image.');
             }
-            if (stderr) {
-                console.error(`stderr: ${stderr}`);
-            }
-
-            console.log("Python script output:", stdout); // Log raw output for debugging
 
             let data;
             try {
                 // Parse the JSON part of the output
                 data = JSON.parse(stdout);
             } catch (err) {
-                console.error("Failed to parse image data:", err);
                 return m.reply(`Failed to parse image data. Raw output: ${stdout}`);
             }
 
@@ -43,37 +36,37 @@ exports.run = {
                 return client.reply(m.chat, 'No images found.', m);
             }
 
-            // Prepare the images, but only pick 1st, 3rd, 5th, and 7th
-            const selectedImages = [0, 2, 4, 6].map(index => {
-                let imageUrl = data.images[index]?.url;
+            // Select the 1st, 3rd, 5th, and 7th images and add .jpg extension
+            const selectedImages = [
+                data.images[0]?.url + '.jpg',  // 1st image
+                data.images[2]?.url + '.jpg',  // 3rd image
+                data.images[4]?.url + '.jpg',  // 5th image
+                data.images[6]?.url + '.jpg'   // 7th image
+            ];
 
-                // Validate URL and add .jpg if not present
-                if (typeof imageUrl !== 'string' || !imageUrl.startsWith('http')) {
-                    console.warn(`Skipping invalid image URL: ${imageUrl}`);
-                    return null;  // Skip invalid URLs
+            // Prepare carousel cards for sending the images
+            const cards = selectedImages.map((imageUrl, index) => ({
+                header: {
+                    imageMessage: {
+                        url: imageUrl,  // Use the image URL
+                    },
+                    hasMediaAttachment: true,
+                },
+                body: {
+                    text: `◦  *Prompt* : ${text}\nImage ${index + 1} of 4`,
+                },
+                nativeFlowMessage: {
+                    buttons: []
                 }
+            }));
 
-                // Add '.jpg' if not already in the URL
-                if (!imageUrl.endsWith('.jpg')) {
-                    imageUrl += '.jpg';
-                }
-
-                return {
-                    url: imageUrl,  // Validated URL
-                    text: `◦ *Prompt* : ${data.prompt}\nImage ${index + 1} of ${data.images.length}`,
-                };
-            }).filter(image => image !== null); // Remove null values from the array
-
-            // Send selected images (1st, 3rd, 5th, and 7th) one by one with a 2-second delay
-            let delay = 0;  // Start from 0ms delay
-            for (let i = 0; i < selectedImages.length; i++) {
-                setTimeout(() => {
-                    client.sendMessage(m.chat, {
-                        image: { url: selectedImages[i].url },
-                        caption: selectedImages[i].text,
-                    }, { quoted: m });
-                }, delay);
-                delay += 2000;  // Add 2 seconds delay for the next image
+            // Send carousel with the prepared cards
+            if (cards.length > 0) {
+                client.sendCarousel(m.chat, cards, m, {
+                    content: 'Here are your generated images:',
+                });
+            } else {
+                m.reply('No valid images found.');
             }
         });
     },
