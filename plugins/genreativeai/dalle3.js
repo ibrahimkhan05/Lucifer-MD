@@ -16,25 +16,38 @@ exports.run = {
 
         // Execute Python script to generate image
         exec(`python3 ${scriptPath} '${text}'`, async (error, stdout, stderr) => {
+            console.log("Executing Python script...");
+
             if (error) {
                 console.error(`Error: ${error.message}`);
                 return m.reply('An error occurred while generating the image.');
             }
+            
             if (stderr) {
                 console.error(`stderr: ${stderr}`);
             }
+
+            // Log stdout to see the raw output from the Python script
+            console.log("Python script output:");
+            console.log(stdout);
 
             let data;
             try {
                 // Parse the output JSON
                 data = JSON.parse(stdout);
+                console.log("Parsed image data:", data);
             } catch (err) {
+                console.error('Failed to parse image data:', err);
                 return m.reply('Failed to parse image data.');
             }
 
             if (!data.images || data.images.length === 0) {
+                console.log("No images found.");
                 return client.reply(m.chat, 'No images found.', m);
             }
+
+            // Log image data
+            console.log("Found images:", data.images);
 
             // Prepare carousel for images
             const cards = data.images.map((image, index) => ({
@@ -50,6 +63,7 @@ exports.run = {
             }));
 
             // Send the carousel with the generated images
+            console.log("Sending carousel with images...");
             client.sendCarousel(m.chat, cards, m, {
                 content: 'Here are your generated images:',
             });
