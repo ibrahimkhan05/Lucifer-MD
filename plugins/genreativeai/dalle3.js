@@ -2,7 +2,7 @@ const { exec } = require('child_process');
 const path = require('path');
 
 exports.run = {
-    usage: ['bingart'],
+    usage: ['bing'],
     use: 'query',
     category: 'generativeai',
     async: async (m, { client, text, Func }) => {
