@@ -43,39 +43,23 @@ exports.run = {
                 return client.reply(m.chat, 'No images found.', m);
             }
 
-            // Prepare cards for the carousel with the images
-            const cards = data.images.map((image, index) => {
-                if (!image.url || typeof image.url !== 'string' || !image.url.startsWith('http')) {
-                    console.warn(`Skipping invalid image URL: ${image.url}`);
-                    return null; // Skip invalid image URLs
+            // Prepare cards for the carousel
+            const cards = data.images.map((image, index) => ({
+                header: {
+                    imageMessage: {
+                        url: image.url,  // Use the URL from the result
+                    },
+                    hasMediaAttachment: true,
+                },
+                body: {
+                    text: `◦ *Prompt* : ${data.prompt}\nImage ${index + 1} of ${data.images.length}`,
                 }
-
-                return {
-                    header: {
-                        imageMessage: {
-                            url: image.url,  // Use the URL from the result
-                        },
-                        hasMediaAttachment: true,
-                    },
-                    body: {
-                        text: `◦ *Prompt* : ${data.prompt}\nImage ${index + 1} of ${data.images.length}`,
-                    },
-                    nativeFlowMessage: {
-                        buttons: []  // No buttons for now as per your request
-                    }
-                };
-            }).filter(card => card !== null); // Remove null values from the array
+            }));
 
             // Send the carousel with the generated images
-            if (cards.length > 0) {
-                console.log("Sending carousel with images...");
-                client.sendCarousel(m.chat, cards, m, {
-                    content: 'Here are your generated images:',
-                });
-            } else {
-                console.log("No valid images to send.");
-                m.reply('No valid images found.');
-            }
+            client.sendCarousel(m.chat, cards, m, {
+                content: 'Here are your generated images:',
+            });
         });
     },
     error: false,
