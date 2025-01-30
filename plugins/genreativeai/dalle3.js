@@ -12,7 +12,7 @@ exports.run = {
         
         m.reply('Generating image, please wait...');
         
-        const scriptPath = path.join(__dirname, 'generate_image.py');
+        const scriptPath = path.join(__dirname, 'generate_image.py'); // Path to your Python script
 
         // Execute Python script to generate image
         exec(`python3 ${scriptPath} '${text}'`, async (error, stdout, stderr) => {
@@ -23,29 +23,33 @@ exports.run = {
             if (stderr) {
                 console.error(`stderr: ${stderr}`);
             }
-            
+
             let data;
             try {
+                // Parse the output JSON
                 data = JSON.parse(stdout);
             } catch (err) {
                 return m.reply('Failed to parse image data.');
             }
-            
+
             if (!data.images || data.images.length === 0) {
                 return client.reply(m.chat, 'No images found.', m);
             }
-            
+
             // Prepare carousel for images
             const cards = data.images.map((image, index) => ({
                 header: {
-                    imageMessage: image.url,
+                    imageMessage: {
+                        url: image.url,  // Use the URL from the result
+                    },
                     hasMediaAttachment: true,
                 },
                 body: {
                     text: `◦ *Prompt* : ${data.prompt}\nImage ${index + 1} of ${data.images.length}`,
                 }
             }));
-            
+
+            // Send the carousel with the generated images
             client.sendCarousel(m.chat, cards, m, {
                 content: 'Here are your generated images:',
             });
