@@ -44,17 +44,29 @@ exports.run = {
             }
 
             // Prepare cards for the carousel
-            const cards = data.images.map((image, index) => ({
-                header: {
-                    imageMessage: {
-                        url: image.url,  // Use the URL from the result
-                    },
-                    hasMediaAttachment: true,
-                },
-                body: {
-                    text: `◦ *Prompt* : ${data.prompt}\nImage ${index + 1} of ${data.images.length}`,
+            const cards = data.images.map((image, index) => {
+                let imageUrl = image.url;
+
+                // Add '.jpg' to the image URL if it doesn't already have it
+                if (!imageUrl.endsWith('.jpg')) {
+                    imageUrl += '.jpg';
                 }
-            }));
+
+                return {
+                    header: {
+                        imageMessage: {
+                            url: imageUrl,  // Use the updated URL
+                        },
+                        hasMediaAttachment: true,
+                    },
+                    body: {
+                        text: `◦ *Prompt* : ${data.prompt}\nImage ${index + 1} of ${data.images.length}`,
+                    },
+                    nativeFlowMessage: {
+                        buttons: []  // No buttons for now as per your request
+                    }
+                };
+            });
 
             // Send the carousel with the generated images
             client.sendCarousel(m.chat, cards, m, {
