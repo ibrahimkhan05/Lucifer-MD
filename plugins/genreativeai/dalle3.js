@@ -43,9 +43,9 @@ exports.run = {
                 return client.reply(m.chat, 'No images found.', m);
             }
 
-            // Prepare the images
-            const images = data.images.map((image, index) => {
-                let imageUrl = image.url;
+            // Prepare the images, but only pick 1st, 3rd, 5th, and 7th
+            const selectedImages = [0, 2, 4, 6].map(index => {
+                let imageUrl = data.images[index]?.url;
 
                 // Validate URL and add .jpg if not present
                 if (typeof imageUrl !== 'string' || !imageUrl.startsWith('http')) {
@@ -64,13 +64,13 @@ exports.run = {
                 };
             }).filter(image => image !== null); // Remove null values from the array
 
-            // Send images one by one with a 2-second delay
+            // Send selected images (1st, 3rd, 5th, and 7th) one by one with a 2-second delay
             let delay = 0;  // Start from 0ms delay
-            for (let i = 0; i < images.length; i++) {
+            for (let i = 0; i < selectedImages.length; i++) {
                 setTimeout(() => {
                     client.sendMessage(m.chat, {
-                        image: { url: images[i].url },
-                        caption: images[i].text,
+                        image: { url: selectedImages[i].url },
+                        caption: selectedImages[i].text,
                     }, { quoted: m });
                 }, delay);
                 delay += 2000;  // Add 2 seconds delay for the next image
