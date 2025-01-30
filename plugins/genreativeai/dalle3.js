@@ -36,37 +36,19 @@ exports.run = {
                 return client.reply(m.chat, 'No images found.', m);
             }
 
-            // Select the 1st, 3rd, 5th, and 7th images and add .jpg extension
-            const selectedImages = [
-                data.images[0]?.url + '.jpg',  // 1st image
-                data.images[2]?.url + '.jpg',  // 3rd image
-                data.images[4]?.url + '.jpg',  // 5th image
-                data.images[6]?.url + '.jpg'   // 7th image
-            ];
+            // Send the 1st, 3rd, 5th, and 7th images directly without saving them in separate variables
+            for (let i = 0; i < 4; i++) {
+                const imageIndex = i * 2; // To select 1st, 3rd, 5th, and 7th images
+                const imageUrl = data.images[imageIndex]?.url + '.jpg'; // Add .jpg extension
 
-            // Prepare carousel cards for sending the images
-            const cards = selectedImages.map((imageUrl, index) => ({
-                header: {
-                    imageMessage: {
-                        url: imageUrl,  // Use the image URL
-                    },
-                    hasMediaAttachment: true,
-                },
-                body: {
-                    text: `◦  *Prompt* : ${text}\nImage ${index + 1} of 4`,
-                },
-                nativeFlowMessage: {
-                    buttons: []
+                if (imageUrl) {
+                    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 2 seconds
+
+                    client.sendMessage(m.chat, {
+                        image: { url: imageUrl },
+                        caption: `◦  *Prompt* : ${text}\nImage ${i + 1} of 4`,
+                    });
                 }
-            }));
-
-            // Send carousel with the prepared cards
-            if (cards.length > 0) {
-                client.sendCarousel(m.chat, cards, m, {
-                    content: 'Here are your generated images:',
-                });
-            } else {
-                m.reply('No valid images found.');
             }
         });
     },
