@@ -43,7 +43,7 @@ exports.run = {
                 return client.reply(m.chat, 'No images found.', m);
             }
 
-            // Prepare cards for the carousel, ensuring valid URLs
+            // Prepare cards for the carousel with the images
             const cards = data.images.map((image, index) => {
                 if (!image.url || typeof image.url !== 'string' || !image.url.startsWith('http')) {
                     console.warn(`Skipping invalid image URL: ${image.url}`);
@@ -60,6 +60,9 @@ exports.run = {
                     body: {
                         text: `◦ *Prompt* : ${data.prompt}\nImage ${index + 1} of ${data.images.length}`,
                     },
+                    nativeFlowMessage: {
+                        buttons: []  // No buttons for now as per your request
+                    }
                 };
             }).filter(card => card !== null); // Remove null values from the array
 
