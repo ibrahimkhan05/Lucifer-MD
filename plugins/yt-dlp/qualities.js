@@ -69,7 +69,7 @@ exports.run = {
     usage: ['ytdl'],
     use: 'url',
     category: 'special',
-    async: async (m, { client, text, isPrefix, command }) => {
+    async: async (m, { client, Func, text, isPrefix, command }) => {
         try {
             if (command === 'ytdl') {
                 if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), m);
