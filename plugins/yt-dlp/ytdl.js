@@ -66,7 +66,7 @@ exports.run = {
                 const fileSize = fs.statSync(filePath).size;
                 const fileSizeStr = `${(fileSize / (1024 * 1024)).toFixed(2)} MB`;
 
-                if (fileSize > 930 * 1024 * 1024) { // 930 MB
+                if (fileSize > 1970 * 1024 * 1024) { // 930 MB
                     await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 930MB`, m);
                     fs.unlinkSync(filePath); // Delete the file
                     return;
