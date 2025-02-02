@@ -72,6 +72,7 @@ exports.run = {
     async: async (m, { client, text, isPrefix, command }) => {
         try {
             if (command === 'ytdl') {
+                if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), m);
                 client.sendReact(m.chat, '🕒', m.key)
                 await handleUserRequest(m, { client, text, isPrefix, command });
                 
