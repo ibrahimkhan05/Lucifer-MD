@@ -5,7 +5,7 @@ exports.run = {
     usage: ['bingimg'],
     use: 'query',
     category: 'generativeai',
-    async: async (m, { client, text, Func }) => {
+    async: async (m, { client,isPrefix, text, Func }) => {
         if (!text) {
             return client.reply(m.chat, Func.example(isPrefix, command, 'a cat painting'), m);
         }
