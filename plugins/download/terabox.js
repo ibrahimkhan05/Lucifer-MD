@@ -25,7 +25,6 @@ exports.run = {
             for (let file of jsonData.result) {
                 if (file.files && file.files.length > 0) {
                     for (let fileData of file.files) {
-                        const downloadUrl = fileData.url; // Extracted download URL
                         const filename = fileData.filename;
 
                         // Fetch the actual file
