@@ -1,5 +1,4 @@
-const { RsnChat } = require("rsnchat");
-const rsnchat = new RsnChat(process.env.RSGPT);
+
 exports.run = {
    usage: ['ai'],
    use: 'prompt',
