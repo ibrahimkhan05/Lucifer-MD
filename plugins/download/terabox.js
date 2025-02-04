@@ -29,10 +29,10 @@ exports.run = {
                         const filename = fileData.filename;
 
                         // Fetch the actual file
-                        const fileResponse = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
+                       
 
                         // Send the file to the chat
-                        await client.sendFile(m.chat, fileResponse.data, filename, '', m);
+                        await client.sendFile(m.chat, fileData.url, filename, '', m);
                     }
                 }
             }
