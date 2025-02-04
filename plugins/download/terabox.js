@@ -1,6 +1,4 @@
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
 
 exports.run = {
     usage: ['terabox'],
@@ -33,15 +31,8 @@ exports.run = {
                         // Fetch the actual file from the redirected URL
                         const fileResponse = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
 
-                        // Save the file temporarily
-                        const filePath = path.join(__dirname, filename);
-                        fs.writeFileSync(filePath, fileResponse.data);
-
-                        // Send the file to the chat
-                        await client.sendFile(m.chat, filePath, filename, '', m);
-
-                        // Delete the file after sending
-                        fs.unlinkSync(filePath);
+                        // Send the file directly to the chat
+                        await client.sendFile(m.chat, Buffer.from(fileResponse.data), filename, '', m);
                     }
                 }
             }
