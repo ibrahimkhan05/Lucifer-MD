@@ -17,7 +17,7 @@ exports.run = {
             const jsonData = response.data;
 
             // Check if the response contains valid files
-            if (!jsonData || jsonData.status !== "true" || !jsonData.result || !jsonData.result.length) {
+            if (!jsonData || jsonData.status !== "true") {
                 return client.reply(m.chat, '⚠️ Failed to fetch files. Please check the link or try again later.', m);
             }
 
