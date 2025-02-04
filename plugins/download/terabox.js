@@ -1,4 +1,6 @@
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 
 exports.run = {
     usage: ['terabox'],
@@ -9,7 +11,7 @@ exports.run = {
             if (!text) {
                 return client.reply(m.chat, Func.example(isPrefix, command, 'your link'), m);
             }
-            
+
             client.sendReact(m.chat, '🕒', m.key);
 
             // Fetch data from the API
@@ -26,12 +28,20 @@ exports.run = {
                 if (file.files && file.files.length > 0) {
                     for (let fileData of file.files) {
                         const filename = fileData.filename;
+                        const downloadUrl = fileData.url;
 
-                        // Fetch the actual file
-                       
+                        // Fetch the actual file from the redirected URL
+                        const fileResponse = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
+
+                        // Save the file temporarily
+                        const filePath = path.join(__dirname, filename);
+                        fs.writeFileSync(filePath, fileResponse.data);
 
                         // Send the file to the chat
-                        await client.sendFile(m.chat, fileData.url, filename, '', m);
+                        await client.sendFile(m.chat, filePath, filename, '', m);
+
+                        // Delete the file after sending
+                        fs.unlinkSync(filePath);
                     }
                 }
             }
