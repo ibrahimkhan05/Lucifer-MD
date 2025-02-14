@@ -46,7 +46,7 @@ exports.run = {
 
                     client.sendMessage(m.chat, {
                         image: { url: imageUrl },
-                        caption: `◦  *Prompt* : ${text}\nImage ${i + 1} of 4`,
+                        caption: `◦  *Prompt* : ${text}\n*Image:* ${i + 1} of 4`,
                     });
                 }
             }
