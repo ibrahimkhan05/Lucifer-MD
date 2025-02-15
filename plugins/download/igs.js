@@ -1,24 +1,26 @@
 exports.run = {
    usage: ['igs'],
    hidden: ['igstory'],
-   use: 'link',
+   use: 'username',
    category: 'downloader',
    async: async (m, { client, args, isPrefix, command, Func }) => {
       try {
          if (!args || !args[0]) {
-            return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.instagram.com/p/CK0tLXyAzEI'), m);
+            return client.reply(m.chat, Func.example(isPrefix, command, 'ustazadnin'), m);
          }
-         if (!args[0].match(/(https:\/\/www.instagram.com)/gi)) {
-            return client.reply(m.chat, global.status.invalid, m);
-         }
+
+         // Trim spaces but keep everything else intact
+         const username = args[0].trim();
+         const igUrl = `https://www.instagram.com/stories/${username}`;
 
          client.sendReact(m.chat, '🕒', m.key);
          const startTime = Date.now();
-         const apiUrl = `https://api.betabotz.eu.org/api/download/igdowloader?url=${args[0]}&apikey=${global.betabotz}`;
+
+         const apiUrl = `https://api.betabotz.eu.org/api/download/igdowloader?url=${encodeURIComponent(igUrl)}&apikey=${global.betabotz}`;
          
          const response = await Func.fetchJson(apiUrl);
          if (!response.status || !response.message.length) {
-            return client.reply(m.chat, 'Unable to fetch the content. Please try again.', m);
+            return client.reply(m.chat, 'Unable to fetch the story. Please try again.', m);
          }
 
          const processedUrls = new Set();
