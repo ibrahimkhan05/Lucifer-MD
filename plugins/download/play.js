@@ -47,7 +47,7 @@ exports.run = {
                 const data = response.data.result;
 
                 // Send the audio file to the user
-                client.sendFile(m.chat, data.mp3, `${data.title}.mp3`, '', m, {
+                client.sendFile(m.chat, data.mp3, `${data.title}.wav`, '', m, {
                     document: true,
                     APIC: await Func.fetchBuffer(data.thumb)
                 });
