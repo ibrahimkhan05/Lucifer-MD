@@ -1,6 +1,3 @@
-const axios = require('axios');
-const querystring = require('querystring');
-
 exports.run = {
    usage: ['ig'],
    hidden: ['igdl'],
@@ -9,7 +6,7 @@ exports.run = {
    async: async (m, { client, args, isPrefix, command, Func }) => {
       try {
          if (!args || !args[0]) {
-            return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.instagram.com/reel/DF9rbvbyPq7/?igsh=MTN2aGZ0M3ZycDhzZA=='), m);
+            return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.instagram.com/p/CK0tLXyAzEI'), m);
          }
          if (!args[0].match(/(https:\/\/www.instagram.com)/gi)) {
             return client.reply(m.chat, global.status.invalid, m);
@@ -17,25 +14,15 @@ exports.run = {
 
          client.sendReact(m.chat, '🕒', m.key);
          const startTime = Date.now();
-
-         // Encode URL properly
-         const encodedUrl = encodeURIComponent(args[0]);
-
-         // Add headers like a browser request
-         const headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-         };
-
-         const apiUrl = `https://api.betabotz.eu.org/api/download/igdowloader?url=${encodedUrl}&apikey=${global.betabotz}`;
+         const apiUrl = `https://api.betabotz.eu.org/api/download/igdowloader?url=${args[0]}&apikey=${global.betabotz}`;
          
-         const response = await axios.get(apiUrl, { headers });
-
-         if (!response.data.status || !response.data.message.length) {
+         const response = await Func.fetchJson(apiUrl);
+         if (!response.status || !response.message.length) {
             return client.reply(m.chat, 'Unable to fetch the content. Please try again.', m);
          }
 
          const processedUrls = new Set();
-         for (const item of response.data.message) {
+         for (const item of response.message) {
             if (processedUrls.has(item._url)) continue;
 
             processedUrls.add(item._url);
