@@ -47,7 +47,10 @@ exports.run = {
                 const data = response.data.result;
 
                 // Send the audio file to the user
-                client.sendFile(m.chat, data.mp3, 'song.mp3',firstResult.title, m);
+                client.sendFile(m.chat, data.mp3, `${data.title}.mp3`, '', m, {
+                    document: false,
+                    APIC: await Func.fetchBuffer(data.thumb)
+                });
             });
 
         } catch (e) {
