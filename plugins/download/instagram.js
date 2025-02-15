@@ -6,7 +6,7 @@ exports.run = {
    async: async (m, { client, args, isPrefix, command, Func }) => {
       try {
          if (!args || !args[0]) {
-            return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.instagram.com/p/CK0tLXyAzEI'), m);
+            return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.instagram.com/reel/CK0tLXyAzEI'), m);
          }
          if (!args[0].match(/(https:\/\/www.instagram.com)/gi)) {
             return client.reply(m.chat, global.status.invalid, m);
@@ -31,12 +31,19 @@ exports.run = {
             await client.sendFile(m.chat, mediaUrls[0], filename, message, m);
          } else {
             // If multiple images/videos, send them all
-            for (const url of mediaUrls) {
-               const file = await Func.getFile(url);
+            for (const item of response.message) {
+               const file = await Func.getFile(item._url);
                const filename = `file_${Date.now()}.${file.extension}`;
                const message = `🍟 *Fetched in* : ${Date.now() - startTime} ms`;
 
-               await client.sendFile(m.chat, url, filename, message, m);
+               if (file.extension === 'mp4') {
+                  // Send video normally
+                  await client.sendFile(m.chat, item._url, 'video.mp4', message, m);
+               } else {
+                  // Send image
+                  await client.sendFile(m.chat, item._url, filename, message, m);
+               }
+
                await Func.delay(1500);
             }
          }
