@@ -1,31 +1,44 @@
-const { exec } = require('child_process');
-const path = require('path');
+const { spawn } = require("child_process");
+const path = require("path");
 
 exports.run = {
-    usage: ['bingimg'],
-    use: 'query',
-    category: 'generativeai',
-    async: async (m, { client,isPrefix, text, Func, command }) => {
+    usage: ["bingimg"],
+    use: "query",
+    category: "generativeai",
+    async: async (m, { client, isPrefix, text, Func, command }) => {
         if (!text) {
-            return client.reply(m.chat, Func.example(isPrefix, command, 'a cat painting'), m);
+            return client.reply(m.chat, Func.example(isPrefix, command, "a cat painting"), m);
         }
 
-        m.reply('Generating images, please wait...');
+        m.reply("Generating images, please wait...");
 
-        const scriptPath = path.join(__dirname, 'generate_image.py'); // Path to your Python script
+        const scriptPath = path.join(__dirname, "generate_image.py"); // Path to Python script
 
-        // Execute Python script to generate image
-        exec(`python3 ${scriptPath} '${text}'`, async (error, stdout, stderr) => {
-            if (error) {
-                return m.reply('An error occurred while generating the image.');
+        // Use spawn to handle long prompts properly
+        const process = spawn("python3", [scriptPath, text]);
+
+        let output = "";
+        let errorOutput = "";
+
+        process.stdout.on("data", (data) => {
+            output += data.toString();
+        });
+
+        process.stderr.on("data", (data) => {
+            errorOutput += data.toString();
+        });
+
+        process.on("close", (code) => {
+            if (errorOutput) {
+                return m.reply(`Error: ${errorOutput}`);
             }
 
             let data;
             try {
-                // Parse the JSON part of the output
-                data = JSON.parse(stdout);
+                // Parse JSON output from Python script
+                data = JSON.parse(output);
             } catch (err) {
-                return m.reply(`Failed to parse image data. Raw output: ${stdout}`);
+                return m.reply(`Failed to parse image data. Raw output: ${output}`);
             }
 
             if (data.error) {
@@ -33,21 +46,21 @@ exports.run = {
             }
 
             if (!data.images || data.images.length === 0) {
-                return client.reply(m.chat, 'No images found.', m);
+                return client.reply(m.chat, "No images found.", m);
             }
 
-            // Send the 1st, 3rd, 5th, and 7th images directly without saving them in separate variables
+            // Send the 1st, 3rd, 5th, and 7th images
             for (let i = 0; i < 4; i++) {
-                const imageIndex = i * 2; // To select 1st, 3rd, 5th, and 7th images
-                const imageUrl = data.images[imageIndex]?.url + '.jpg'; // Add .jpg extension
+                const imageIndex = i * 2; // Select 1st, 3rd, 5th, and 7th images
+                const imageUrl = data.images[imageIndex]?.url + ".jpg"; // Add .jpg extension
 
                 if (imageUrl) {
-                    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 2 seconds
-
-                    client.sendMessage(m.chat, {
-                        image: { url: imageUrl },
-                        caption: `◦  *Prompt* : ${text}\n*Image:* ${i + 1} of 4`,
-                    });
+                    setTimeout(() => {
+                        client.sendMessage(m.chat, {
+                            image: { url: imageUrl },
+                            caption: `◦  *Prompt* : ${text}\n*Image:* ${i + 1} of 4`,
+                        });
+                    }, 2000 * i); // Add a delay between image sending
                 }
             }
         });
@@ -55,5 +68,5 @@ exports.run = {
     error: false,
     limit: true,
     premium: false,
-    verified: true
+    verified: true,
 };
