@@ -6,7 +6,7 @@ exports.run = {
     category: "generativeai",
     async: async (m, { client, isPrefix, text, Func, command }) => {
         
-const r = await yts( 'superman theme' )
+const r = await yts( 'Hona tha pyar' )
 
 const videos = r.videos.slice( 0, 3 )
 videos.forEach( function ( v ) {
