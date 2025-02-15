@@ -1,12 +1,11 @@
-const { spawn } = require("child_process");
-const path = require("path");
+const yts = require( 'yt-search' )
 
 exports.run = {
-    usage: ["youtt"],
+    usage: ["testt"],
     use: "query",
     category: "generativeai",
     async: async (m, { client, isPrefix, text, Func, command }) => {
-        const yts = require( 'yt-search' )
+        
 const r = await yts( 'superman theme' )
 
 const videos = r.videos.slice( 0, 3 )
