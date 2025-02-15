@@ -37,10 +37,7 @@ exports.run = {
                     }
                     
                     const data = response.data.result;
-                     client.sendFile(m.chat, data.mp3, `${data.title}`, '', m, {
-                        document: false,
-                        APIC: await Func.fetchBuffer(data.thumb)
-                    });
+                     await client.sendFile(m.chat, data.mp3, `${data.title}`, '', m);
                 } catch (error) {
                     console.error(error);
                     client.reply(m.chat, "Error fetching audio file. Please try again later.", m);
