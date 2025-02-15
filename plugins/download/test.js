@@ -1,7 +1,7 @@
 const yts = require( 'yt-search' )
 
 exports.run = {
-    usage: ["testt"],
+    usage: ["myy"],
     use: "query",
     category: "generativeai",
     async: async (m, { client, isPrefix, text, Func, command }) => {
