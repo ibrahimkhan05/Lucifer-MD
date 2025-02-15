@@ -37,7 +37,7 @@ exports.run = {
                     }
                     
                     const data = response.data.result;
-                     await client.sendFile(m.chat, data.mp3, `${data.title}`, '', m);
+                     await client.sendFile(m.chat, data.mp3, `${data.title}.mp3`, '', m);
                 } catch (error) {
                     console.error(error);
                     client.reply(m.chat, "Error fetching audio file. Please try again later.", m);
