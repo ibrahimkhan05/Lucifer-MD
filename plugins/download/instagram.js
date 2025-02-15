@@ -15,28 +15,30 @@ exports.run = {
          client.sendReact(m.chat, '🕒', m.key);
          const startTime = Date.now();
          const apiUrl = `https://api.betabotz.eu.org/api/download/igdowloader?url=${args[0]}&apikey=${global.betabotz}`;
-         
+
          const response = await Func.fetchJson(apiUrl);
          if (!response.status || !response.message.length) {
             return client.reply(m.chat, 'Unable to fetch the content. Please try again.', m);
          }
 
-         const processedUrls = new Set();
-         for (const item of response.message) {
-            if (processedUrls.has(item._url)) continue;
-
-            processedUrls.add(item._url);
-            const file = await Func.getFile(item._url);
+         const mediaUrls = response.message.map(item => item._url);
+         if (mediaUrls.length === 1) {
+            // If only one media file (image or video), send it directly
+            const file = await Func.getFile(mediaUrls[0]);
             const filename = `file_${Date.now()}.${file.extension}`;
-            const message = `🍟 *Fetching* : ${Date.now() - startTime} ms`;
+            const message = `🍟 *Fetched in* : ${Date.now() - startTime} ms`;
 
-            if (['jpg', 'jpeg', 'png', 'webp'].includes(file.extension)) {
-               await client.sendFile(m.chat, item._url, filename, message, m);
-            } else {
-               await client.sendFile(m.chat, item._url, 'video.mp4', message, m);
+            await client.sendFile(m.chat, mediaUrls[0], filename, message, m);
+         } else {
+            // If multiple images/videos, send them all
+            for (const url of mediaUrls) {
+               const file = await Func.getFile(url);
+               const filename = `file_${Date.now()}.${file.extension}`;
+               const message = `🍟 *Fetched in* : ${Date.now() - startTime} ms`;
+
+               await client.sendFile(m.chat, url, filename, message, m);
+               await Func.delay(1500);
             }
-
-            await Func.delay(1500);
          }
       } catch (error) {
          console.error('Error:', error);
