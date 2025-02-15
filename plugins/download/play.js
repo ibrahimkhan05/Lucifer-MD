@@ -1,7 +1,5 @@
 const { ytsearch } = require('ruhend-scraper');
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
 
 exports.run = {
     usage: ['play'],
@@ -39,25 +37,10 @@ exports.run = {
                     }
                     
                     const data = response.data.result;
-                    const filePath = path.join(__dirname, `${data.title}.mp3`);
-                    
-                    const writer = fs.createWriteStream(filePath);
-                    const audioStream = await axios({
-                        url: data.mp3,
-                        method: 'GET',
-                        responseType: 'stream'
+                     client.sendFile(m.chat, data.mp3, `${data.title}`, '', m, {
+                        document: false,
+                        APIC: await Func.fetchBuffer(data.thumb)
                     });
-                    
-                    audioStream.data.pipe(writer);
-                    
-                    writer.on('finish', async () => {
-                        await client.sendFile(m.chat, filePath, `${data.title}.mp3`, '', m, {
-                            document: true,
-                            APIC: await Func.fetchBuffer(data.thumb)
-                        });
-                        fs.unlinkSync(filePath);
-                    });
-                    
                 } catch (error) {
                     console.error(error);
                     client.reply(m.chat, "Error fetching audio file. Please try again later.", m);
