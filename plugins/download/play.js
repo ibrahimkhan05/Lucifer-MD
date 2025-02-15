@@ -37,7 +37,7 @@ exports.run = {
                     }
                     
                     const data = response.data.result;
-                     client.sendFile(m.chat, data.mp3, `${data.title}.mp3`, '', m, {
+                     client.sendFile(m.chat, data.mp3, `${data.title}`, '', m, {
                         document: true,
                         APIC: await Func.fetchBuffer(data.thumb)
                     });
