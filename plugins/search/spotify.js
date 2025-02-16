@@ -1,4 +1,4 @@
-const axios = require('axios'); // Import axios library
+const axios = require('axios');
 
 exports.run = {
     usage: ['spotify'],
@@ -6,39 +6,38 @@ exports.run = {
     category: 'search',
     async: async (m, { client, text, Func, isPrefix, command }) => {
         try {
-            // Check if a query is provided
-            if (!text) {
-                return client.reply(m.chat, Func.example(isPrefix, command, 'dj dalinda'), m);
-            }
+            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'dj dalinda'), m);
 
-            // Send a reaction to indicate processing
             client.sendReact(m.chat, '🕒', m.key);
 
-            // Make a GET request using Axios
             const response = await axios.get(`https://api.betabotz.eu.org/api/search/spotify?query=${encodeURIComponent(text)}&apikey=${global.betabotz}`);
 
-            // Check if the request was successful
-            if (!response.data.status) {
-                return client.reply(m.chat, Func.jsonFormat(response.data), m);
-            }
+            if (!response.data.status) return client.reply(m.chat, Func.jsonFormat(response.data), m);
 
-            // Split response into chunks of 18 results each
             const results = response.data.result.data;
-            const chunkSize = 18;
-            for (let i = 0; i < results.length; i += chunkSize) {
-                const chunk = results.slice(i, i + chunkSize);
-                let combinedCaption = i === 0 ? '乂  *S P O T I F Y  S E A R C H*\n\n' : ''; // Include caption only for the first chunk
-                chunk.forEach((v) => {
-                    combinedCaption += `    ◦  *Title* : ${v.title}\n`;
-                    combinedCaption += `    ◦  *Duration* : ${v.duration}\n`;
-                    combinedCaption += `    ◦  *Popularity* : ${v.popularity}\n`;
-                    combinedCaption += `    ◦  *URL* : ${v.url}\n\n`;
-                });
-                // Send the combined caption with search results as a single message
-                await m.reply(combinedCaption);
-            }
+            if (!results.length) return client.reply(m.chat, 'No results found!', m);
+
+            const listOptions = results.map((v) => ({
+                title: v.title,
+                description: '', // No extra details
+                id: `${isPrefix}spotifydl ${v.url}`
+            }));
+
+            await client.sendIAMessage(m.chat, [{
+                name: 'single_select',
+                buttonParamsJson: JSON.stringify({
+                    title: 'Select a song',
+                    sections: [{ rows: listOptions }]
+                })
+            }], m, {
+                header: '',
+                content: '🎵 *Spotify Search Results* 🎵',
+                footer: global.footer,
+                media: results[0].thumbnail // Include thumbnail in the message
+            });
+
         } catch (e) {
-            console.error(e); // Log the error for debugging
+            console.error(e);
             return client.reply(m.chat, global.status.error, m);
         }
     },

@@ -37,16 +37,11 @@ exports.run = {
             if (!downloadResponse.status) return client.reply(m.chat, global.status.fail, m);
 
             // Prepare message text
-            let teks = `乂  *S P O T I F Y  D O W N L O A D E R *\n\n`;
-            teks += '    ◦  *Name* : ' + downloadResponse.result.data.title + '\n';
-            teks += '    ◦  *Duration*: ' + downloadResponse.result.data.duration + '\n';
-            teks += '    ◦  *Artists* : ' + downloadResponse.result.data.artist.name + '\n';
-            teks += global.footer;
+           
 
             // Send thumbnail and file
-            client.sendFile(m.chat, downloadResponse.result.data.thumbnail, '', teks, m).then(() => {
+            
                 client.sendFile(m.chat, downloadResponse.result.data.url, downloadResponse.result.data.title + '.mp3', downloadResponse.result.data.title, m);
-            });
 
         } catch (e) {
             console.error(e);
