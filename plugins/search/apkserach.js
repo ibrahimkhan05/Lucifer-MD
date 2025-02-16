@@ -1,8 +1,8 @@
 const gplay = require('custom-google-play-scraper');
 
 exports.run = {
-  usage: ['apk'],
-  use: 'query',
+  usage: ['app'],
+  use: 'app name',
   category: 'search',
   async: async (m, { client, text, args, isPrefix, command, Func }) => {
     try {
@@ -12,7 +12,7 @@ exports.run = {
 
       const response = await gplay.search({
         term: text,
-        num: 5, // Fetch up to 5 results
+        num: 1, // Fetch up to 5 results
         throttle: 10
       });
 
