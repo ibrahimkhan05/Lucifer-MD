@@ -38,10 +38,11 @@ exports.run = {
 
             // Prepare message text
            
-
-            // Send thumbnail and file
-            
-                client.sendFile(m.chat, downloadResponse.result.data.url, downloadResponse.result.data.title + '.mp3', downloadResponse.result.data.title, m);
+                client.sendFile(m.chat, downloadResponse.result.data.url, downloadResponse.result.data.title + '.mp3', downloadResponse.result.data.title, m,{
+                    document: true,
+                    APIC: downloadResponse.result.data.thumbnail
+                });
+        
 
         } catch (e) {
             console.error(e);

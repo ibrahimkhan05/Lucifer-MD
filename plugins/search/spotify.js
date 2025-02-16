@@ -33,7 +33,7 @@ exports.run = {
                 header: '',
                 content: '🎵 *Spotify Search Results* 🎵',
                 footer: global.footer,
-                media: results[0].thumbnail // Include thumbnail in the message
+                media: '' // Include thumbnail in the message
             });
 
         } catch (e) {
