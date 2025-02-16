@@ -8,7 +8,7 @@ exports.run = {
         try {
             // Check if a query is provided
             if (!text) {
-                return client.reply(m.chat, Func.example(isPrefix, isPrefix, 'dj dalinda'), m);
+                return client.reply(m.chat, Func.example(isPrefix, command, 'dj dalinda'), m);
             }
 
             // Send a reaction to indicate processing
