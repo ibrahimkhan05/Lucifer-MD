@@ -36,7 +36,7 @@ exports.run = {
 
                     if (stderr) console.error(`⚠️ stderr: ${stderr}`);
 
-                    console.log(`📜 stdout: ${stdout}`);
+                   
 
                     let output;
                     try {
