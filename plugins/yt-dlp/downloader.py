@@ -3,6 +3,7 @@ import time
 import yt_dlp
 import sys
 from pathlib import Path
+import subprocess
 
 def get_available_formats(url):
     ydl_opts = {
@@ -10,52 +11,40 @@ def get_available_formats(url):
         'format': 'bestaudio/best',
         'noplaylist': True,
         'extract_flat': True,
-        'logger': None,  # Disables yt-dlp logging
-        'progress_hooks': [],  # Disables progress updates
-        'postprocessor_hooks': [],  # Disables post-processing logs
-        'noconsoletitle': True  # Prevents updates to terminal title
+        'logger': None,
+        'progress_hooks': [],
+        'postprocessor_hooks': [],
+        'noconsoletitle': True
     }
-    
+
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=False)
             formats = info_dict.get('formats', [])
-            format_list = [
-                f"{fmt['format_id']}: {fmt['height']}p" if 'height' in fmt else f"{fmt['format_id']}: Audio"
-                for fmt in formats
+            return [
+                f"{fmt['format_id']}: {fmt.get('height', 'Audio')}p" for fmt in formats
             ]
-            return format_list, None
-    except Exception:
-        return None, None  # Silence errors
+    except:
+        return None  # Return None if format check fails
 
 def download_video(url, output_path, quality='best', start_time=None):
-    formats, _ = get_available_formats(url)
+    formats = get_available_formats(url)
     if not formats:
-        return None  # Return nothing if format check fails
-    
+        return None  # Format check failed, return nothing
+
     format_code = next((fmt.split(':')[0] for fmt in formats if quality in fmt), 'best')
 
-    ydl_opts = {
-        'outtmpl': str(output_path),
-        'format': format_code,
-        'quiet': True,
-        'noprogress': True,
-        'noplaylist': True,
-        'concurrent_fragment_downloads': 4,
-        'logger': None,  # Disables yt-dlp logging
-        'progress_hooks': [],  # Disables progress updates
-        'postprocessor_hooks': [],  # Disables post-processing logs
-        'noconsoletitle': True  # Prevents updates to terminal title
-    }
-
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-    except Exception:
-        return None  # Silently fail on download error
+    # Silent subprocess execution
+    cmd = [
+        'yt-dlp', '-o', str(output_path), '-f', format_code,
+        '--quiet', '--no-warnings', '--no-progress', '--no-playlist'
+    ]
+    
+    with open('/dev/null', 'w') as devnull:  # Use 'nul' on Windows
+        subprocess.run(cmd, stdout=devnull, stderr=devnull)
 
     if not Path(output_path).exists():
-        return None  # File not found, return nothing
+        return None  # File not found
 
     file_size = Path(output_path).stat().st_size
     if start_time is None:
@@ -65,12 +54,11 @@ def download_video(url, output_path, quality='best', start_time=None):
     return output_path, download_speed, file_size
 
 def main(url, output_dir, quality='best'):
-    file_name = f"video_{int(time.time())}.mp4"  
+    file_name = f"video_{int(time.time())}.mp4"
     output_path = Path(output_dir) / file_name
     start_time = time.time()
 
     result = download_video(url, output_path, quality, start_time)
-
     if result:
         output_path, download_speed, file_size = result
         print(json.dumps({"filePath": str(output_path), "downloadSpeed": download_speed, "fileSize": file_size}))
