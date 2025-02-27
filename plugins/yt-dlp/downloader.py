@@ -9,7 +9,11 @@ def get_available_formats(url):
         'quiet': True,
         'format': 'bestaudio/best',
         'noplaylist': True,
-        'extract_flat': True
+        'extract_flat': True,
+        'logger': None,  # Disables yt-dlp logging
+        'progress_hooks': [],  # Disables progress updates
+        'postprocessor_hooks': [],  # Disables post-processing logs
+        'noconsoletitle': True  # Prevents updates to terminal title
     }
     
     try:
@@ -37,7 +41,11 @@ def download_video(url, output_path, quality='best', start_time=None):
         'quiet': True,
         'noprogress': True,
         'noplaylist': True,
-        'concurrent_fragment_downloads': 4
+        'concurrent_fragment_downloads': 4,
+        'logger': None,  # Disables yt-dlp logging
+        'progress_hooks': [],  # Disables progress updates
+        'postprocessor_hooks': [],  # Disables post-processing logs
+        'noconsoletitle': True  # Prevents updates to terminal title
     }
 
     try:
