@@ -9,11 +9,7 @@ def get_available_formats(url):
         'quiet': True,
         'format': 'bestaudio/best',
         'noplaylist': True,
-        'extract_flat': True,
-        'logger': None,  # Disable yt-dlp logs
-        'progress_hooks': [],  # No progress updates
-        'postprocessor_hooks': [],  # No post-processing logs
-        'noconsoletitle': True  # Prevents updates to terminal title
+        'extract_flat': True
     }
     
     try:
@@ -25,14 +21,14 @@ def get_available_formats(url):
                 for fmt in formats
             ]
             return format_list, None
-    except Exception:
-        return None, None  # Silence errors
+    except Exception as e:
+        return None, str(e)
 
 def download_video(url, output_path, quality='best', start_time=None):
-    formats, _ = get_available_formats(url)
-    if not formats:
-        return "Format check failed", None, None, 0, 0  # Keep function structure same
-
+    formats, error = get_available_formats(url)
+    if error:
+        return "Format check failed", error, None, 0, 0
+    
     format_code = next((fmt.split(':')[0] for fmt in formats if quality in fmt), 'best')
 
     ydl_opts = {
@@ -41,18 +37,17 @@ def download_video(url, output_path, quality='best', start_time=None):
         'quiet': True,
         'noprogress': True,
         'noplaylist': True,
-        'concurrent_fragment_downloads': 4,
-        'logger': None  # Silence yt-dlp logs
+        'concurrent_fragment_downloads': 4
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
-    except Exception:
-        return "Download failed", None, None, 0, 0  # Silent failure
+    except Exception as e:
+        return "Download failed", str(e), None, 0, 0
 
     if not Path(output_path).exists():
-        return "Download failed", None, None, 0, 0  # No logs, just return status
+        return "Download failed", "File not found after download", None, 0, 0
 
     file_size = Path(output_path).stat().st_size
     if start_time is None:
@@ -62,20 +57,22 @@ def download_video(url, output_path, quality='best', start_time=None):
     return None, None, output_path, download_speed, file_size
 
 def main(url, output_dir, quality='best'):
-    file_name = f"video_{int(time.time())}.mp4"  # Keep naming logic same
+    file_name = f"video_{int(time.time())}.mp4"  # Customize your file name logic here
     output_path = Path(output_dir) / file_name
     start_time = time.time()
 
-    error, _, output_path, download_speed, file_size = download_video(url, output_path, quality, start_time)
+    error, error_message, output_path, download_speed, file_size = download_video(url, output_path, quality, start_time)
 
     if error:
-        return  # No logging, just silent exit
+        print(json.dumps({"error": error, "message": error_message}))
+        return
 
     print(json.dumps({"filePath": str(output_path), "downloadSpeed": download_speed, "fileSize": file_size}))
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        sys.exit(1)  # Silent exit on incorrect usage
+        print(json.dumps({"error": "Usage: python downloader.py <url> <output_dir> [<quality>]"}))
+        sys.exit(1)
 
     url = sys.argv[1]
     output_dir = sys.argv[2]
