@@ -42,7 +42,7 @@ exports.run = {
             }
 
             console.log(`stdout: ${stdout}`);
-            
+
             // Parse the stdout to get the original file name and path
             let output;
             try {
@@ -64,14 +64,15 @@ exports.run = {
             // Handle file and send to user
             try {
                 const fileSize = fs.statSync(filePath).size;
-                const fileSizeStr = `${(fileSize / (1024 * 1024)).toFixed(2)} MB`;
+                const fileSizeMB = fileSize / (1024 * 1024); // Convert bytes to MB
+                const fileSizeStr = `${fileSizeMB.toFixed(2)} MB`;
 
-                if (fileSize > 1980 * 1024 * 1024) {
-                    await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 930MB`, m);
+                if (fileSize > 1980 * 1024 * 1024) { // Check if file exceeds 2GB
+                    await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 2GB`, m);
                     fs.unlinkSync(filePath); // Delete the file
                     return;
                 }
-                
+
                 const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
                 const chSize = Func.sizeLimit(fileSize.toString(), maxUpload.toString());
 
@@ -85,7 +86,9 @@ exports.run = {
 
                 const extname = path.extname(fileName).toLowerCase();
                 const isVideo = ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(extname);
-                const isDocument = isVideo && fileSize / (1024 * 1024) > 99; // 99 MB threshold
+                
+                // Send as a document if size is greater than 99MB
+                const isDocument = isVideo && fileSizeMB > 99;
 
                 await client.sendFile(m.chat, filePath, fileName, '', m, { document: isDocument });
 
