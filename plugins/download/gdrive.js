@@ -2,7 +2,7 @@ const { google } = require('googleapis');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const mime = require('mime-types');
+const fileType = require('file-type');
 
 const GOOGLE_API_KEY = 'AIzaSyAZDqbPmnMb1ZDb_seBOXbNzv-2s3ugxIQ'; // Replace with your API key
 const DRIVE_API = google.drive({ version: 'v3', auth: GOOGLE_API_KEY });
@@ -20,21 +20,31 @@ async function getDriveFileInfo(url) {
     }
 }
 
-async function downloadFile(fileId, fileName, mimeType) {
+async function downloadFile(fileId, fileName) {
     const tempDir = path.join(__dirname, 'temp');
     if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
     }
 
-    const extension = mime.extension(mimeType) || 'bin';
-    const filePath = path.join(tempDir, `${fileName}.${extension}`);
+    const filePath = path.join(tempDir, fileName);
     const dest = fs.createWriteStream(filePath);
-    const res = await DRIVE_API.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
-    res.data.pipe(dest);
-    return new Promise((resolve, reject) => {
-        dest.on('finish', () => resolve(filePath));
-        dest.on('error', reject);
-    });
+    
+    try {
+        const res = await DRIVE_API.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
+        res.data.pipe(dest);
+        await new Promise((resolve, reject) => {
+            dest.on('finish', resolve);
+            dest.on('error', reject);
+        });
+
+        const type = await fileType.fromFile(filePath);
+        const finalPath = type ? `${filePath}.${type.ext}` : filePath;
+        if (type) fs.renameSync(filePath, finalPath);
+        return finalPath;
+    } catch (error) {
+        console.error('Error downloading file:', error);
+        return null;
+    }
 }
 
 async function listFolderFiles(folderId) {
@@ -87,14 +97,20 @@ exports.run = {
                     await client.reply(m.chat, `⚠️ Skipping ${file.name} (size: ${(sizeInBytes / (1024 * 1024)).toFixed(2)} MB) as it exceeds the limit.`, m);
                     continue;
                 }
-                const filePath = await downloadFile(file.id, file.name, file.mimeType);
-                await client.sendFile(m.chat, filePath, file.name, `📂 *File Name:* ${file.name}\n📦 *Size:* ${file.size || 'Unknown'}`, m);
-                fs.unlinkSync(filePath);
+                const filePath = await downloadFile(file.id, file.name);
+                if (filePath) {
+                    await client.sendFile(m.chat, filePath, path.basename(filePath), `📂 *File Name:* ${file.name}
+📦 *Size:* ${file.size || 'Unknown'}`, m);
+                    fs.unlinkSync(filePath);
+                }
             }
         } else {
-            const filePath = await downloadFile(fileInfo.id, fileInfo.name, fileInfo.mimeType);
-            await client.sendFile(m.chat, filePath, fileInfo.name, `📄 *File Name:* ${fileInfo.name}\n📦 *Size:* ${fileInfo.size || 'Unknown'}`, m);
-            fs.unlinkSync(filePath);
+            const filePath = await downloadFile(fileInfo.id, fileInfo.name);
+            if (filePath) {
+                await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${fileInfo.name}
+📦 *Size:* ${fileInfo.size || 'Unknown'}`, m);
+                fs.unlinkSync(filePath);
+            }
         }
     },
     error: false,
