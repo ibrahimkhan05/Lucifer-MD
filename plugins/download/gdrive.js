@@ -4,7 +4,7 @@ const path = require('path');
 const axios = require('axios');
 const fileType = require('file-type');
 
-const GOOGLE_API_KEY = 'YOUR_GOOGLE_API_KEY'; // Replace with your API key
+const GOOGLE_API_KEY = 'AIzaSyAZDqbPmnMb1ZDb_seBOXbNzv-2s3ugxIQ'; // Replace with your API key
 const DRIVE_API = google.drive({ version: 'v3', auth: GOOGLE_API_KEY });
 
 // Get file/folder metadata from Google Drive
