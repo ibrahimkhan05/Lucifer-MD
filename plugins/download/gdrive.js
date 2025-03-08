@@ -7,7 +7,7 @@ const fileType = require('file-type');
 const GOOGLE_API_KEY = 'AIzaSyAZDqbPmnMb1ZDb_seBOXbNzv-2s3ugxIQ'; // Replace with your API key
 const DRIVE_API = google.drive({ version: 'v3', auth: GOOGLE_API_KEY });
 
-// Get file/folder metadata
+// Get file metadata (file/folder)
 async function getDriveFileInfo(url) {
     const match = url.match(/[-\w]{25,}/);
     if (!match) return null;
@@ -22,7 +22,7 @@ async function getDriveFileInfo(url) {
     }
 }
 
-// List all files inside a folder
+// List all files in a folder
 async function listFolderFiles(folderId) {
     try {
         const res = await DRIVE_API.files.list({
@@ -36,7 +36,7 @@ async function listFolderFiles(folderId) {
     }
 }
 
-// Check if file/folder size is within the allowed limit
+// Check if file/folder is oversized
 function isOversized(size, users, env) {
     const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
     return size > maxUpload;
@@ -52,7 +52,7 @@ async function downloadFile(fileId, fileName, mimeType, folderPath) {
     try {
         let res;
         if (mimeType.startsWith('application/vnd.google-apps')) {
-            // Handle Google Docs, Sheets, and Slides
+            // Convert Google Docs, Sheets, and Slides
             const exportMimeTypes = {
                 'application/vnd.google-apps.document': 'application/pdf',
                 'application/vnd.google-apps.spreadsheet': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -72,7 +72,7 @@ async function downloadFile(fileId, fileName, mimeType, folderPath) {
                 { responseType: 'stream' }
             );
         } else {
-            // Handle normal files
+            // Normal file download
             res = await DRIVE_API.files.get(
                 { fileId, alt: 'media' },
                 { responseType: 'stream' }
