@@ -7,19 +7,12 @@ const sleep = promisify(setTimeout);
 const GOOGLE_API_KEY = 'AIzaSyAZDqbPmnMb1ZDb_seBOXbNzv-2s3ugxIQ'; // Replace with your actual API key
 const DRIVE_API = google.drive({ version: 'v3', auth: GOOGLE_API_KEY });
 
-const MAX_FILE_SIZE_MB = 1989; // Maximum file size limit for uploads (1989 MB)
-
 // Ensure directory exists
 function ensureDirectoryExists(filePath) {
     const dir = path.dirname(filePath);
-    try {
-        if (fs.existsSync(dir) && !fs.lstatSync(dir).isDirectory()) {
-            fs.renameSync(dir, dir + '_backup_' + Date.now());
-        }
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-    } catch { }
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
 }
 
 // Get file/folder metadata
@@ -62,22 +55,11 @@ async function listFolderFiles(folderId) {
     return allFiles;
 }
 
-// Convert file size to MB
-function formatFileSize(size) {
-    return size ? `${(size / 1024 / 1024).toFixed(2)} MB` : 'Unknown';
-}
-
-// Check if file size is within limit
-function isFileSizeValid(size) {
-    return size && size / (1024 * 1024) < MAX_FILE_SIZE_MB;
-}
-
 // Download file
 async function downloadFile(fileId, fileName, mimeType, folderPath) {
-    const fullFilePath = path.join(folderPath, fileName);
-    ensureDirectoryExists(fullFilePath);
+    ensureDirectoryExists(folderPath);
 
-    let filePath = fullFilePath;
+    let filePath = path.join(folderPath, fileName);
     const dest = fs.createWriteStream(filePath);
 
     try {
@@ -89,9 +71,9 @@ async function downloadFile(fileId, fileName, mimeType, folderPath) {
                 'application/vnd.google-apps.presentation': 'application/pdf'
             };
 
-            const exportMimeType = exportMimeTypes[mimeType] || 'application/pdf';
+            const exportMimeType = exportMimeTypes[mimeType];
+            if (!exportMimeType) return null;
             filePath += exportMimeType.includes('pdf') ? '.pdf' : '.xlsx';
-            ensureDirectoryExists(filePath);
 
             res = await DRIVE_API.files.export(
                 { fileId, mimeType: exportMimeType },
@@ -128,55 +110,40 @@ exports.run = {
         const fileInfo = await getDriveFileInfo(text);
         if (!fileInfo) return client.reply(m.chat, 'Failed to retrieve file details.', m);
 
+        let fileListMessage = `📂 *Downloading from Google Drive:*\n\n`;
+
         if (fileInfo.mimeType === 'application/vnd.google-apps.folder') {
             const folderPath = path.join(__dirname, 'temp', fileInfo.name);
             const files = await listFolderFiles(fileInfo.id);
             if (!files.length) return client.reply(m.chat, 'No files found in the folder.', m);
 
-            let fileList = `📂 *Folder:* ${fileInfo.name}\n\n`;
-            let validFiles = [];
+            for (const file of files) {
+                await sleep(3000);
 
-            files.forEach(file => {
-                const fileSizeMB = formatFileSize(file.size);
-                fileList += `📄 *${file.name}* - ${fileSizeMB}\n`;
-
-                if (isFileSizeValid(file.size)) {
-                    validFiles.push(file);
-                }
-            });
-
-            await client.reply(m.chat, fileList, m);
-
-            if (validFiles.length === 0) {
-                return client.reply(m.chat, '❌ No files are eligible for upload (All files are too large).', m);
-            }
-
-            for (const file of validFiles) {
-                await sleep(3000); // 3-second delay
                 const filePath = await downloadFile(file.id, file.name, file.mimeType, path.join(folderPath, path.dirname(file.path)));
                 if (filePath) {
-                    await client.sendFile(m.chat, filePath, path.basename(filePath), '', m);
+                    const fileSizeMB = file.size ? (file.size / (1024 * 1024)).toFixed(2) + ' MB' : 'Unknown';
+                    fileListMessage += `📄 *${file.name}* (${fileSizeMB})\n`;
+
+                    await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${file.name}\n📦 *Size:* ${fileSizeMB}`, m);
                     fs.unlinkSync(filePath);
                 }
             }
         } else {
-            const fileSizeMB = formatFileSize(fileInfo.size);
-            const fileList = `📄 *File:* ${fileInfo.name}\n📦 *Size:* ${fileSizeMB}`;
-            await client.reply(m.chat, fileList, m);
-
-            if (!isFileSizeValid(fileInfo.size)) {
-                return client.reply(m.chat, '❌ This file is too large to upload (Max 1989 MB allowed).', m);
-            }
-
-            await sleep(3000); // 3-second delay
+            await client.reply(m.chat, '📄 Downloading file...', m);
 
             const folderPath = path.join(__dirname, 'temp');
             const filePath = await downloadFile(fileInfo.id, fileInfo.name, fileInfo.mimeType, folderPath);
             if (filePath) {
-                await client.sendFile(m.chat, filePath, path.basename(filePath), '', m);
+                const fileSizeMB = fileInfo.size ? (fileInfo.size / (1024 * 1024)).toFixed(2) + ' MB' : 'Unknown';
+                fileListMessage += `📄 *${fileInfo.name}* (${fileSizeMB})\n`;
+
+                await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${fileInfo.name}\n📦 *Size:* ${fileSizeMB}`, m);
                 fs.unlinkSync(filePath);
             }
         }
+
+        await client.reply(m.chat, fileListMessage, m);
     },
     error: false,
     limit: true,
