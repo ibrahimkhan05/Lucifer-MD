@@ -51,12 +51,6 @@ async function listFolderFiles(folderId) {
     return allFiles;
 }
 
-// Check if file is oversized
-function isOversized(size, users, env) {
-    const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
-    return size > maxUpload;
-}
-
 // Download file
 async function downloadFile(fileId, fileName, mimeType, folderPath) {
     if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
@@ -124,18 +118,15 @@ exports.run = {
             if (!files.length) return client.reply(m.chat, 'No files found in the folder.', m);
 
             for (const file of files) {
-                if (isOversized(parseFloat(file.size || 0), users, env)) {
-                    await client.reply(m.chat, `⚠️ Skipping *${file.name}* (Too large)`, m);
-                    continue;
-                }
-
                 const filePath = await downloadFile(file.id, file.name, file.mimeType, path.join(folderPath, path.dirname(file.path)));
                 if (filePath) {
                     const detectedType = await fileType.fromFile(filePath);
                     const extension = detectedType ? `.${detectedType.ext}` : path.extname(filePath);
 
-                    await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${file.name}\n📦 *Size:* ${file.size || 'Unknown'}`, m);
-                    fs.unlinkSync(filePath);
+                    setTimeout(async () => {  // 3-second delay before sending the file
+                        await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${file.name}\n📦 *Size:* ${file.size || 'Unknown'}`, m);
+                        fs.unlinkSync(filePath);
+                    }, 3000);
                 }
             }
         } else {
@@ -147,8 +138,10 @@ exports.run = {
                 const detectedType = await fileType.fromFile(filePath);
                 const extension = detectedType ? `.${detectedType.ext}` : path.extname(filePath);
 
-                await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${fileInfo.name}\n📦 *Size:* ${fileInfo.size || 'Unknown'}`, m);
-                fs.unlinkSync(filePath);
+                setTimeout(async () => {  // 3-second delay before sending the file
+                    await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${fileInfo.name}\n📦 *Size:* ${fileInfo.size || 'Unknown'}`, m);
+                    fs.unlinkSync(filePath);
+                }, 3000);
             }
         }
     },
