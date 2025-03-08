@@ -1,13 +1,12 @@
 const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
-const axios = require('axios');
 const fileType = require('file-type');
 
 const GOOGLE_API_KEY = 'AIzaSyAZDqbPmnMb1ZDb_seBOXbNzv-2s3ugxIQ'; // Replace with your API key
 const DRIVE_API = google.drive({ version: 'v3', auth: GOOGLE_API_KEY });
 
-// Get file metadata (file/folder)
+// Get file/folder metadata
 async function getDriveFileInfo(url) {
     const match = url.match(/[-\w]{25,}/);
     if (!match) return null;
@@ -22,27 +21,43 @@ async function getDriveFileInfo(url) {
     }
 }
 
-// List all files in a folder
+// List all files and subfolders recursively
 async function listFolderFiles(folderId) {
-    try {
-        const res = await DRIVE_API.files.list({
-            q: `'${folderId}' in parents and trashed=false`,
-            fields: 'files(id, name, mimeType, size)'
-        });
-        return res.data.files;
-    } catch (error) {
-        console.error('Error listing folder files:', error);
-        return [];
+    let allFiles = [];
+
+    async function fetchFiles(parentId, parentPath = '') {
+        try {
+            const res = await DRIVE_API.files.list({
+                q: `'${parentId}' in parents and trashed=false`,
+                fields: 'files(id, name, mimeType, size)'
+            });
+
+            for (const file of res.data.files) {
+                const filePath = path.join(parentPath, file.name);
+
+                if (file.mimeType === 'application/vnd.google-apps.folder') {
+                    console.log(`📂 Entering folder: ${file.name}`);
+                    await fetchFiles(file.id, filePath); // Recursively fetch subfolder contents
+                } else {
+                    allFiles.push({ ...file, path: filePath });
+                }
+            }
+        } catch (error) {
+            console.error('Error listing folder files:', error);
+        }
     }
+
+    await fetchFiles(folderId);
+    return allFiles;
 }
 
-// Check if file/folder is oversized
+// Check if file is oversized
 function isOversized(size, users, env) {
     const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
     return size > maxUpload;
 }
 
-// Download a file from Google Drive
+// Download file
 async function downloadFile(fileId, fileName, mimeType, folderPath) {
     if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
 
@@ -52,7 +67,6 @@ async function downloadFile(fileId, fileName, mimeType, folderPath) {
     try {
         let res;
         if (mimeType.startsWith('application/vnd.google-apps')) {
-            // Convert Google Docs, Sheets, and Slides
             const exportMimeTypes = {
                 'application/vnd.google-apps.document': 'application/pdf',
                 'application/vnd.google-apps.spreadsheet': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -72,7 +86,6 @@ async function downloadFile(fileId, fileName, mimeType, folderPath) {
                 { responseType: 'stream' }
             );
         } else {
-            // Normal file download
             res = await DRIVE_API.files.get(
                 { fileId, alt: 'media' },
                 { responseType: 'stream' }
@@ -104,7 +117,7 @@ exports.run = {
         if (!fileInfo) return client.reply(m.chat, 'Failed to retrieve file details.', m);
 
         if (fileInfo.mimeType === 'application/vnd.google-apps.folder') {
-            await client.reply(m.chat, `📂 Folder detected: *${fileInfo.name}* \n⏳ Fetching contents...`, m);
+            await client.reply(m.chat, `📂 Folder detected: *${fileInfo.name}* \n⏳ Fetching all files recursively...`, m);
 
             const folderPath = path.join(__dirname, 'temp', fileInfo.name);
             const files = await listFolderFiles(fileInfo.id);
@@ -116,7 +129,7 @@ exports.run = {
                     continue;
                 }
 
-                const filePath = await downloadFile(file.id, file.name, file.mimeType, folderPath);
+                const filePath = await downloadFile(file.id, file.name, file.mimeType, path.join(folderPath, path.dirname(file.path)));
                 if (filePath) {
                     const detectedType = await fileType.fromFile(filePath);
                     const extension = detectedType ? `.${detectedType.ext}` : path.extname(filePath);
