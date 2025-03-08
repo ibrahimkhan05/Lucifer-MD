@@ -1,111 +1,96 @@
+const { google } = require('googleapis');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 
+const GOOGLE_API_KEY = 'AIzaSyAZDqbPmnMb1ZDb_seBOXbNzv-2s3ugxIQ'; // Replace with your API key
+const DRIVE_API = google.drive({ version: 'v3', auth: GOOGLE_API_KEY });
+
+async function getDriveFileInfo(url) {
+    const match = url.match(/[-\w]{25,}/);
+    if (!match) return null;
+    const fileId = match[0];
+    try {
+        const res = await DRIVE_API.files.get({ fileId, fields: 'id, name, mimeType, size' });
+        return res.data;
+    } catch (error) {
+        console.error('Error fetching file info:', error);
+        return null;
+    }
+}
+
+async function downloadFile(fileId, fileName) {
+    const filePath = path.join(__dirname, 'temp', fileName);
+    const dest = fs.createWriteStream(filePath);
+    const res = await DRIVE_API.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
+    res.data.pipe(dest);
+    return new Promise((resolve, reject) => {
+        dest.on('finish', () => resolve(filePath));
+        dest.on('error', reject);
+    });
+}
+
+async function listFolderFiles(folderId) {
+    try {
+        const res = await DRIVE_API.files.list({
+            q: `'${folderId}' in parents and trashed=false`,
+            fields: 'files(id, name, mimeType, size)'
+        });
+        return res.data.files;
+    } catch (error) {
+        console.error('Error listing folder files:', error);
+        return [];
+    }
+}
+
 exports.run = {
-   usage: ['gdrive'],
-   use: 'link',
-   category: 'downloader',
-   async: async (m, { client, text, isPrefix, command, users, env, Func, Scraper }) => {
-      try {
-         if (!text) {
-            return client.reply(m.chat, Func.example(isPrefix, command, 'https://drive.google.com/file/d/1sCMC4pXfPBdRvLhH0QCrg8dypKkI_i0y/view?usp=drive_link'), m);
-         }
+    usage: ['gdrive'],
+    use: 'link',
+    category: 'downloader',
+    async: async (m, { client, text, users, env, Func, Scraper }) => {
+        if (!text) return client.reply(m.chat, 'Provide a Google Drive link!', m);
+        
+        await client.reply(m.chat, '⏳ Fetching file/folder details...', m);
+        const fileInfo = await getDriveFileInfo(text);
+        if (!fileInfo) return client.reply(m.chat, 'Failed to retrieve file details.', m);
+        
+        const sizeUnits = { B: 1, KB: 1024, MB: 1024 ** 2, GB: 1024 ** 3, TB: 1024 ** 4 };
+        const sizeValue = parseFloat(fileInfo.size);
+        const sizeUnit = sizeUnits['B'] || 1;
+        const sizeInBytes = sizeValue * sizeUnit;
+        
+        const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
+        const isOver = `💀 File size (${(sizeInBytes / (1024 * 1024)).toFixed(2)} MB) exceeds the maximum limit, download it by yourself via this link: ${await (await Scraper.shorten(text)).data.url}`;
+        const chSize = Func.sizeLimit(sizeInBytes.toString(), maxUpload.toString());
 
-         // Send an initial message that downloading is in progress
-         await client.reply(m.chat, '⏳ Downloading your file... Please wait a moment.', m);
-
-         // Use the new API to fetch the download link
-         const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/gdrive?url=${text}&apikey=${global.betabotz}`);
-
-         if (!json.status) {
-            return client.reply(m.chat, 'Failed to retrieve the download link from Google Drive.', m);
-         }
-
-         const { data, fileName, fileSize } = json.result;
-
-         // Convert fileSize to bytes for comparison
-         const sizeUnits = { B: 1, KB: 1024, MB: 1024 ** 2, GB: 1024 ** 3, TB: 1024 ** 4 };
-         const sizeMatch = fileSize.match(/([\d.]+)\s*([a-zA-Z]+)/);
-         if (!sizeMatch) {
-            return client.reply(m.chat, 'Unable to determine file size.', m);
-         }
-
-         const sizeValue = parseFloat(sizeMatch[1]);
-         const sizeUnit = sizeUnits[sizeMatch[2].toUpperCase()] || 1;
-         const sizeInBytes = sizeValue * sizeUnit;
-
-         const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
-         const isOver = `💀 File size (${fileSize}) exceeds the maximum limit, download it by yourself via this link: ${await (await Scraper.shorten(data)).data.url}`;
-         const chSize = Func.sizeLimit(sizeInBytes.toString(), maxUpload.toString());
-
-         if (chSize.oversize) {
+        if (chSize.oversize) {
             return client.reply(m.chat, isOver, m);
-         }
+        }
+        
+        if (fileInfo.mimeType === 'application/vnd.google-apps.folder') {
+            const files = await listFolderFiles(fileInfo.id);
+            if (!files.length) return client.reply(m.chat, 'No files found in the folder.', m);
+            
+            for (const file of files) {
+                const sizeValue = parseFloat(file.size);
+                const sizeInBytes = sizeValue * sizeUnit;
+                const chSize = Func.sizeLimit(sizeInBytes.toString(), maxUpload.toString());
 
-         // Determine if file is a video based on the file extension
-         const extname = path.extname(fileName).toLowerCase();
-         const isVideo = ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(extname);
-         const fileSizeInMB = sizeInBytes / (1024 * 1024);
-         const isDocument = isVideo && fileSizeInMB > 99;
-
-         // Download the file locally
-         const response = await axios({
-            url: data,
-            method: 'GET',
-            responseType: 'stream',
-            headers: {
-               'User-Agent': 'Mozilla/5.0'
+                if (chSize.oversize) {
+                    await client.reply(m.chat, `⚠️ Skipping ${file.name} (size: ${(sizeInBytes / (1024 * 1024)).toFixed(2)} MB) as it exceeds the limit.`, m);
+                    continue;
+                }
+                const filePath = await downloadFile(file.id, file.name);
+                await client.sendFile(m.chat, filePath, file.name, `📂 *File Name:* ${file.name}\n📦 *Size:* ${file.size || 'Unknown'}`, m);
+                fs.unlinkSync(filePath);
             }
-         });
-
-         // Sanitize the filename
-         const sanitizedFileName = fileName.replace(/[\\/?<>[\]]/g, '_');
-
-         // Ensure the temp directory exists
-         const tempDir = path.join(__dirname, 'temp');
-         if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true });
-         }
-
-         const tempFilePath = path.join(tempDir, sanitizedFileName);
-         const writer = fs.createWriteStream(tempFilePath);
-
-         response.data.pipe(writer);
-
-         writer.on('finish', async () => {
-            try {
-               // Prepare message content
-               const message = `乂  *G D R I V E  - F I L E*\n\n` +
-                               `    ◦  *File Name* : ${fileName}\n` +
-                               `    ◦  *File Size* : ${fileSize}\n`;
-
-               // Send the file to the user
-               await client.sendFile(m.chat, tempFilePath, fileName, message, m, { document: isDocument });
-
-               // Clean up the temp file
-               fs.unlinkSync(tempFilePath);
-            } catch (uploadError) {
-               console.error('Error uploading file:', uploadError);
-               client.reply(m.chat, 'Failed to upload the file to WhatsApp.', m);
-               // Clean up the temp file in case of upload error
-               fs.unlinkSync(tempFilePath);
-            }
-         });
-
-         writer.on('error', (err) => {
-            console.error('Error downloading file:', err);
-            client.reply(m.chat, 'Failed to download the file.', m);
-         });
-
-      } catch (e) {
-         console.log('Unhandled Error:', e);
-         return client.reply(m.chat, 'An unexpected error occurred.', m);
-      }
-   },
-   error: false,
-   limit: true,
-   cache: true,
-   verified: true,
-   location: __filename
+        } else {
+            const filePath = await downloadFile(fileInfo.id, fileInfo.name);
+            await client.sendFile(m.chat, filePath, fileInfo.name, `📄 *File Name:* ${fileInfo.name}\n📦 *Size:* ${fileInfo.size || 'Unknown'}`, m);
+            fs.unlinkSync(filePath);
+        }
+    },
+    error: false,
+    limit: true,
+    cache: true
 };
