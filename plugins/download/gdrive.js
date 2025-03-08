@@ -6,7 +6,7 @@ const fileType = require('file-type');
 const GOOGLE_API_KEY = 'AIzaSyAZDqbPmnMb1ZDb_seBOXbNzv-2s3ugxIQ'; // Replace with your API key
 const DRIVE_API = google.drive({ version: 'v3', auth: GOOGLE_API_KEY });
 
-// Get file/folder metadata
+// Get file metadata
 async function getDriveFileInfo(url) {
     const match = url.match(/[-\w]{25,}/);
     if (!match) return null;
@@ -21,7 +21,7 @@ async function getDriveFileInfo(url) {
     }
 }
 
-// List all files and subfolders recursively
+// List all files and subfolders
 async function listFolderFiles(folderId) {
     let allFiles = [];
 
@@ -38,7 +38,7 @@ async function listFolderFiles(folderId) {
 
                 if (file.mimeType === 'application/vnd.google-apps.folder') {
                     console.log(`📂 Entering folder: ${file.name}`);
-                    await fetchFiles(file.id, filePath); // Recursively fetch subfolder contents
+                    await fetchFiles(file.id, filePath);
                 } else {
                     allFiles.push({ ...file, path: filePath });
                 }
@@ -50,12 +50,6 @@ async function listFolderFiles(folderId) {
 
     await fetchFiles(folderId);
     return allFiles;
-}
-
-// Check if file is oversized
-function isOversized(size, users, env) {
-    const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
-    return size > maxUpload;
 }
 
 // Download file with Google Drive export support
@@ -111,7 +105,7 @@ exports.run = {
     usage: ['gdrive'],
     use: 'link',
     category: 'downloader',
-    async: async (m, { client, text, users, env, Func, Scraper }) => {
+    async: async (m, { client, text }) => {
         if (!text) return client.reply(m.chat, 'Provide a Google Drive link!', m);
 
         await client.reply(m.chat, '⏳ Fetching file/folder details...', m);
@@ -119,18 +113,13 @@ exports.run = {
         if (!fileInfo) return client.reply(m.chat, 'Failed to retrieve file details.', m);
 
         if (fileInfo.mimeType === 'application/vnd.google-apps.folder') {
-            await client.reply(m.chat, `📂 Folder detected: *${fileInfo.name}* \n⏳ Fetching all files recursively...`, m);
+            await client.reply(m.chat, `📂 Folder detected: *${fileInfo.name}* \n⏳ Fetching all files...`, m);
 
             const folderPath = path.join(__dirname, 'temp', fileInfo.name.replace(/[<>:"/\\|?*]+/g, ''));
             const files = await listFolderFiles(fileInfo.id);
             if (!files.length) return client.reply(m.chat, 'No files found in the folder.', m);
 
             for (const file of files) {
-                if (isOversized(parseFloat(file.size || 0), users, env)) {
-                    await client.reply(m.chat, `⚠️ Skipping *${file.name}* (Too large)`, m);
-                    continue;
-                }
-
                 const filePath = await downloadFile(file.id, file.name, file.mimeType, path.join(folderPath, path.dirname(file.path)));
                 if (filePath) {
                     const detectedType = await fileType.fromFile(filePath);
@@ -140,12 +129,12 @@ exports.run = {
 
                     if (detectedType && detectedType.mime.startsWith('video/')) {
                         if (parseFloat(file.size) > 99 * 1024 * 1024) {
-                            await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${file.name}\n📦 *Size:* ${file.size || 'Unknown'}`, m, { asDocument: true });
+                            await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${file.name}`, m, { asDocument: true });
                         } else {
-                            await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${file.name}\n📦 *Size:* ${file.size || 'Unknown'}`, m);
+                            await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${file.name}`, m);
                         }
                     } else {
-                        await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${file.name}\n📦 *Size:* ${file.size || 'Unknown'}`, m);
+                        await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${file.name}`, m);
                     }
 
                     fs.unlinkSync(filePath);
@@ -164,12 +153,12 @@ exports.run = {
 
                 if (detectedType && detectedType.mime.startsWith('video/')) {
                     if (parseFloat(fileInfo.size) > 99 * 1024 * 1024) {
-                        await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${fileInfo.name}\n📦 *Size:* ${fileInfo.size || 'Unknown'}`, m, { asDocument: true });
+                        await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${fileInfo.name}`, m, { asDocument: true });
                     } else {
-                        await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${fileInfo.name}\n📦 *Size:* ${fileInfo.size || 'Unknown'}`, m);
+                        await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${fileInfo.name}`, m);
                     }
                 } else {
-                    await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${fileInfo.name}\n📦 *Size:* ${fileInfo.size || 'Unknown'}`, m);
+                    await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${fileInfo.name}`, m);
                 }
 
                 fs.unlinkSync(filePath);
