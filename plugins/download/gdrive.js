@@ -33,7 +33,8 @@ async function listFolderFiles(folderId) {
             });
 
             for (const file of res.data.files) {
-                const filePath = path.join(parentPath, file.name);
+                const safeFileName = file.name.replace(/[<>:"/\\|?*]+/g, ''); // Sanitize filename
+                const filePath = path.join(parentPath, safeFileName);
 
                 if (file.mimeType === 'application/vnd.google-apps.folder') {
                     console.log(`📂 Entering folder: ${file.name}`);
@@ -51,7 +52,13 @@ async function listFolderFiles(folderId) {
     return allFiles;
 }
 
-// Download file
+// Check if file is oversized
+function isOversized(size, users, env) {
+    const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
+    return size > maxUpload;
+}
+
+// Download file with Google Drive export support
 async function downloadFile(fileId, fileName, mimeType, folderPath) {
     if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
 
@@ -64,7 +71,8 @@ async function downloadFile(fileId, fileName, mimeType, folderPath) {
             const exportMimeTypes = {
                 'application/vnd.google-apps.document': 'application/pdf',
                 'application/vnd.google-apps.spreadsheet': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'application/vnd.google-apps.presentation': 'application/pdf'
+                'application/vnd.google-apps.presentation': 'application/pdf',
+                'application/vnd.google-apps.drawing': 'image/png'
             };
 
             const exportMimeType = exportMimeTypes[mimeType];
@@ -73,7 +81,7 @@ async function downloadFile(fileId, fileName, mimeType, folderPath) {
                 return null;
             }
 
-            filePath += exportMimeType.includes('pdf') ? '.pdf' : '.xlsx';
+            filePath += exportMimeType.includes('pdf') ? '.pdf' : exportMimeType.includes('png') ? '.png' : '.xlsx';
 
             res = await DRIVE_API.files.export(
                 { fileId, mimeType: exportMimeType },
@@ -113,20 +121,34 @@ exports.run = {
         if (fileInfo.mimeType === 'application/vnd.google-apps.folder') {
             await client.reply(m.chat, `📂 Folder detected: *${fileInfo.name}* \n⏳ Fetching all files recursively...`, m);
 
-            const folderPath = path.join(__dirname, 'temp', fileInfo.name);
+            const folderPath = path.join(__dirname, 'temp', fileInfo.name.replace(/[<>:"/\\|?*]+/g, ''));
             const files = await listFolderFiles(fileInfo.id);
             if (!files.length) return client.reply(m.chat, 'No files found in the folder.', m);
 
             for (const file of files) {
+                if (isOversized(parseFloat(file.size || 0), users, env)) {
+                    await client.reply(m.chat, `⚠️ Skipping *${file.name}* (Too large)`, m);
+                    continue;
+                }
+
                 const filePath = await downloadFile(file.id, file.name, file.mimeType, path.join(folderPath, path.dirname(file.path)));
                 if (filePath) {
                     const detectedType = await fileType.fromFile(filePath);
                     const extension = detectedType ? `.${detectedType.ext}` : path.extname(filePath);
 
-                    setTimeout(async () => {  // 3-second delay before sending the file
+                    await new Promise(resolve => setTimeout(resolve, 3000)); // 3-sec delay before sending file
+
+                    if (detectedType && detectedType.mime.startsWith('video/')) {
+                        if (parseFloat(file.size) > 99 * 1024 * 1024) {
+                            await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${file.name}\n📦 *Size:* ${file.size || 'Unknown'}`, m, { asDocument: true });
+                        } else {
+                            await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${file.name}\n📦 *Size:* ${file.size || 'Unknown'}`, m);
+                        }
+                    } else {
                         await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${file.name}\n📦 *Size:* ${file.size || 'Unknown'}`, m);
-                        fs.unlinkSync(filePath);
-                    }, 3000);
+                    }
+
+                    fs.unlinkSync(filePath);
                 }
             }
         } else {
@@ -138,10 +160,19 @@ exports.run = {
                 const detectedType = await fileType.fromFile(filePath);
                 const extension = detectedType ? `.${detectedType.ext}` : path.extname(filePath);
 
-                setTimeout(async () => {  // 3-second delay before sending the file
+                await new Promise(resolve => setTimeout(resolve, 3000)); // 3-sec delay before sending file
+
+                if (detectedType && detectedType.mime.startsWith('video/')) {
+                    if (parseFloat(fileInfo.size) > 99 * 1024 * 1024) {
+                        await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${fileInfo.name}\n📦 *Size:* ${fileInfo.size || 'Unknown'}`, m, { asDocument: true });
+                    } else {
+                        await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${fileInfo.name}\n📦 *Size:* ${fileInfo.size || 'Unknown'}`, m);
+                    }
+                } else {
                     await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${fileInfo.name}\n📦 *Size:* ${fileInfo.size || 'Unknown'}`, m);
-                    fs.unlinkSync(filePath);
-                }, 3000);
+                }
+
+                fs.unlinkSync(filePath);
             }
         }
     },
