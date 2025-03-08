@@ -20,7 +20,12 @@ async function getDriveFileInfo(url) {
 }
 
 async function downloadFile(fileId, fileName) {
-    const filePath = path.join(__dirname, 'temp', fileName);
+    const tempDir = path.join(__dirname, 'temp');
+    if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    const filePath = path.join(tempDir, fileName);
     const dest = fs.createWriteStream(filePath);
     const res = await DRIVE_API.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
     res.data.pipe(dest);
