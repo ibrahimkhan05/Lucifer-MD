@@ -10,14 +10,19 @@ const DRIVE_API = google.drive({ version: 'v3', auth: GOOGLE_API_KEY });
 // Ensure directory exists
 function ensureDirectoryExists(filePath) {
     const dir = path.dirname(filePath);
+
     try {
         if (fs.existsSync(dir) && !fs.lstatSync(dir).isDirectory()) {
+            console.error(`⚠️ Path exists but is a file: ${dir}. Renaming it.`);
             fs.renameSync(dir, dir + '_backup_' + Date.now());
         }
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
+            console.log(`✅ Created directory: ${dir}`);
         }
-    } catch { }
+    } catch (err) {
+        console.error(`❌ Failed to create directory: ${dir}\nError: ${err.message}`);
+    }
 }
 
 // Get file/folder metadata
@@ -29,7 +34,8 @@ async function getDriveFileInfo(url) {
     try {
         const res = await DRIVE_API.files.get({ fileId, fields: 'id, name, mimeType, size' });
         return res.data;
-    } catch {
+    } catch (error) {
+        console.error('Error fetching file info:', error);
         return null;
     }
 }
@@ -47,27 +53,28 @@ async function listFolderFiles(folderId) {
 
             for (const file of res.data.files) {
                 const filePath = path.join(parentPath, file.name);
+
                 if (file.mimeType === 'application/vnd.google-apps.folder') {
+                    console.log(`📂 Entering folder: ${file.name}`);
                     await fetchFiles(file.id, filePath);
                 } else {
                     allFiles.push({ ...file, path: filePath });
                 }
             }
-        } catch { }
+        } catch (error) {
+            console.error('Error listing folder files:', error);
+        }
     }
 
     await fetchFiles(folderId);
     return allFiles;
 }
 
-// Convert file size to MB
-function formatFileSize(size) {
-    return size ? `${(size / 1024 / 1024).toFixed(2)} MB` : 'Unknown';
-}
-
-// Download file
+// Download file (Fixes ENOENT error)
 async function downloadFile(fileId, fileName, mimeType, folderPath) {
     const fullFilePath = path.join(folderPath, fileName);
+    
+    // Ensure full directory exists before writing the file
     ensureDirectoryExists(fullFilePath);
 
     let filePath = fullFilePath;
@@ -76,6 +83,8 @@ async function downloadFile(fileId, fileName, mimeType, folderPath) {
     try {
         let res;
         if (mimeType.startsWith('application/vnd.google-apps')) {
+            console.log(`🔄 Exporting Google Docs format: ${mimeType}`);
+
             const exportMimeTypes = {
                 'application/vnd.google-apps.document': 'application/pdf',
                 'application/vnd.google-apps.spreadsheet': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -84,6 +93,8 @@ async function downloadFile(fileId, fileName, mimeType, folderPath) {
 
             const exportMimeType = exportMimeTypes[mimeType] || 'application/pdf';
             filePath += exportMimeType.includes('pdf') ? '.pdf' : '.xlsx';
+
+            // Ensure directory exists again for exported file
             ensureDirectoryExists(filePath);
 
             res = await DRIVE_API.files.export(
@@ -91,6 +102,8 @@ async function downloadFile(fileId, fileName, mimeType, folderPath) {
                 { responseType: 'stream' }
             );
         } else {
+            console.log(`⬇️ Downloading normal file...`);
+
             res = await DRIVE_API.files.get(
                 { fileId, alt: 'media' },
                 { responseType: 'stream' }
@@ -104,7 +117,8 @@ async function downloadFile(fileId, fileName, mimeType, folderPath) {
         });
 
         return filePath;
-    } catch {
+    } catch (error) {
+        console.error('Error downloading file:', error);
         return null;
     }
 }
@@ -114,7 +128,7 @@ exports.run = {
     usage: ['gdrive'],
     use: 'link',
     category: 'downloader',
-    async: async (m, { client, text }) => {
+    async: async (m, { client, text, Func }) => {
         if (!text) return client.reply(m.chat, 'Provide a Google Drive link!', m);
 
         await client.reply(m.chat, '⏳ Fetching file/folder details...', m);
@@ -122,35 +136,30 @@ exports.run = {
         if (!fileInfo) return client.reply(m.chat, 'Failed to retrieve file details.', m);
 
         if (fileInfo.mimeType === 'application/vnd.google-apps.folder') {
+            await client.reply(m.chat, `📂 Folder detected: *${fileInfo.name}* \n⏳ Fetching all files...`, m);
+
             const folderPath = path.join(__dirname, 'temp', fileInfo.name);
             const files = await listFolderFiles(fileInfo.id);
             if (!files.length) return client.reply(m.chat, 'No files found in the folder.', m);
 
-            let fileList = `📂 *Folder:* ${fileInfo.name}\n\n`;
-            files.forEach(file => {
-                fileList += `📄 *${file.name}* - ${formatFileSize(file.size)}\n`;
-            });
-
-            await client.reply(m.chat, fileList, m);
-
             for (const file of files) {
                 await sleep(3000); // 3-second delay
+
                 const filePath = await downloadFile(file.id, file.name, file.mimeType, path.join(folderPath, path.dirname(file.path)));
                 if (filePath) {
-                    await client.sendFile(m.chat, filePath, path.basename(filePath), '', m);
+                    await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${file.name}\n📦 *Size:* ${file.size || 'Unknown'}`, m);
                     fs.unlinkSync(filePath);
                 }
             }
         } else {
-            const folderPath = path.join(__dirname, 'temp');
-            const fileList = `📄 *File:* ${fileInfo.name}\n📦 *Size:* ${formatFileSize(fileInfo.size)}`;
-            
-            await client.reply(m.chat, fileList, m);
-            await sleep(3000); // 3-second delay
+            await client.reply(m.chat, '📄 Downloading file...', m);
 
+            const folderPath = path.join(__dirname, 'temp');
             const filePath = await downloadFile(fileInfo.id, fileInfo.name, fileInfo.mimeType, folderPath);
             if (filePath) {
-                await client.sendFile(m.chat, filePath, path.basename(filePath), '', m);
+                await sleep(3000); // 3-second delay
+
+                await client.sendFile(m.chat, filePath, path.basename(filePath), `📄 *File Name:* ${fileInfo.name}\n📦 *Size:* ${fileInfo.size || 'Unknown'}`, m);
                 fs.unlinkSync(filePath);
             }
         }
