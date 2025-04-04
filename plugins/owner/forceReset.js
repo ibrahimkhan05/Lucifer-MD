@@ -4,22 +4,17 @@ exports.run = {
    async: async (m, { client, args, command, setting, env, Func }) => {
       try {
          // Ensure env.limit is set correctly or use a fallback value
-         const baseLimit = env.limit || 15; // Fallback to 15 if undefined
+         const baseLimit = env.limit || 15; // Default to 15 if undefined
 
          // Process each user in the database
          global.db.users.forEach(user => {
-            if (!user) {
-               console.log("User object is undefined");
-               return; // Skip undefined users
+            // Skip invalid users
+            if (!user || !user.jid || user.limit === undefined) {
+               console.log('Invalid user, skipping: ', user);
+               return;
             }
 
-            // Check if the user has the required properties
-            if (user.id === undefined || user.limit === undefined) {
-               console.log(`User ${user.id} is missing required properties:`, user);
-               return; // Skip this user if they are missing properties
-            }
-
-            // Start with the base limit from env (defaulted to 15 if undefined)
+            // Start with the base limit from env
             let finalLimit = baseLimit;
 
             // Add points based on the number of referrals (10 points per referral)
@@ -30,14 +25,13 @@ exports.run = {
                finalLimit += 5; // Bonus for not using a referral code
             }
 
-            // Debug log: Check final limit calculation
-            console.log(`User ${user.id} - Final Limit (after referral logic): ${finalLimit}`);
+            // Log the final limit for debugging
+            console.log(`User ${user.jid} - Final Limit (after referral logic): ${finalLimit}`);
 
             // If the user's current limit is less than the final limit, update it
             if (user.limit < finalLimit) {
-               // If args[0] is provided, override the final limit with that value, otherwise use the calculated finalLimit
                const newLimit = args[0] ? parseInt(args[0]) : finalLimit;
-               console.log(`User ${user.id} - Updating limit from ${user.limit} to ${newLimit}`);
+               console.log(`User ${user.jid} - Updating limit from ${user.limit} to ${newLimit}`);
                user.limit = newLimit;
             }
          });
