@@ -6,13 +6,13 @@ exports.run = {
          // Use the base limit from env
          const baseLimitFromEnv = env.limit; // This uses the value from the env file
 
-         // Process each user in the database
-         global.db.users.filter(v => v.limit < baseLimitFromEnv && !v.premium).forEach(user => {
+         // Process each user in the database (no filtering based on limit or premium status)
+         global.db.users.forEach(user => {
             // Start with the base limit from env
             let finalLimit = baseLimitFromEnv;
 
-            // Add points based on the user's referral limit (assuming it's stored in the user object)
-            finalLimit += (user.referralCount || 0) * 10; // 10 points per referral
+            // Add points based on the user's referral count (10 points per referral)
+            finalLimit += (user.referralCount || 0) * 10;
 
             // Add bonus if the user has not used a referral code
             if (user.referralCodeUsed === false) {
@@ -32,7 +32,7 @@ exports.run = {
          // Notify success
          client.reply(
             m.chat,
-            Func.texted('bold', `🚩 Successfully reset limits for free users and adjusted referral-related points.`),
+            Func.texted('bold', `🚩 Successfully reset limits for all users and adjusted referral-related points.`),
             m
          );
       } catch (e) {
