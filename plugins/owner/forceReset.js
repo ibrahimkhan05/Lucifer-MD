@@ -3,18 +3,27 @@ exports.run = {
    category: 'owner',
    async: async (m, { client, args, command, setting, env, Func }) => {
       try {
-         // Process each user in the database
-         global.db.users.filter(v => v.limit < env.limit && !v.premium).forEach(user => {
-            // Calculate base limit from referrals
-            let baseLimit = (user.referralCount || 0) * 10;
+         // Use the base limit from env
+         const baseLimitFromEnv = env.limit; // This uses the value from the env file
 
-            // Add bonus if user used a referral code
+         // Process each user in the database
+         global.db.users.filter(v => v.limit < baseLimitFromEnv && !v.premium).forEach(user => {
+            // Start with the base limit from env
+            let finalLimit = baseLimitFromEnv;
+
+            // Add points based on the user's referral limit (assuming it's stored in the user object)
+            finalLimit += (user.referralCount || 0) * 10; // 10 points per referral
+
+            // Add bonus if the user has not used a referral code
             if (user.referralCodeUsed === false) {
-               baseLimit += 5;
+               finalLimit += 5; // Add bonus for not using a referral code
             }
 
-            // Final limit (override if custom amount passed as argument)
-            user.limit = args[0] ? parseInt(args[0]) : baseLimit;
+            // Now check if the user's limit is less than the total limit (base + referral limit + bonus)
+            if (user.limit < finalLimit) {
+               // Final limit (override if custom amount passed as argument)
+               user.limit = args[0] ? parseInt(args[0]) : finalLimit;
+            }
          });
 
          // Update the last reset timestamp
