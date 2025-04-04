@@ -1,5 +1,5 @@
-
-const { Function: Func, Scraper, Cooldown, Spam, InvCloud, Config: env } = new (require('@neoxr/wb'))
+const { Component } = require('@neoxr/wb')
+const { Function: Func, Scraper, Cooldown, Spam, Config: env } = new Component
 const cron = require('node-cron')
 const cooldown = new Cooldown(env.cooldown)
 const spam = new Spam({
@@ -11,10 +11,9 @@ const spam = new Spam({
 })
 
 module.exports = async (client, ctx) => {
-   var { store, m, body, prefix, plugins, commands, args, command, text, prefixes, core } = ctx
+   var { store, m, body, prefix, plugins, commands, args, command, text, prefixes, core, database } = ctx
    try {
-      // "InvCloud" reduces RAM usage and minimizes errors during rewrite (according to recommendations/suggestions from Baileys)
-      require('./lib/system/schema')(m, env), InvCloud(store)
+      require('./lib/system/schema')(m, env)
       let groupSet = global.db.groups.find(v => v.jid === m.chat)
       let chats = global.db.chats.find(v => v.jid === m.chat)
       let users = global.db.users.find(v => v.jid === m.sender)
@@ -193,7 +192,7 @@ module.exports = async (client, ctx) => {
                client.reply(m.chat, global.status.private, m)
                continue
             }
-            cmd.async(m, { client, args, text, isPrefix: prefix, prefixes, command, groupMetadata, participants, users, chats, groupSet, setting, isOwner, isAdmin, isBotAdmin, plugins: Object.fromEntries(Object.entries(plugins).filter(([name, _]) => !setting.pluginDisable.includes(name))), blockList, env, ctx, store, Func, Scraper })
+            cmd.async(m, { client, args, text, isPrefix: prefix, prefixes, command, groupMetadata, participants, users, chats, groupSet, setting, isOwner, isAdmin, isBotAdmin, plugins: Object.fromEntries(Object.entries(plugins).filter(([name, _]) => !setting.pluginDisable.includes(name))), blockList, env, ctx, store, database, Func, Scraper })
             break
          }
       } else {
@@ -222,7 +221,7 @@ module.exports = async (client, ctx) => {
             if (event.admin && !isAdmin) continue
             if (event.private && m.isGroup) continue
             if (event.download && (!setting.autodownload || (body && env.evaluate_chars.some(v => body.startsWith(v))))) continue
-            event.async(m, { client, body, prefixes, groupMetadata, participants, users, chats, groupSet, setting, isOwner, isAdmin, isBotAdmin, plugins: Object.fromEntries(Object.entries(plugins).filter(([name, _]) => !setting.pluginDisable.includes(name))), blockList, env, ctx, store, Func, Scraper })
+            event.async(m, { client, body, prefixes, groupMetadata, participants, users, chats, groupSet, setting, isOwner, isAdmin, isBotAdmin, plugins: Object.fromEntries(Object.entries(plugins).filter(([name, _]) => !setting.pluginDisable.includes(name))), blockList, env, ctx, store, database, Func, Scraper })
          }
       }
    } catch (e) {
