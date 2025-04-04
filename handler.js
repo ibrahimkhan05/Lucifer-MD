@@ -1,3 +1,4 @@
+
 const { Component } = require('@neoxr/wb')
 const { Function: Func, Scraper, Cooldown, Spam, Config: env } = new Component
 const cron = require('node-cron')
@@ -98,7 +99,7 @@ module.exports = async (client, ctx) => {
       }
       cron.schedule('00 00 * * *', () => {
          setting.lastReset = new Date * 1
-         global.db.users.filter(v => v.limit < env.limit && !v.premium).map(v => v.limit = (v.referralCount * 10) + (v.referralCodeUsed === false ? 5 : 0))
+         global.db.users.filter(v => v.limit < env.limit && !v.premium).map(v => v.limit = env.limit)
          Object.entries(global.db.statistic).map(([_, prop]) => prop.today = 0)
       }, {
          scheduled: true,
