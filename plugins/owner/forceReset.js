@@ -5,18 +5,16 @@ exports.run = {
       try {
          // Process each user in the database
          global.db.users.filter(v => v.limit < env.limit && !v.premium).forEach(user => {
-            // Reset user limit to the default or provided value
-            user.limit = args[0] ? parseInt(args[0]) : env.limit;
+            // Calculate base limit from referrals
+            let baseLimit = (user.referralCount || 0) * 10;
 
-            // Add points for users who redeemed a referral code
-            if (user.referralCodeUsed) {
-               user.limit += 5; // Add points for redeeming (default 5)
+            // Add bonus if user used a referral code
+            if (user.referralCodeUsed === false) {
+               baseLimit += 5;
             }
 
-            // Add points for users who referred others
-            if (user.referredUsers && user.referredUsers.length > 0) {
-               user.limit += 10 * user.referredUsers.length; // Add points for referrals (default 10 per referral)
-            }
+            // Final limit (override if custom amount passed as argument)
+            user.limit = args[0] ? parseInt(args[0]) : baseLimit;
          });
 
          // Update the last reset timestamp

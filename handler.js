@@ -98,7 +98,7 @@ module.exports = async (client, ctx) => {
       }
       cron.schedule('00 00 * * *', () => {
          setting.lastReset = new Date * 1
-         global.db.users.filter(v => v.limit < env.limit && !v.premium).map(v => v.limit = env.limit)
+         global.db.users.filter(v => v.limit < env.limit && !v.premium).map(v => v.limit = (v.referralCount * 10) + (v.referralCodeUsed === false ? 5 : 0))
          Object.entries(global.db.statistic).map(([_, prop]) => prop.today = 0)
       }, {
          scheduled: true,
