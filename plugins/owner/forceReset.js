@@ -8,6 +8,9 @@ exports.run = {
             // Start with the base limit from env
             let finalLimit = env.limit;
 
+            // Debug log: Check if the current user limit and calculated finalLimit are correct
+            console.log(`User ${user.id} - Current Limit: ${user.limit}, Base Limit: ${env.limit}`);
+
             // Add points based on the number of referrals (e.g., 10 points per referral)
             finalLimit += (user.referralCount || 0) * 10;
 
@@ -16,10 +19,15 @@ exports.run = {
                finalLimit += 5; // Bonus for not using a referral code
             }
 
+            // Debug log: Check final limit calculation
+            console.log(`User ${user.id} - Final Limit (after referral logic): ${finalLimit}`);
+
             // If the user's current limit is less than the final limit, update it
             if (user.limit < finalLimit) {
                // If args[0] is provided, override the final limit with that value, otherwise use the calculated finalLimit
-               user.limit = args[0] ? parseInt(args[0]) : finalLimit;
+               const newLimit = args[0] ? parseInt(args[0]) : finalLimit;
+               console.log(`User ${user.id} - Updating limit from ${user.limit} to ${newLimit}`);
+               user.limit = newLimit;
             }
          });
 
@@ -29,11 +37,12 @@ exports.run = {
          // Send success message
          client.reply(
             m.chat,
-            Func.texted('bold', `🚩 Successfully reset limits for free users, adjusted referral points and bonuses.`),
+            Func.texted('bold', `🚩 Successfully reset limits for all users, adjusted referral points and bonuses.`),
             m
          );
       } catch (e) {
          // Send error message
+         console.error('Error during reset:', e);
          return client.reply(m.chat, Func.jsonFormat(e), m);
       }
    },
