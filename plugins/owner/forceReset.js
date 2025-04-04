@@ -3,15 +3,26 @@ exports.run = {
    category: 'owner',
    async: async (m, { client, args, command, setting, env, Func }) => {
       try {
+         // Ensure env.limit is set correctly or use a fallback value
+         const baseLimit = env.limit || 15; // Fallback to 15 if undefined
+
          // Process each user in the database
          global.db.users.forEach(user => {
-            // Start with the base limit from env
-            let finalLimit = env.limit;
+            if (!user) {
+               console.log("User object is undefined");
+               return; // Skip undefined users
+            }
 
-            // Debug log: Check if the current user limit and calculated finalLimit are correct
-            console.log(`User ${user.id} - Current Limit: ${user.limit}, Base Limit: ${env.limit}`);
+            // Check if the user has the required properties
+            if (user.id === undefined || user.limit === undefined) {
+               console.log(`User ${user.id} is missing required properties:`, user);
+               return; // Skip this user if they are missing properties
+            }
 
-            // Add points based on the number of referrals (e.g., 10 points per referral)
+            // Start with the base limit from env (defaulted to 15 if undefined)
+            let finalLimit = baseLimit;
+
+            // Add points based on the number of referrals (10 points per referral)
             finalLimit += (user.referralCount || 0) * 10;
 
             // Add bonus points if the user has not used a referral code
