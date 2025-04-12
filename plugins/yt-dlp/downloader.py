@@ -25,11 +25,11 @@ def get_available_formats(url):
         return None, str(e)
 
 def download_video(url, output_path, quality='best', start_time=None):
-    formats, error = get_available_formats(url)
-    if error:
-        return "Format check failed", error, None, 0, 0
-    
-    format_code = next((fmt.split(':')[0] for fmt in formats if quality in fmt), 'best')
+    if quality == 'best':
+        format_code = 'bestvideo+bestaudio/best'
+    else:
+        height = ''.join(filter(str.isdigit, quality))
+        format_code = f'bestvideo[height<={height}]+bestaudio/best'
 
     ydl_opts = {
         'outtmpl': str(output_path),
@@ -37,6 +37,7 @@ def download_video(url, output_path, quality='best', start_time=None):
         'quiet': True,
         'noprogress': True,
         'noplaylist': True,
+        'merge_output_format': 'mp4',  # Ensure final output is MP4
         'concurrent_fragment_downloads': 4
     }
 
@@ -57,7 +58,7 @@ def download_video(url, output_path, quality='best', start_time=None):
     return None, None, output_path, download_speed, file_size
 
 def main(url, output_dir, quality='best'):
-    file_name = f"video_{int(time.time())}.mp4"  # Customize your file name logic here
+    file_name = f"video_{int(time.time())}.mp4"
     output_path = Path(output_dir) / file_name
     start_time = time.time()
 
@@ -67,7 +68,11 @@ def main(url, output_dir, quality='best'):
         print(json.dumps({"error": error, "message": error_message}))
         return
 
-    print(json.dumps({"filePath": str(output_path), "downloadSpeed": download_speed, "fileSize": file_size}))
+    print(json.dumps({
+        "filePath": str(output_path),
+        "downloadSpeed": download_speed,
+        "fileSize": file_size
+    }))
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
