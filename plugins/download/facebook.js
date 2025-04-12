@@ -21,43 +21,26 @@ exports.run = {
          // Indicate that the bot is processing the request
          client.sendReact(m.chat, '🕒', m.key);
          
-         // Fetch the video download link using the provided API
-         const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/fbdown?url=${encodeURIComponent(args[0])}&apikey=${global.betabotz}`);
-         if (json.status !== true || !json.result || json.result.length === 0) return client.reply(m.chat, global.status.fail, m);
+         // Fetch the video download link using the new BK9 API
+         const json = await Func.fetchJson(`https://bk9.fun/download/fb?url=${encodeURIComponent(args[0])}`);
+         if (json.status !== true || !json.BK9 || (!json.BK9.hd && !json.BK9.sd)) return client.reply(m.chat, global.status.fail, m);
 
-         // Sort the results by resolution in descending order (from highest to lowest resolution)
-         const resolutionOrder = ['1080p', '720p', '480p', '360p', '240p', '144p', '120p', '60p']; // List of possible resolutions
-         
-         // Filter available resolutions and sort them by resolution priority
-         const availableResolutions = json.result.filter(video =>
-            resolutionOrder.includes(video.resolution.split(' ')[0])
-         ).sort((a, b) => {
-            const indexA = resolutionOrder.indexOf(a.resolution.split(' ')[0]);
-            const indexB = resolutionOrder.indexOf(b.resolution.split(' ')[0]);
-            return indexB - indexA; // Sorting in descending order
-         });
-
-         // Check if there are any available resolutions
-         if (availableResolutions.length === 0) {
-            return client.reply(m.chat, '❌ No valid video resolutions available', m);
-         }
-
-         // Get the highest available resolution
-         const highestQuality = availableResolutions[0];
+         // Use HD if available, otherwise SD
+         const selected = json.BK9.hd ? json.BK9.hd : json.BK9.sd;
 
          // Get the file size
-         const size = await Func.getSize(highestQuality._url);
+         const size = await Func.getSize(selected);
          const chSize = Func.sizeLimit(size, users.premium ? env.max_upload : env.max_upload_free);
 
          // Check if the file size exceeds the user's limit
          const isOver = users.premium
-            ? `💀 File size (${size}) exceeds the maximum limit, download it by yourself via this link: ${await (await Scraper.shorten(highestQuality._url)).data.url}`
+            ? `💀 File size (${size}) exceeds the maximum limit, download it by yourself via this link: ${await (await Scraper.shorten(selected)).data.url}`
             : `⚠️ File size (${size}), you can only download files with a maximum size of ${env.max_upload_free} MB and for premium users a maximum of ${env.max_upload} MB.`;
          
          if (chSize.oversize) return client.reply(m.chat, isOver, m);
 
-         // Send the highest quality video file to the user
-         await client.sendFile(m.chat, highestQuality._url, Func.filename('mp4'), '', m);
+         // Send the selected video file to the user
+         await client.sendFile(m.chat, selected, Func.filename('mp4'), '', m);
          
       } catch (e) {
          console.log(e);
