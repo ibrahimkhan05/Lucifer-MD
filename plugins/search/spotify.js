@@ -10,16 +10,17 @@ exports.run = {
 
             client.sendReact(m.chat, '🕒', m.key);
 
-            const response = await axios.get(`https://api.betabotz.eu.org/api/search/spotify?query=${encodeURIComponent(text)}&apikey=${global.betabotz}`);
+            // New API integration
+            const response = await axios.get(`https://delirius-apiofc.vercel.app/search/spotify?q=${encodeURIComponent(text)}&limit=20`);
 
             if (!response.data.status) return client.reply(m.chat, Func.jsonFormat(response.data), m);
 
-            const results = response.data.result.data;
+            const results = response.data.data;
             if (!results.length) return client.reply(m.chat, 'No results found!', m);
 
             const listOptions = results.map((v) => ({
-                title: v.title,
-                description: '', // No extra details
+                title: `${v.title} - ${v.artist}`,
+                description: `${v.album} (${v.duration})`,
                 id: `${isPrefix}spotifydl ${v.url}`
             }));
 
