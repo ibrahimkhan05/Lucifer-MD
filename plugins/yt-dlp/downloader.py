@@ -33,11 +33,9 @@ def download_video(url, output_path, format_id='best', start_time=None):
     if format_id == 'best':
         format_spec = 'bestvideo+bestaudio/best'
     elif format_id in ['1080p', '720p', '480p', '360p', '240p', '144p']:
-        # Handle resolution-based format selection with improved format specification
+        # Handle resolution-based format selection
         height = format_id.replace('p', '')
-        # Ensure we always get video+audio, with proper fallbacks
-        format_spec = f'bestvideo[height<={height}]+bestaudio/best[height<={height}]/bestvideo+bestaudio/best'
-        logger.info(f"Using resolution-based format spec: {format_spec}")
+        format_spec = f'bestvideo[height<={height}]+bestaudio/best[height<={height}]'
     else:
         # Direct format ID
         format_spec = format_id
@@ -50,16 +48,10 @@ def download_video(url, output_path, format_id='best', start_time=None):
         'noprogress': True,  # Disable progress
         'noplaylist': True,
         'merge_output_format': 'mp4',
-        'postprocessors': [
-            {
-                'key': 'FFmpegVideoConvertor',
-                'preferedformat': 'mp4',
-            },
-            {
-                'key': 'FFmpegMetadata',
-                'add_metadata': True,
-            }
-        ],
+        'postprocessors': [{
+            'key': 'FFmpegMetadata',
+            'add_metadata': True,
+        }],
         'logger': logger  # Use our custom logger
     }
 
@@ -68,16 +60,6 @@ def download_video(url, output_path, format_id='best', start_time=None):
         with contextlib.redirect_stdout(io.StringIO()):
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 logger.info("Starting download...")
-                
-                # Log the selected format before downloading
-                try:
-                    info_dict = ydl.extract_info(url, download=False)
-                    selected_format = ydl.build_format_selector(format_spec)(info_dict)
-                    logger.info(f"Selected format: {selected_format}")
-                except Exception as e:
-                    logger.warning(f"Could not determine selected format beforehand: {str(e)}")
-                
-                # Now download the video
                 ydl.download([url])
                 logger.info("Download completed")
     except Exception as e:
@@ -89,24 +71,6 @@ def download_video(url, output_path, format_id='best', start_time=None):
     if not actual_path.exists():
         logger.error(f"File not found after download: {output_path}")
         return "Download failed", "File not found after download", None, 0, 0
-
-    # Check if the file is valid video with audio
-    try:
-        verify_cmd = f'ffprobe -v error -select_streams v:0 -count_packets -show_entries stream=nb_read_packets -of csv=p=0 "{actual_path}"'
-        with os.popen(verify_cmd) as proc:
-            video_packets = proc.read().strip()
-        
-        if not video_packets or int(video_packets or '0') == 0:
-            logger.error(f"Downloaded file has no video stream: {output_path}")
-            # Try to download again with a more specific format
-            if not format_id.startswith('retry_'):
-                logger.info("Retrying with explicit video+audio format")
-                # Delete the bad file
-                os.remove(actual_path)
-                # Retry with a clear video+audio specification
-                return download_video(url, output_path, 'retry_bestvideo+bestaudio/best', start_time)
-    except Exception as verify_err:
-        logger.warning(f"Could not verify video content: {str(verify_err)}")
 
     # Get file size and calculate download speed
     file_size = actual_path.stat().st_size

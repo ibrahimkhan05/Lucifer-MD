@@ -6,10 +6,8 @@ exports.run = {
     usage: ['aria2'],
     use: 'url',
     category: 'special',
-    async: async (m, { client, args, isPrefix, command, env, Func }) => {
-        if (!args || !args[0]) {
-            return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), m);
-        }
+    async: async (m, { client, args, isPrefix, command, users, env, Func, Scraper }) => {
+        if (!args || !args[0]) return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), m);
 
         const url = args[0];
         const outputDir = path.resolve(__dirname, 'downloads');
@@ -24,7 +22,7 @@ exports.run = {
 
         const executeDownload = async () => {
             try {
-                await client.reply(m.chat, '📥 Your file is being downloaded. This may take some time.', m);
+                await client.reply(m.chat, 'Your file is being downloaded. This may take some time.', m);
 
                 const command = `python3 "${scriptPath}" ${safeUrl} ${safeOutputDir}`;
                 console.log(`📜 Running command: ${command}`);
@@ -37,6 +35,8 @@ exports.run = {
                     }
 
                     if (stderr) console.error(`⚠️ stderr: ${stderr}`);
+
+                   
 
                     let output;
                     try {
@@ -59,18 +59,34 @@ exports.run = {
                     }
 
                     const fileName = path.basename(resolvedPath).replace(/\s+/g, '-');
+                    const fileSize = fs.statSync(resolvedPath).size;
+                    const fileSizeMB = fileSize / (1024 * 1024);
+                    const fileSizeStr = `${fileSizeMB.toFixed(2)} MB`;
                     const fileExt = path.extname(fileName).toLowerCase();
-                    const videoExtensions = ['.mp4', '.mkv', '.mov', '.webm', '.avi', '.flv'];
 
                     console.log(`📦 File Path: ${resolvedPath}`);
                     console.log(`📦 File Name: ${fileName}`);
+                    console.log(`📦 File Size: ${fileSizeStr}`);
                     console.log(`📦 File Extension: ${fileExt}`);
 
-                    await client.reply(m.chat, '✅ Uploading your file...', m);
+                    if (fileSize > 1980 * 1024 * 1024) {
+                        await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit of 1980MB.`, m);
+                        fs.unlinkSync(resolvedPath);
+                        return;
+                    }
 
-                    // Upload video files normally, others as document
-                    const sendAsDocument = !videoExtensions.includes(fileExt);
+                    const maxUpload = users.premium ? env.max_upload : env.max_upload_free;
+                    const chSize = Func.sizeLimit(fileSize.toString(), maxUpload.toString());
+                    if (chSize.oversize) {
+                        await client.reply(m.chat, `💀 File size (${fileSizeStr}) exceeds the maximum limit.`, m);
+                        fs.unlinkSync(resolvedPath);
+                        return;
+                    }
 
+                    await client.reply(m.chat, `✅ Your file (${fileSizeStr}) is being uploaded.`, m);
+
+                    let sendAsDocument = fileSizeMB > 99; 
+                    
                     try {
                         await client.sendFile(m.chat, resolvedPath, fileName, '', m, { document: sendAsDocument });
                         console.log('✅ File sent successfully.');
