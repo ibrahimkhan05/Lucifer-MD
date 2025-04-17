@@ -16,40 +16,42 @@ exports.run = {
 
         // Ensure the downloads directory exists
         if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir);
+            fs.mkdirSync(outputDir, { recursive: true });
         }
 
         // Notify user that the download is starting
         await client.reply(m.chat, 'Your file is being downloaded. This may take some time.', m);
 
+        // Escape special characters in URL
+        const escapedUrl = url.replace(/"/g, '\\"');
+        
         // Construct the command based on whether format ID is provided
-        let commandStr = `python3 ${scriptPath} "${url}" "${outputDir}"`;
+        let commandStr = `python3 "${scriptPath}" "${escapedUrl}" "${outputDir}"`;
         if (formatId) {
-            commandStr += ` "${formatId}"`; // Only append format ID if it's provided
+            commandStr += ` "${formatId}"`;
         }
-
-        exec(commandStr, async (error, stdout, stderr) => {
+        
+        console.log(`Executing command: ${commandStr}`);
+        
+        exec(commandStr, { maxBuffer: 10 * 1024 * 1024 }, async (error, stdout, stderr) => {
             if (error) {
-                console.error(`exec error: ${error.message}`);
+                console.error(`Exec error: ${error.message}`);
                 await client.reply(m.chat, `Error downloading video: ${error.message}`, m);
                 return;
             }
 
+            console.log(`Python stdout: ${stdout}`);
             if (stderr) {
-                console.error(`stderr: ${stderr}`);
-                await client.reply(m.chat, `Error downloading video: ${stderr}`, m);
-                return;
+                console.error(`Python stderr: ${stderr}`);
             }
-
-            console.log(`stdout: ${stdout}`);
 
             // Parse the stdout to get the file information
             let output;
             try {
                 output = JSON.parse(stdout.trim());
             } catch (parseError) {
-                console.error(`Error parsing JSON: ${parseError.message}`);
-                await client.reply(m.chat, `Error parsing download information: ${parseError.message}`, m);
+                console.error(`Error parsing JSON: ${parseError.message}, Raw output: ${stdout}`);
+                await client.reply(m.chat, `Error parsing download information. Check logs for details.`, m);
                 return;
             }
 
@@ -65,15 +67,15 @@ exports.run = {
             }
 
             const filePath = output.filePath; // The full path to the downloaded file
-            const fileName = path.basename(filePath); // Extract file name from path
-
+            
             // Handle file and send to user
             try {
                 if (!fs.existsSync(filePath)) {
-                    await client.reply(m.chat, `Download failed: File not found after download`, m);
+                    await client.reply(m.chat, `Download failed: File not found at ${filePath}`, m);
                     return;
                 }
 
+                const fileName = path.basename(filePath);
                 const fileStats = fs.statSync(filePath);
                 const fileSize = fileStats.size;
                 const fileSizeMB = fileSize / (1024 * 1024); // Convert bytes to MB
@@ -106,14 +108,24 @@ exports.run = {
 
                 // Delete the file after sending
                 setTimeout(() => {
-                    if (fs.existsSync(filePath)) {
-                        fs.unlinkSync(filePath);
+                    try {
+                        if (fs.existsSync(filePath)) {
+                            fs.unlinkSync(filePath);
+                            console.log(`Deleted file: ${filePath}`);
+                        }
+                    } catch (deleteError) {
+                        console.error(`Error deleting file: ${deleteError.message}`);
                     }
-                }, 3000); // Give a short delay to ensure file is sent before deletion
+                }, 5000); // 5 second delay to ensure file is sent before deletion
             } catch (fileError) {
                 console.error(`Error handling file: ${fileError.message}`);
                 await client.reply(m.chat, `Error handling file: ${fileError.message}`, m);
-                if (fs.existsSync(filePath)) fs.unlinkSync(filePath); // Delete on error
+                // Attempt to delete the file on error
+                try {
+                    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                } catch (deleteError) {
+                    console.error(`Error deleting file: ${deleteError.message}`);
+                }
             }
         });
     },

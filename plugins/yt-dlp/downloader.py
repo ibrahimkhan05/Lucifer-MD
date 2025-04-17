@@ -1,91 +1,108 @@
-import sys
 import json
+import time
 import yt_dlp
+import sys
+from pathlib import Path
+import logging
 
-def fetch_qualities(url):
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('downloader')
+
+def download_video(url, output_path, format_id='best', start_time=None):
+    """
+    Download a video with specified format ID
+    """
+    if start_time is None:
+        start_time = time.time()
+        
+    # Create output directory if it doesn't exist
+    output_dir = Path(output_path).parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    logger.info(f"Downloading URL: {url}")
+    logger.info(f"Output path: {output_path}")
+    logger.info(f"Format ID: {format_id}")
+    
+    # Process format_id - handle direct format IDs from the quality selector
+    if format_id == 'best':
+        format_spec = 'bestvideo+bestaudio/best'
+    elif format_id in ['1080p', '720p', '480p', '360p', '240p', '144p']:
+        # Handle resolution-based format selection
+        height = format_id.replace('p', '')
+        format_spec = f'bestvideo[height<={height}]+bestaudio/best[height<={height}]'
+    else:
+        # Direct format ID
+        format_spec = format_id
+    
     ydl_opts = {
-        'quiet': True,
-        'format': 'bestaudio/best'
+        'outtmpl': str(output_path),
+        'format': format_spec,
+        'quiet': False,  # Enable output for debugging
+        'noprogress': False,  # Show progress for debugging
+        'noplaylist': True,
+        'merge_output_format': 'mp4',
+        'postprocessors': [{
+            'key': 'FFmpegMetadata',
+            'add_metadata': True,
+        }]
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
-            info_dict = ydl.extract_info(url, download=False)
-            formats = info_dict.get('formats', [])
-            
-            # Filter out formats that don't have video or have extremely low resolution
-            video_formats = []
-            audio_only_formats = []
-            
-            for fmt in formats:
-                format_id = fmt.get('format_id', 'unknown')
-                height = fmt.get('height')
-                width = fmt.get('width')
-                vcodec = fmt.get('vcodec', '')
-                acodec = fmt.get('acodec', '')
-                format_label = fmt.get('format_note') or fmt.get('format', 'Unknown')
-                file_size = fmt.get('filesize') or fmt.get('filesize_approx')
-                ext = fmt.get('ext', 'unknown')
-                
-                # Skip formats without necessary information
-                if not format_id or format_id == 'unknown':
-                    continue
-                    
-                # Calculate size string
-                if file_size is not None:
-                    try:
-                        size_str = f"{int(file_size) / (1024 * 1024):.2f} MB"
-                    except:
-                        size_str = 'Size not available'
-                else:
-                    size_str = 'Size not available'
-                
-                # Skip formats with no video or extremely low resolution
-                has_video = vcodec != 'none' and height is not None and height > 0
-                has_audio = acodec != 'none'
-                
-                # Create format info
-                format_info = {
-                    'id': format_id,
-                    'size': size_str,
-                    'ext': ext
-                }
-                
-                if has_video:
-                    format_info['label'] = f"{height}p ({format_label})"
-                    video_formats.append(format_info)
-                elif has_audio:
-                    format_info['label'] = f"Audio ({format_label})"
-                    audio_only_formats.append(format_info)
-            
-            # Add combined formats for better quality
-            combined_formats = []
-            
-            # Add best video+audio option
-            combined_formats.append({
-                'id': 'best',
-                'label': 'Best Quality (Auto)',
-                'size': 'Variable',
-                'ext': 'mp4'
-            })
-            
-            # Sort video formats by height (resolution)
-            video_formats.sort(key=lambda x: int(x['label'].split('p')[0]) if 'p' in x['label'] else 0, reverse=True)
-            
-            # Return only the most useful formats (best combined, top video formats, top audio)
-            result_formats = combined_formats + video_formats[:6]
-            if audio_only_formats:
-                result_formats.append(audio_only_formats[0])
-                
-            return json.dumps(result_formats)
-            
-        except Exception as e:
-            return json.dumps({'error': str(e)})
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            logger.info("Starting download...")
+            ydl.download([url])
+            logger.info("Download completed")
+    except Exception as e:
+        logger.error(f"Download failed: {str(e)}")
+        return "Download failed", str(e), None, 0, 0
+
+    # Verify the file exists
+    actual_path = Path(output_path)
+    if not actual_path.exists():
+        logger.error(f"File not found after download: {output_path}")
+        return "Download failed", "File not found after download", None, 0, 0
+
+    # Get file size and calculate download speed
+    file_size = actual_path.stat().st_size
+    download_speed = file_size / (time.time() - start_time)
+    
+    logger.info(f"File downloaded: {actual_path}, Size: {file_size}")
+    
+    # Return success with file information
+    return None, None, str(actual_path), download_speed, file_size
+
+def main(url, output_dir, format_id='best'):
+    # Generate unique file name
+    file_name = f"video_{int(time.time())}.mp4"
+    output_path = Path(output_dir) / file_name
+    start_time = time.time()
+
+    # Download the video
+    error, error_message, output_path, download_speed, file_size = download_video(url, output_path, format_id, start_time)
+
+    # Handle errors
+    if error:
+        logger.error(f"Error: {error}, Message: {error_message}")
+        result = {"error": error, "message": error_message}
+        print(json.dumps(result))
+        return
+
+    # Return the result as JSON
+    result = {
+        "filePath": str(output_path),
+        "downloadSpeed": download_speed,
+        "fileSize": file_size
+    }
+    print(json.dumps(result))
+    logger.info(f"Success! Result: {result}")
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        url = sys.argv[1]
-        print(fetch_qualities(url))
-    else:
-        print(json.dumps({'error': 'No URL provided'}))
+    if len(sys.argv) < 3:
+        print(json.dumps({"error": "Usage", "message": "python downloader.py <url> <output_dir> [<format_id>]"}))
         sys.exit(1)
+
+    url = sys.argv[1]
+    output_dir = sys.argv[2]
+    format_id = sys.argv[3] if len(sys.argv) > 3 else 'best'
+    main(url, output_dir, format_id)
