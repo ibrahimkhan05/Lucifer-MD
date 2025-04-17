@@ -10,7 +10,7 @@ exports.run = {
         if (!args || !args[0]) return client.reply(m.chat, Func.example(isPrefix, command, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'), m);
 
         const url = args[0]; // URL provided by the user
-        const quality = args[1]; // Get quality from args if provided
+        const formatId = args[1]; // Get format ID from args if provided
         const outputDir = path.resolve(__dirname, 'downloads'); // Directory to save the download
         const scriptPath = path.resolve(__dirname, 'downloader.py'); // Path to Python script
 
@@ -22,10 +22,10 @@ exports.run = {
         // Notify user that the download is starting
         await client.reply(m.chat, 'Your file is being downloaded. This may take some time.', m);
 
-        // Construct the command based on whether quality is provided
-        let commandStr = `python3 ${scriptPath} ${url} ${outputDir}`;
-        if (quality) {
-            commandStr += ` ${quality}`; // Only append quality if it's provided
+        // Construct the command based on whether format ID is provided
+        let commandStr = `python3 ${scriptPath} "${url}" "${outputDir}"`;
+        if (formatId) {
+            commandStr += ` "${formatId}"`; // Only append format ID if it's provided
         }
 
         exec(commandStr, async (error, stdout, stderr) => {
@@ -43,7 +43,7 @@ exports.run = {
 
             console.log(`stdout: ${stdout}`);
 
-            // Parse the stdout to get the original file name and path
+            // Parse the stdout to get the file information
             let output;
             try {
                 output = JSON.parse(stdout.trim());
@@ -54,7 +54,13 @@ exports.run = {
             }
 
             if (output.error) {
-                await client.reply(m.chat, `Download failed: ${output.message}`, m);
+                await client.reply(m.chat, `Download failed: ${output.message || output.error}`, m);
+                return;
+            }
+
+            // Check if filePath exists in the output
+            if (!output.filePath) {
+                await client.reply(m.chat, `Download failed: No file path returned from downloader`, m);
                 return;
             }
 
@@ -63,7 +69,13 @@ exports.run = {
 
             // Handle file and send to user
             try {
-                const fileSize = fs.statSync(filePath).size;
+                if (!fs.existsSync(filePath)) {
+                    await client.reply(m.chat, `Download failed: File not found after download`, m);
+                    return;
+                }
+
+                const fileStats = fs.statSync(filePath);
+                const fileSize = fileStats.size;
                 const fileSizeMB = fileSize / (1024 * 1024); // Convert bytes to MB
                 const fileSizeStr = `${fileSizeMB.toFixed(2)} MB`;
 
@@ -92,7 +104,12 @@ exports.run = {
 
                 await client.sendFile(m.chat, filePath, fileName, '', m, { document: isDocument });
 
-                fs.unlinkSync(filePath); // Delete the file after sending
+                // Delete the file after sending
+                setTimeout(() => {
+                    if (fs.existsSync(filePath)) {
+                        fs.unlinkSync(filePath);
+                    }
+                }, 3000); // Give a short delay to ensure file is sent before deletion
             } catch (fileError) {
                 console.error(`Error handling file: ${fileError.message}`);
                 await client.reply(m.chat, `Error handling file: ${fileError.message}`, m);
