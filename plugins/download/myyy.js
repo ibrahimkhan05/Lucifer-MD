@@ -1,4 +1,4 @@
-const { ytsearch } = require('ruhend-scraper');
+const { ytmp3 } = require('ruhend-scraper')
 
 exports.run = {
     usage: ["myy"],
@@ -6,13 +6,10 @@ exports.run = {
     category: "generativeai",
     async: async (m, { client, isPrefix, text, Func, command }) => {
         
-const r = await yts( 'Hona tha pyar' )
+const url = 'https://youtu.be/fW1Cgv63naI';
 
-const videos = r.videos.slice( 0, 3 )
-videos.forEach( function ( v ) {
-	const views = String( v.views ).padStart( 10, ' ' )
-	console.log( `${ views } | ${ v.title } (${ v.timestamp }) | ${ v.author.name }` )
-} )
+const data = await ytmp3(url);
+console.log(data);
 
      
     },

@@ -19,28 +19,23 @@ exports.run = {
          // Indicate that the bot is processing the request
          client.sendReact(m.chat, '🕒', m.key);
          
-         // Fetch media details from the provided Pinterest URL
-         const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/pinterest?url=${encodeURIComponent(args[0])}&apikey=${global.betabotz}`);
+         // Fetch media details from the provided Pinterest URL using the new API
+         const json = await Func.fetchJson(`https://delirius-apiofc.vercel.app/download/pinterestdl?url=${encodeURIComponent(args[0])}`);
          
          // Check if the response is valid and contains the expected data
-         if (!json || !json.result || !json.result.success) {
+         if (!json || !json.status || !json.data || !json.data.download || !json.data.download.url) {
             return client.reply(m.chat, '⚠️ Failed to fetch media details. Please check the URL or try again later.', m);
          }
          
-         const { data } = json.result;
-         let mediaUrl = data.image;
-
-         // Handle different media types
-         if (data.media_type === 'image') {
-            // If the media is an image, send the image file
-            client.sendFile(m.chat, mediaUrl, '', '', m);
-         } else if (data.media_type === 'video') {
-            // If the media is a video, use the video URL (ensure the URL is video type)
-            mediaUrl = data.video || mediaUrl; // Fallback to image URL if no video URL is provided
+         // Extract the media URL
+         const mediaUrl = json.data.download.url;
+         
+         // Check if the media is a video and send accordingly
+         if (mediaUrl.endsWith('.mp4')) {
             client.sendFile(m.chat, mediaUrl, '', '', m);
          } else {
-            // If the media type is not recognized, return an invalid media response
-            return client.reply(m.chat, '⚠️ Unsupported media type. Only image and video types are supported.', m);
+            // If it's an image, send the thumbnail (or another image) URL
+            client.sendFile(m.chat, json.data.thumbnail, '', '', m);
          }
       } catch (e) {
          // Handle any errors and send the error response

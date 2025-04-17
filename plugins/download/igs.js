@@ -11,34 +11,35 @@ exports.run = {
 
          // Trim spaces but keep everything else intact
          const username = args[0].trim();
-         const igUrl = `https://www.instagram.com/stories/${username}`;
+         const igUrl = `https://bk9.fun/download/igs?username=${username}`;
 
          client.sendReact(m.chat, '🕒', m.key);
          const startTime = Date.now();
 
-         const apiUrl = `https://api.betabotz.eu.org/api/download/igdowloader?url=${encodeURIComponent(igUrl)}&apikey=${global.betabotz}`;
-         
-         const response = await Func.fetchJson(apiUrl);
-         if (!response.status || !response.message.length) {
-            return client.reply(m.chat, 'Unable to fetch the story. Please try again.', m);
+         // Fetch the API response
+         const response = await Func.fetchJson(igUrl);
+
+         // Check if the response is valid
+         if (!response || !response.status || !response.BK9 || response.BK9.length === 0) {
+            return client.reply(m.chat, 'Unable to fetch the story. Please try again later.', m);
          }
 
          const processedUrls = new Set();
-         for (const item of response.message) {
-            if (processedUrls.has(item._url)) continue;
+         for (const item of response.BK9) {
+            if (processedUrls.has(item.url)) continue;
 
-            processedUrls.add(item._url);
-            const file = await Func.getFile(item._url);
+            processedUrls.add(item.url);
+            const file = await Func.getFile(item.url);
             const filename = `file_${Date.now()}.${file.extension}`;
             const message = `🍟 *Fetching* : ${Date.now() - startTime} ms`;
 
-            if (['jpg', 'jpeg', 'png', 'webp'].includes(file.extension)) {
-               await client.sendFile(m.chat, item._url, filename, message, m);
-            } else {
-               await client.sendFile(m.chat, item._url, 'video.mp4', message, m);
+            if (item.type === 'image') {
+               await client.sendFile(m.chat, item.url, filename, message, m);
+            } else if (item.type === 'video') {
+               await client.sendFile(m.chat, item.url, 'video.mp4', message, m);
             }
 
-            await Func.delay(1500);
+            await Func.delay(1500); // To avoid too many requests in a short time
          }
       } catch (error) {
          console.error('Error:', error);

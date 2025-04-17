@@ -14,16 +14,16 @@ exports.run = {
          if (!args || !args[0]) return client.reply(m.chat, Func.example(isPrefix, command, 'https://twitter.com/mosidik/status/1475812845249957889?s=20'), m)
          if (!args[0].match(/(twitter.com)/gi)) return client.reply(m.chat, global.status.invalid, m)
          client.sendReact(m.chat, '🕒', m.key)
-         const json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/twitter2?url=${args[0]}&apikey=${global.betabotz}`);
          let old = new Date()
+         const json = await Func.fetchJson(`https://bk9.fun/download/twitter-2?url=${encodeURIComponent(args[0])}`);
          if (!json.status) return client.reply(m.chat, Func.jsonFormat(json), m)
-         
-         const mediaURLs = json.result.mediaURLs;
-         for (let url of mediaURLs) {
-            if (url.match(/\.(jpg|jpeg|png)$/i)) {
-               client.sendFile(m.chat, url, 'image.jpg', '', m)
-            } else if (url.match(/\.(mp4|gif)$/i)) {
-               client.sendFile(m.chat, url, 'video.mp4', '', m)
+
+         const media = json.BK9.BK9
+         for (let item of media) {
+            if (item.type === 'video') {
+               client.sendFile(m.chat, item.url, 'video.mp4', `🍟 *Fetching* : ${((new Date() - old) * 1)} ms`, m)
+            } else if (item.type === 'image') {
+               client.sendFile(m.chat, item.url, 'image.jpg', '', m)
             }
             await Func.delay(1500)
          }
