@@ -68,6 +68,7 @@ exports.run = {
 
                     await client.reply(m.chat, '✅ Uploading your file...', m);
 
+                    // Upload video files normally, others as document
                     const sendAsDocument = !videoExtensions.includes(fileExt);
 
                     try {
