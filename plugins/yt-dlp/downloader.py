@@ -2,11 +2,16 @@ import json
 import time
 import yt_dlp
 import sys
+import os
 from pathlib import Path
 import logging
+import io
+import contextlib
 
-# Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Set up logging to a file instead of stdout
+log_file = 'downloader.log'
+logging.basicConfig(filename=log_file, level=logging.INFO, 
+                   format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('downloader')
 
 def download_video(url, output_path, format_id='best', start_time=None):
@@ -38,21 +43,25 @@ def download_video(url, output_path, format_id='best', start_time=None):
     ydl_opts = {
         'outtmpl': str(output_path),
         'format': format_spec,
-        'quiet': False,  # Enable output for debugging
-        'noprogress': False,  # Show progress for debugging
+        'quiet': True,  # Disable normal output
+        'no_warnings': True,  # Disable warnings
+        'noprogress': True,  # Disable progress
         'noplaylist': True,
         'merge_output_format': 'mp4',
         'postprocessors': [{
             'key': 'FFmpegMetadata',
             'add_metadata': True,
-        }]
+        }],
+        'logger': logger  # Use our custom logger
     }
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            logger.info("Starting download...")
-            ydl.download([url])
-            logger.info("Download completed")
+        # Redirect stdout to capture yt-dlp output
+        with contextlib.redirect_stdout(io.StringIO()):
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                logger.info("Starting download...")
+                ydl.download([url])
+                logger.info("Download completed")
     except Exception as e:
         logger.error(f"Download failed: {str(e)}")
         return "Download failed", str(e), None, 0, 0
@@ -94,6 +103,7 @@ def main(url, output_dir, format_id='best'):
         "downloadSpeed": download_speed,
         "fileSize": file_size
     }
+    # Print ONLY the JSON result to stdout
     print(json.dumps(result))
     logger.info(f"Success! Result: {result}")
 

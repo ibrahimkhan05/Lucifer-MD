@@ -20,10 +20,10 @@ exports.run = {
         }
 
         // Notify user that the download is starting
-        await client.reply(m.chat, 'Your file is being downloaded. This may take some time.', m);
+        const downloadMsg = await client.reply(m.chat, 'Your file is being downloaded. This may take some time.', m);
 
-        // Escape special characters in URL
-        const escapedUrl = url.replace(/"/g, '\\"');
+        // Escape special characters in URL for shell safety
+        const escapedUrl = url.replace(/(["\s'$`\\])/g, '\\$1');
         
         // Construct the command based on whether format ID is provided
         let commandStr = `python3 "${scriptPath}" "${escapedUrl}" "${outputDir}"`;
@@ -40,7 +40,10 @@ exports.run = {
                 return;
             }
 
-            console.log(`Python stdout: ${stdout}`);
+            // Trim stdout to remove any extra whitespace or newlines
+            const cleanedOutput = stdout.trim();
+            console.log(`Python clean output: ${cleanedOutput}`);
+            
             if (stderr) {
                 console.error(`Python stderr: ${stderr}`);
             }
@@ -48,10 +51,13 @@ exports.run = {
             // Parse the stdout to get the file information
             let output;
             try {
-                output = JSON.parse(stdout.trim());
+                // Try to extract just the JSON part if there's other text
+                const jsonMatch = cleanedOutput.match(/(\{.*\})/);
+                const jsonStr = jsonMatch ? jsonMatch[0] : cleanedOutput;
+                output = JSON.parse(jsonStr);
             } catch (parseError) {
-                console.error(`Error parsing JSON: ${parseError.message}, Raw output: ${stdout}`);
-                await client.reply(m.chat, `Error parsing download information. Check logs for details.`, m);
+                console.error(`Error parsing JSON: ${parseError.message}, Raw output: ${cleanedOutput}`);
+                await client.reply(m.chat, `Download failed. The source might be restricted or unavailable.`, m);
                 return;
             }
 
@@ -71,7 +77,7 @@ exports.run = {
             // Handle file and send to user
             try {
                 if (!fs.existsSync(filePath)) {
-                    await client.reply(m.chat, `Download failed: File not found at ${filePath}`, m);
+                    await client.reply(m.chat, `Download failed: File not found after download`, m);
                     return;
                 }
 
