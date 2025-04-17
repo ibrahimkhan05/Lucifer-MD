@@ -4,27 +4,8 @@ import yt_dlp
 import sys
 from pathlib import Path
 
-def get_available_formats(url):
-    ydl_opts = {
-        'quiet': True,
-        'format': 'bestaudio/best',
-        'noplaylist': True,
-        'extract_flat': True
-    }
-    
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info_dict = ydl.extract_info(url, download=False)
-            formats = info_dict.get('formats', [])
-            format_list = [
-                f"{fmt['format_id']}: {fmt['height']}p" if 'height' in fmt else f"{fmt['format_id']}: Audio"
-                for fmt in formats
-            ]
-            return format_list, None
-    except Exception as e:
-        return None, str(e)
-
 def download_video(url, output_path, quality='best', start_time=None):
+    # Format selection logic
     if quality == 'best':
         format_code = 'bestvideo+bestaudio/best'
     else:
@@ -37,8 +18,11 @@ def download_video(url, output_path, quality='best', start_time=None):
         'quiet': True,
         'noprogress': True,
         'noplaylist': True,
-        'merge_output_format': 'mp4',  # Ensure final output is MP4
-        'concurrent_fragment_downloads': 4
+        'merge_output_format': 'mp4',
+        'postprocessors': [{
+            'key': 'FFmpegVideoConvertor',
+            'preferedformat': 'mp4'
+        }]
     }
 
     try:
@@ -58,6 +42,7 @@ def download_video(url, output_path, quality='best', start_time=None):
     return None, None, output_path, download_speed, file_size
 
 def main(url, output_dir, quality='best'):
+    # Generate unique file name
     file_name = f"video_{int(time.time())}.mp4"
     output_path = Path(output_dir) / file_name
     start_time = time.time()
