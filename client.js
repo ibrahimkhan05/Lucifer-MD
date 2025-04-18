@@ -34,7 +34,7 @@ const connect = async () => {
          session: session ? session(process.env.DATABASE_URL, 'session') : 'session',
          online: true,
          bypass_disappearing: true,
-         version: [2, 3000, 1022020250-alpha] // To see the latest version : https://wppconnect.io/whatsapp-versions/
+         version: [2, 3000, 1022020250] // To see the latest version : https://wppconnect.io/whatsapp-versions/
       }, {
          shouldIgnoreJid: jid => {
             return /(newsletter|bot)/.test(jid)
