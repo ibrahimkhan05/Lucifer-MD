@@ -27,12 +27,19 @@ exports.run = {
 
             // Download the audio using the ytdown function from the song URL
             const audioData = await ytdown(firstResult.url);
-            const audioUrl = audioData.result.audio;
 
-            // Send the audio file to the user as a .mp3 document without any caption
-            client.sendFile(m.chat, audioUrl, `${firstResult.title}.mp3`, '', m, {
-                document: true
-            });
+            // Check if the audioData contains the expected structure
+            if (audioData && audioData.result && audioData.result.audio) {
+                const audioUrl = audioData.result.audio;
+
+                // Send the audio file to the user as a .mp3 document without any caption
+                client.sendFile(m.chat, audioUrl, `${firstResult.title}.mp3`, '', m, {
+                    document: true
+                });
+            } else {
+                // Handle the case where audio data is not available
+                client.reply(m.chat, "Audio download failed. Please try again later.", m);
+            }
 
         } catch (e) {
             console.error(e); // Log the error for debugging
