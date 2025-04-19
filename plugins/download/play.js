@@ -22,7 +22,7 @@ exports.run = {
                 return client.reply(m.chat, "No results found for your search.", m);
             }
 
-            // Get the first video result
+            // Get the first song result
             const firstResult = results[0];
 
             // Format the response with the desired structure
@@ -38,8 +38,11 @@ exports.run = {
                 largeThumb: true,
                 thumbnail: firstResult.image
             }).then(async () => {
-                // Download the audio using the ytdown function
-                const audioData = await ytdown(firstResult.url);
+                // Redirection to the URL of the first song result (YouTube URL)
+                const songUrl = firstResult.url;
+
+                // Download the audio using the ytdown function from the song URL
+                const audioData = await ytdown(songUrl);
 
                 // Send the audio file to the user
                 client.sendFile(m.chat, audioData.mp3, `${firstResult.title}.mp3`, '', m, {
