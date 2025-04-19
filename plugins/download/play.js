@@ -1,5 +1,5 @@
-const { ytsearch } = require('ruhend-scraper');
-const axios = require('axios'); // Make sure to import axios for API requests
+const axios = require('axios');
+const { ytdown } = require('nayan-videos-downloader');
 
 exports.run = {
     usage: ['play'],
@@ -13,43 +13,38 @@ exports.run = {
             // Send a reaction to indicate processing
             client.sendReact(m.chat, '🕒', m.key);
 
-            // Search for the song using the 'ruhend-scraper' API
-            const result = await ytsearch(text);
+            // Search for the song using the Delirius API
+            const response = await axios.get(`https://delirius-apiofc.vercel.app/search/searchtrack?q=${text}`);
+            const results = response.data;
 
             // Ensure we have search results
-            if (!result || !result.video || result.video.length === 0) {
+            if (!results || results.length === 0) {
                 return client.reply(m.chat, "No results found for your search.", m);
             }
 
             // Get the first video result
-            const firstResult = result.video[0];
+            const firstResult = results[0];
 
             // Format the response with the desired structure
             let caption = `乂  *Y T - P L A Y*\n\n`;
             caption += `◦  *Title* : ${firstResult.title}\n`;
+            caption += `◦  *Artist* : ${firstResult.artist}\n`;
+            caption += `◦  *Album* : ${firstResult.album}\n`;
+            caption += `◦  *Duration* : ${firstResult.duration.label}\n`;
             caption += `◦  *URL* : ${firstResult.url}\n`;
-            caption += `◦  *Duration* : ${firstResult.duration}\n`;
-            caption += `◦  *Uploaded* : ${firstResult.publishedTime}\n`;
-            caption += `◦  *Views* : ${firstResult.view}\n`;
 
-            // Send the formatted message with video details
+            // Send the formatted message with song details
             client.sendMessageModify(m.chat, caption, m, {
                 largeThumb: true,
-                thumbnail: firstResult.thumbnail
+                thumbnail: firstResult.image
             }).then(async () => {
-                // Use BetaBotz API to get the audio file for download
-                const response = await axios.get(`https://api.betabotz.eu.org/api/download/yt?url=${firstResult.url}&apikey=${global.betabotz}`);
-                if (!response.data.status) {
-                    return client.reply(m.chat, "Failed to fetch the audio. Please try again later.", m);
-                }
-
-                // Get the result from the API response
-                const data = response.data.result;
+                // Download the audio using the ytdown function
+                const audioData = await ytdown(firstResult.url);
 
                 // Send the audio file to the user
-                client.sendFile(m.chat, data.mp3, `${data.title}.mp3`, '', m, {
+                client.sendFile(m.chat, audioData.mp3, `${firstResult.title}.mp3`, '', m, {
                     document: true,
-                    APIC: await Func.fetchBuffer(data.thumb)
+                    APIC: await Func.fetchBuffer(firstResult.image)
                 });
             });
 
