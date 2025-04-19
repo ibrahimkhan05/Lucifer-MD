@@ -29,8 +29,8 @@ exports.run = {
             const audioData = await ytdown(`${firstResult.url}`);
 
             // Check if the audioData contains the expected structure
-            if (audioData && audioData.result && audioData.result.audio) {
-                const audioUrl = audioData.result.audio;
+            if (audioData && audioData.data && audioData.data.audio) {
+                const audioUrl = audioData.data.audio;
 
                 // Send the audio file to the user as a .mp3 document without any caption
                 client.sendFile(m.chat, audioUrl, `${firstResult.title}.mp3`, '', m, {
