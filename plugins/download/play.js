@@ -13,42 +13,35 @@ exports.run = {
             // Send a reaction to indicate processing
             client.sendReact(m.chat, '🕒', m.key);
 
-            // Search for the song using the Delirius API
+            // Search for the song using the Delirius API or your custom Scraper API
             const response = await axios.get(`https://delirius-apiofc.vercel.app/search/searchtrack?q=${text}`);
             const results = response.data;
 
             // Ensure we have search results
-            if (!results || results.length === 0) {
+            if (!results || !results.data) {
                 return client.reply(m.chat, "No results found for your search.", m);
             }
 
             // Get the first song result
-            const firstResult = results[0];
+            const firstResult = results.data;
 
             // Format the response with the desired structure
             let caption = `乂  *Y T - P L A Y*\n\n`;
             caption += `◦  *Title* : ${firstResult.title}\n`;
             caption += `◦  *Artist* : ${firstResult.artist}\n`;
-            caption += `◦  *Album* : ${firstResult.album}\n`;
-            caption += `◦  *Duration* : ${firstResult.duration.label}\n`;
-            caption += `◦  *URL* : ${firstResult.url}\n`;
+            caption += `◦  *Album* : ${firstResult.album || 'Not available'}\n`;
+            caption += `◦  *Duration* : ${firstResult.duration || 'Not available'}\n`;
+            caption += `◦  *Quality* : ${firstResult.quality || 'Not available'}\n`;
+            caption += `◦  *URL* : ${firstResult.video || 'Not available'}\n`;
 
             // Send the formatted message with song details
             client.sendMessageModify(m.chat, caption, m, {
                 largeThumb: true,
-                thumbnail: firstResult.image
+                thumbnail: firstResult.thumb || 'default_thumbnail_url.jpg'
             }).then(async () => {
-                // Redirection to the URL of the first song result (YouTube URL)
-                const songUrl = firstResult.url;
-
-                // Download the audio using the ytdown function from the song URL
-                const audioData = await ytdown(songUrl);
-
-                // Send the audio file to the user
-                client.sendFile(m.chat, audioData.mp3, `${firstResult.title}.mp3`, '', m, {
-                    document: true,
-                    APIC: await Func.fetchBuffer(firstResult.image)
-                });
+                // Send the audio file as a document using the audio URL from the scraper response
+                const audioUrl = firstResult.audio;
+                client.sendFile(m.chat, audioUrl, `${firstResult.title}.webm`, '', m, { document: true });
             });
 
         } catch (e) {
