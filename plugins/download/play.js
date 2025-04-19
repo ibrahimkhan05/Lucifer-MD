@@ -1,6 +1,7 @@
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const { ytdown } = require('nayan-videos-downloader'); // Assuming this will be used if needed
 
 exports.run = {
     usage: ['play'],
@@ -9,21 +10,28 @@ exports.run = {
     async: async (m, { client, text, isPrefix, command, users, env, Func, Scraper }) => {
         try {
             // Check if a query is provided
-            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'song name or URL'), m);
+            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'song name'), m);
 
             // Send a reaction to indicate processing
             client.sendReact(m.chat, '🕒', m.key);
 
-            // Assuming the user provides a URL for the audio file (direct download link)
-            const audioUrl = text;
+            // Search for the song using the Delirius API
+            const response = await axios.get(`https://delirius-apiofc.vercel.app/search/searchtrack?q=${text}`);
+            const results = response.data;
 
-            // Check if the URL is valid
-            if (!audioUrl.startsWith('http') || !audioUrl.includes('.mp3')) {
-                return client.reply(m.chat, "Please provide a valid audio URL.", m);
+            // Ensure we have search results
+            if (!results || results.length === 0) {
+                return client.reply(m.chat, "No results found for your search.", m);
             }
 
+            // Get the first song result
+            const firstResult = results[0];
+
+            // Extract the audio URL from the result
+            const audioUrl = firstResult.url; // Assuming this is the playback URL you mentioned
+
             // Download the audio file using axios
-            const response = await axios({
+            const audioResponse = await axios({
                 url: audioUrl,
                 method: 'GET',
                 responseType: 'arraybuffer',  // Download the content as a buffer
@@ -34,11 +42,11 @@ exports.run = {
             });
 
             // Create a temporary file path to store the audio file
-            const fileName = `${path.basename(audioUrl)}.mp3`;
+            const fileName = `${firstResult.title}.mp3`; // Using the song title for the filename
             const filePath = path.join(__dirname, fileName);
 
             // Write the audio file to disk
-            fs.writeFile(filePath, response.data, (err) => {
+            fs.writeFile(filePath, audioResponse.data, (err) => {
                 if (err) {
                     console.error('Error saving the audio file:', err);
                     return client.reply(m.chat, "Failed to download the audio. Please try again later.", m);
