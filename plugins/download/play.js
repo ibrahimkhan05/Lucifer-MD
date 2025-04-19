@@ -25,12 +25,9 @@ exports.run = {
             // Get the first song result
             const firstResult = results[0];
 
-            // Redirection to the URL of the first song result (YouTube URL)
-            const songUrl = firstResult.url;
-
             // Download the audio using the ytdown function from the song URL
-            const audioData = await ytdown(songUrl);
-            const audioUrl = response.data.audio
+            const audioData = await ytdown(firstResult.url);
+            const audioUrl = audioData.data.audio
             // Send the audio file to the user as a .mp3 document without any caption
             client.sendFile(m.chat, audioUrl, `${firstResult.title}.mp3`, '', m, {
                 document: true
