@@ -34,29 +34,27 @@ exports.run = {
             if (audioData && audioData.data && audioData.data.audio) {
                 const audioUrl = audioData.data.audio;
 
-                // Add headers to avoid potential 403 errors
-                const axiosConfig = {
+                // Download the file using axios directly, no streaming
+                const response = await axios({
                     url: audioUrl,
                     method: 'GET',
-                    responseType: 'stream',
+                    responseType: 'arraybuffer', // Get the response as a buffer (this is usually the format for direct downloads)
                     headers: {
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
-                        'Accept': 'application/json',
+                        'Accept': 'audio/mpeg', // You can set the proper content-type here
                     }
-                };
-
-                // Download the file using axios
-                const downloadResponse = await axios(axiosConfig);
+                });
 
                 // Create a temporary file path to store the audio file
                 const filePath = path.join(__dirname, `${firstResult.title}.mp3`);
-                const writer = fs.createWriteStream(filePath);
 
-                // Pipe the stream to the file
-                downloadResponse.data.pipe(writer);
+                // Write the buffer to a file
+                fs.writeFile(filePath, response.data, (err) => {
+                    if (err) {
+                        console.error('Error saving the audio file:', err);
+                        return client.reply(m.chat, "Failed to download the audio. Please try again later.", m);
+                    }
 
-                // Wait for the download to finish before sending the file
-                writer.on('finish', () => {
                     // Send the downloaded audio file to the user as a .mp3 document without any caption
                     client.sendFile(m.chat, filePath, `${firstResult.title}.mp3`, '', m, {
                         document: true
@@ -67,11 +65,6 @@ exports.run = {
                         console.error('Error sending file:', error);
                         client.reply(m.chat, "Error sending the file. Please try again later.", m);
                     });
-                });
-
-                writer.on('error', (err) => {
-                    console.error('Error writing file:', err);
-                    client.reply(m.chat, "Failed to download the audio. Please try again later.", m);
                 });
 
             } else {
