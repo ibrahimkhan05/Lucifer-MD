@@ -1,7 +1,6 @@
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const { ytdown } = require('nayan-videos-downloader'); // Assuming this will be used if needed
 
 exports.run = {
     usage: ['play'],
@@ -30,7 +29,7 @@ exports.run = {
             // Extract the audio URL from the result
             const audioUrl = firstResult.url; // Assuming this is the playback URL you mentioned
 
-            // Download the audio file using axios
+            // Download the audio file using axios with redirect handling
             const audioResponse = await axios({
                 url: audioUrl,
                 method: 'GET',
@@ -38,7 +37,8 @@ exports.run = {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
                     'Accept': 'audio/mpeg', // Set the content type for audio
-                }
+                },
+                maxRedirects: 5,  // Allow up to 5 redirects if needed
             });
 
             // Create a temporary file path to store the audio file
