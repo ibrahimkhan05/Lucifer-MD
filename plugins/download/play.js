@@ -13,21 +13,28 @@ exports.run = {
             // Send a reaction to indicate processing
             client.sendReact(m.chat, '🕒', m.key);
 
-            // Search for the song using the Delirius API or your custom Scraper API
+            // Search for the song using the Delirius API
             const response = await axios.get(`https://delirius-apiofc.vercel.app/search/searchtrack?q=${text}`);
             const results = response.data;
 
             // Ensure we have search results
-            if (!results || !results.data) {
+            if (!results || results.length === 0) {
                 return client.reply(m.chat, "No results found for your search.", m);
             }
 
             // Get the first song result
-            const firstResult = results.data;
+            const firstResult = results[0];
 
-            // Send the audio file as an .mp3 document using the audio URL from the scraper response
-            const audioUrl = firstResult.audio;
-            client.sendFile(m.chat, audioUrl, `${firstResult.title}.mp3`, '', m, { document: true });
+            // Redirection to the URL of the first song result (YouTube URL)
+            const songUrl = firstResult.url;
+
+            // Download the audio using the ytdown function from the song URL
+            const audioData = await ytdown(songUrl);
+            const audioUrl = response.data.audio
+            // Send the audio file to the user as a .mp3 document without any caption
+            client.sendFile(m.chat, audioUrl, `${firstResult.title}.mp3`, '', m, {
+                document: true
+            });
 
         } catch (e) {
             console.error(e); // Log the error for debugging
