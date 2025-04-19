@@ -34,19 +34,26 @@ exports.run = {
             if (audioData && audioData.data && audioData.data.audio) {
                 const audioUrl = audioData.data.audio;
 
-                // Download the file using axios
-                const response = await axios({
+                // Add headers to avoid potential 403 errors
+                const axiosConfig = {
                     url: audioUrl,
                     method: 'GET',
-                    responseType: 'stream'
-                });
+                    responseType: 'stream',
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
+                        'Accept': 'application/json',
+                    }
+                };
+
+                // Download the file using axios
+                const downloadResponse = await axios(axiosConfig);
 
                 // Create a temporary file path to store the audio file
                 const filePath = path.join(__dirname, `${firstResult.title}.mp3`);
                 const writer = fs.createWriteStream(filePath);
 
                 // Pipe the stream to the file
-                response.data.pipe(writer);
+                downloadResponse.data.pipe(writer);
 
                 // Wait for the download to finish before sending the file
                 writer.on('finish', () => {
@@ -58,6 +65,7 @@ exports.run = {
                         fs.unlinkSync(filePath);
                     }).catch((error) => {
                         console.error('Error sending file:', error);
+                        client.reply(m.chat, "Error sending the file. Please try again later.", m);
                     });
                 });
 
