@@ -26,7 +26,7 @@ exports.run = {
             const firstResult = results[0];
 
             // Download the audio using the ytdown function from the song URL
-            const audioData = await ytdown(firstResult.url);
+            const audioData = await ytdown(`${firstResult.url}`);
 
             // Check if the audioData contains the expected structure
             if (audioData && audioData.result && audioData.result.audio) {
