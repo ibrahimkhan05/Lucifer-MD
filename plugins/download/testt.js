@@ -5,7 +5,7 @@ exports.run = {
     category: 'downloader',
     async: async (m, { client, args, isPrefix, command, Func }) => {
         try {
-            let URL = await ytdown("https://youtu.be/pIWaVJPl0-c")
+            let URL = await ytdown("https://youtu.be/0_9TCak--cw")
             console.log(URL)
         } catch (e) {
             console.error(e);
