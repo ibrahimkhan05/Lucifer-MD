@@ -1,5 +1,5 @@
 const axios = require('axios');
-const yt = require("@justherza/ytdl-me");
+const ddownr = require('denethdev-ytmp3');
 
 exports.run = {
     usage: ['play'],
@@ -11,34 +11,28 @@ exports.run = {
 
             client.sendReact(m.chat, '🕒', m.key);
 
-            // Search for the song using Delirius API
+            // Step 1: Search via Delirius API
             const search = await axios.get(`https://delirius-apiofc.vercel.app/search/searchtrack?q=${encodeURIComponent(text)}`);
             const results = search.data;
 
-            if (!results || !results.length) {
-                return client.reply(m.chat, '❌ No results found.', m);
+            if (!results || results.length === 0) {
+                return client.reply(m.chat, "❌ No results found.", m);
             }
 
-            const firstResult = results[0];
-            const videoUrl = firstResult.url;
+            const song = results[0];
+            const songUrl = song.url;
+            const title = song.title;
 
-            // Download audio using @justherza/ytdl-me
-            const dl = await yt.download({
-                yt_link: videoUrl,
-                yt_format: "mp3",
-                logs: false,
-                saveId: false
-            });
-
-            if (!dl || !dl.media) {
-                return client.reply(m.chat, '❌ Failed to retrieve download link.', m);
+            // Step 2: Use ddownr to get MP3 download link
+            const result = await ddownr.download(songUrl, 'mp3');
+            if (!result || !result.downloadUrl) {
+                return client.reply(m.chat, "❌ Failed to retrieve download link.", m);
             }
 
-            // Clean the title for safe file naming
-            const title = dl.info?.title?.replace(/[\\/:*?"<>|]/g, '') || 'audio';
+            const downloadLink = result.downloadUrl;
 
-            // Send the MP3 as a document
-            await client.sendFile(m.chat, dl.media, `${title}.mp3`, title, m, {
+            // Step 3: Send MP3 as document with only the API title
+            await client.sendFile(m.chat, downloadLink, `${title}.mp3`, title, m, {
                 document: true
             });
 
