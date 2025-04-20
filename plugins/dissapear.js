@@ -8,7 +8,7 @@ exports.run = {
        try {
           // custom disappearing message
           client.reply(m.chat, 'Hi!', null, {
-            disappear: 1234
+            disappear: 'hELLO'
           })
        } catch (e) {
           client.reply(m.chat, Func.jsonFormat(e), m)
