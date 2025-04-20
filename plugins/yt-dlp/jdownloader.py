@@ -13,17 +13,9 @@ def main():
     parser.add_argument('output_dir', help='Directory to save downloads')
     args = parser.parse_args()
 
-    # JDownloader credentials - you should set these as environment variables
+    # JDownloader credentials - hardcoded but you should consider using environment variables
     jd_user = "killerkhankiller02@gmail.com"
     jd_pass = "Sahil@12345"
-    
-    if not jd_user or not jd_pass:
-        result = {
-            'error': True,
-            'message': 'JDownloader credentials not set. Please set JD_USER and JD_PASS environment variables.'
-        }
-        print(json.dumps(result))
-        return
 
     # Create output directory if it doesn't exist
     os.makedirs(args.output_dir, exist_ok=True)
@@ -38,7 +30,7 @@ def main():
         if not devices:
             result = {
                 'error': True,
-                'message': 'No JDownloader devices found. Please ensure JDownloader is running.'
+                'message': 'No JDownloader devices found. Please ensure JDownloader is running and connected to your My.JDownloader account.'
             }
             print(json.dumps(result))
             return
