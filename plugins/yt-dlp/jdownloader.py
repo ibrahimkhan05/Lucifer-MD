@@ -14,8 +14,8 @@ def main():
     args = parser.parse_args()
 
     # JDownloader credentials - you should set these as environment variables
-    jd_user = os.environ.get('JD_USER', 'killerkhankiller02@gmail.com')
-    jd_pass = os.environ.get('JD_PASS', 'Sahil@12345')
+    jd_user = "killerkhankiller02@gmail.com"
+    jd_pass = "Sahil@12345"
     
     if not jd_user or not jd_pass:
         result = {
