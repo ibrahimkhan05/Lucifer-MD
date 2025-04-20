@@ -1,30 +1,39 @@
-const { exec } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+const axios = require('axios');
 
 exports.run = {
     usage: ['play'],
-    use: 'song name',
+    use: 'query',
     category: 'downloader',
     async: async (m, { client, text, isPrefix, command, Func }) => {
         try {
-            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'shape of you'), m);
-            client.sendReact(m.chat, '🎵', m.key);
+            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'song name'), m);
 
-            // Call Python script
-            exec(`python3 download_song.py "${text}"`, async (err, stdout, stderr) => {
-                if (err || stderr || stdout.includes('ERROR::')) {
-                    return client.reply(m.chat, "❌ Failed to download the song.", m);
-                }
+            client.sendReact(m.chat, '🕒', m.key);
 
-                const filePath = stdout.trim();
-                const fileName = path.basename(filePath);
+            // Step 1: Search via Delirius API
+            const searchRes = await axios.get(`https://delirius-apiofc.vercel.app/search/searchtrack?q=${encodeURIComponent(text)}`);
+            const results = searchRes.data;
 
-                await client.sendFile(m.chat, filePath, fileName, '', m, {
-                    document: true
-                });
+            if (!results || results.length === 0) {
+                return client.reply(m.chat, "❌ No results found.", m);
+            }
 
-                fs.unlinkSync(filePath); // cleanup
+            const first = results[0];
+            const ytUrl = first.url;
+
+            // Step 2: Get MP3 from BK9 API
+            const bk9Res = await axios.get(`https://bk9.fun/download/ytmp3?url=${encodeURIComponent(ytUrl)}&type=mp3`);
+            const data = bk9Res.data;
+
+            if (!data.status || !data.BK9 || !data.BK9.downloadUrl) {
+                return client.reply(m.chat, "❌ Failed to get download link.", m);
+            }
+
+            const { title, downloadUrl } = data.BK9;
+
+            // Step 3: Send MP3 directly as a document from remote URL
+            await client.sendFile(m.chat, downloadUrl, `${title}.mp3`, '', m, {
+                document: true
             });
 
         } catch (e) {
