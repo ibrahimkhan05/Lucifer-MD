@@ -1,48 +1,60 @@
-const axios = require('axios');
-const ddownr = require('denethdev-ytmp3');
+const yts = require('yt-search')
+const ddownr = require('denethdev-ytmp3')
 
 exports.run = {
-    usage: ['play'],
-    use: 'query',
-    category: 'downloader',
-    async: async (m, { client, text, isPrefix, command, Func }) => {
-        try {
-            if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'song name'), m);
+   usage: ['play'],
+   hidden: ['lagu', 'song'],
+   use: 'query',
+   category: 'downloader',
+   async: async (m, {
+      client,
+      text,
+      isPrefix,
+      command,
+      env,
+      users,
+      Func
+   }) => {
+      try {
+         if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'lathi'), m)
 
-            client.sendReact(m.chat, '🕒', m.key);
+         client.sendReact(m.chat, '🧠', m.key)
 
-            // Step 1: Search via Delirius API
-            const search = await axios.get(`https://delirius-apiofc.vercel.app/search/searchtrack?q=${encodeURIComponent(text)}`);
-            const results = search.data;
+         const search = await yts(text)
+         const video = search.videos[0]
+         if (!video) return client.reply(m.chat, '*Song not found 😓*', m)
 
-            if (!results || results.length === 0) {
-                return client.reply(m.chat, "❌ No results found.", m);
-            }
+         const dl = await ddownr.download(video.url, 'mp3')
+         const downloadUrl = dl.downloadUrl
 
-            const song = results[0];
-            const songUrl = song.url;
-            const title = song.title;
+         let caption = `乂  *Y T - P L A Y*\n\n`
+         caption += `◦ *Title* : ${video.title}\n`
+         caption += `◦ *Duration* : ${video.timestamp}\n`
+         caption += `◦ *Views* : ${video.views.toLocaleString()}\n`
+         caption += `◦ *Channel* : ${video.author.name}\n`
+         caption += `◦ *URL* : ${video.url}\n\n`
+         caption += global.footer
 
-            // Step 2: Use ddownr to get MP3 download link
-            const result = await ddownr.download(songUrl, 'mp3');
-            if (!result || !result.downloadUrl) {
-                return client.reply(m.chat, "❌ Failed to retrieve download link.", m);
-            }
+         const thumb = await Func.fetchBuffer(video.thumbnail)
 
-            const downloadLink = result.downloadUrl;
+         await client.sendMessageModify(m.chat, caption, m, {
+            largeThumb: true,
+            thumbnail: thumb
+         })
 
-            // Step 3: Send MP3 as document with only the API title
-            await client.sendFile(m.chat, downloadLink, `${title}.mp3`, title, m, {
-                document: true
-            });
+         await client.sendFile(m.chat, downloadUrl, `${video.title}.mp3`, '', m, {
+            document: true,
+            APIC: thumb
+         })
 
-        } catch (err) {
-            console.error(err);
-            client.reply(m.chat, Func.jsonFormat(err), m);
-        }
-    },
-    error: false,
-    restrict: true,
-    cache: true,
-    location: __filename
-};
+      } catch (e) {
+         console.error(e)
+         client.reply(m.chat, Func.jsonFormat(e), m)
+      }
+   },
+   error: false,
+   limit: true,
+   restrict: true,
+   cache: true,
+   location: __filename
+}
