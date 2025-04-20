@@ -1,4 +1,5 @@
 const axios = require('axios');
+const yt = require("@justherza/ytdl-me");
 
 exports.run = {
     usage: ['play'],
@@ -21,18 +22,21 @@ exports.run = {
             const first = results[0];
             const ytUrl = first.url;
 
-            // Step 2: Get MP3 from BK9 API
-            const bk9Res = await axios.get(`https://bk9.fun/download/ytmp3?url=${encodeURIComponent(ytUrl)}&type=mp3`);
-            const data = bk9Res.data;
+            // Step 2: Use @justherza/ytdl-me to download MP3
+            const dl = await yt.download({
+                yt_link: ytUrl,
+                yt_format: "mp3",
+                logs: false,
+                saveId: false
+            });
 
-            if (!data.status || !data.BK9 || !data.BK9.downloadUrl) {
+            if (!dl || !dl.media) {
                 return client.reply(m.chat, "❌ Failed to get download link.", m);
             }
 
-            const { title, downloadUrl } = data.BK9;
-
-            // Step 3: Send MP3 directly as a document from remote URL
-            await client.sendFile(m.chat, downloadUrl, `${title}.mp3`, `${title}`, m, {
+            // Step 3: Send media URL as file
+            const title = dl.info?.title || 'audio';
+            await client.sendFile(m.chat, dl.media, `${title}.mp3`, `${title}`, m, {
                 document: true
             });
 
