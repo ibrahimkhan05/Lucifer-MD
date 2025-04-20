@@ -19,7 +19,7 @@ exports.run = {
       try {
          if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'lathi'), m)
 
-         client.sendReact(m.chat, '🧠', m.key)
+         client.sendReact(m.chat, '🕒', m.key)
 
          const search = await yts(text)
          const video = search.videos[0]
