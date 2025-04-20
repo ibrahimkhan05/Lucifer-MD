@@ -20,7 +20,6 @@ exports.run = {
          if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'lathi'), m)
 
          client.sendReact(m.chat, '🕒', m.key)
-
          const search = await yts(text)
          const video = search.videos[0]
          if (!video) return client.reply(m.chat, '*Song not found 😓*', m)
