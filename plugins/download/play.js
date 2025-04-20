@@ -32,7 +32,7 @@ exports.run = {
             const { title, downloadUrl } = data.BK9;
 
             // Step 3: Send MP3 directly as a document from remote URL
-            await client.sendFile(m.chat, downloadUrl, `${title}.mp3`, '', m, {
+            await client.sendFile(m.chat, downloadUrl, `${title}.mp3`, `${title}`, m, {
                 document: true
             });
 
