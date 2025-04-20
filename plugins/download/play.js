@@ -11,38 +11,40 @@ exports.run = {
 
             client.sendReact(m.chat, '🕒', m.key);
 
-            // Step 1: Search via Delirius API
-            const searchRes = await axios.get(`https://delirius-apiofc.vercel.app/search/searchtrack?q=${encodeURIComponent(text)}`);
-            const results = searchRes.data;
+            // Search for the song using Delirius API
+            const search = await axios.get(`https://delirius-apiofc.vercel.app/search/searchtrack?q=${encodeURIComponent(text)}`);
+            const results = search.data;
 
-            if (!results || results.length === 0) {
-                return client.reply(m.chat, "❌ No results found.", m);
+            if (!results || !results.length) {
+                return client.reply(m.chat, '❌ No results found.', m);
             }
 
-            const first = results[0];
-            const ytUrl = first.url;
+            const firstResult = results[0];
+            const videoUrl = firstResult.url;
 
-            // Step 2: Use @justherza/ytdl-me to download MP3
+            // Download audio using @justherza/ytdl-me
             const dl = await yt.download({
-                yt_link: ytUrl,
+                yt_link: videoUrl,
                 yt_format: "mp3",
                 logs: false,
                 saveId: false
             });
 
             if (!dl || !dl.media) {
-                return client.reply(m.chat, "❌ Failed to get download link.", m);
+                return client.reply(m.chat, '❌ Failed to retrieve download link.', m);
             }
 
-            // Step 3: Send media URL as file
-            const title = dl.info?.title || 'audio';
-            await client.sendFile(m.chat, dl.media, `${title}.mp3`, `${title}`, m, {
+            // Clean the title for safe file naming
+            const title = dl.info?.title?.replace(/[\\/:*?"<>|]/g, '') || 'audio';
+
+            // Send the MP3 as a document
+            await client.sendFile(m.chat, dl.media, `${title}.mp3`, title, m, {
                 document: true
             });
 
-        } catch (e) {
-            console.error(e);
-            client.reply(m.chat, Func.jsonFormat(e), m);
+        } catch (err) {
+            console.error(err);
+            client.reply(m.chat, Func.jsonFormat(err), m);
         }
     },
     error: false,
