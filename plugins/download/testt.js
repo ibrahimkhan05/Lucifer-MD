@@ -5,12 +5,22 @@ exports.run = {
     category: 'downloader',
     async: async (m, { client, args, isPrefix, command, Func }) => {
         try {
-            const query = 'Alan Walker Faded';
+            const url = 'https://youtu.be/8of5w7RgcTc?list=RD8of5w7RgcTc';
 
-            search(query)
+            // quality download, pilih di Quality Available
+            const quality = "128"
+            
+            /* 
+             * atau kamu bisa langsung url
+             * saja untuk default quality (128)
+             * example: ytmp3(url)
+            */
+            
+            ytmp3(url, quality)
                 .then(result => {
                     if (result.status) {
-                        console.log('Search Results:', result.results);
+                        console.log('Download Link:', result.download);
+                        console.log('Metadata:', result.metadata);
                     } else {
                         console.error('Error:', result.result);
                     }
