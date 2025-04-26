@@ -5,7 +5,7 @@ const yt = new Youtube({
 })
 
 exports.run = {
-    usage: ['test'],
+    usage: ['testttt'],
     use: 'url',
     category: 'downloader',
     async: async (m, { client, args, isPrefix, command, Func, text }) => {
