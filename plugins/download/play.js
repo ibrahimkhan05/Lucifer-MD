@@ -30,7 +30,7 @@ exports.run = {
 
          let caption = `乂  *Y T - P L A Y*\n\n`
          caption += `◦ *Title* : ${firstResp.title}\n`
-         caption += `◦ *Duration* : ${firstResp.timestamp}\n`
+         caption += `◦ *Duration* : ${firstResp.duration.timestamp}\n`
          caption += `◦ *Views* : ${firstResp.views}\n`
          caption += `◦ *Channel* : ${firstResp.author.name}\n`
          caption += `◦ *Views* : ${firstResp.views}\n`
