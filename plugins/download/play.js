@@ -1,5 +1,4 @@
-const yts = require('yt-search')
-const ddownr = require('denethdev-ytmp3')
+const { ytmp3 } = require('@vreden/youtube_scraper');
 
 exports.run = {
    usage: ['play'],
@@ -20,19 +19,19 @@ exports.run = {
 
          client.sendReact(m.chat, '🕒', m.key)
 
-         const search = await yts(text)
-         const video = search.videos[0]
-         if (!video) return client.reply(m.chat, '*Song not found 😓*', m)
+         const json  = await  Func.fetchJson(`https://delirius-apiofc.vercel.app/search/searchtrack?q=${text}`)
+         const firstResp = json[0]
+         if (!firstResp) return client.reply(m.chat, '*Song not found 😓*', m)
 
-         const dl = await ddownr.download(video.url, 'mp3')
-         const downloadUrl = dl.downloadUrl
+         const downResult =  ytmp3(firstResp.url, "320");
+   
 
          let caption = `乂  *Y T - P L A Y*\n\n`
-         caption += `◦ *Title* : ${video.title}\n`
-         caption += `◦ *Duration* : ${video.timestamp}\n`
-         caption += `◦ *Views* : ${video.views.toLocaleString()}\n`
-         caption += `◦ *Channel* : ${video.author.name}\n`
-         caption += `◦ *URL* : ${video.url}\n\n`
+         caption += `◦ *Title* : ${firstResp.title}\n`
+         caption += `◦ *Duration* : ${firstResp.duration.label}\n`
+         caption += `◦ *Views* : ${firstResp.Metadata}\n`
+         caption += `◦ *Channel* : ${firstResp.author.name}\n`
+         caption += `◦ *URL* : ${firstResp.url}\n\n`
          caption += global.footer
 
          const thumb = await Func.fetchBuffer(video.thumbnail)
