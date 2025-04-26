@@ -1,68 +1,30 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
-
-const Y2MATE_URL = 'https://www.y2mate.com/youtube';
-
+const { search, ytmp3, ytmp4, ytdlv2, channel } = require('@vreden/youtube_scraper');
 exports.run = {
-    usage: ['ytdlll'],
+    usage: ['testtt'],
     use: 'youtube video URL',
     category: 'downloader',
     async: async (m, { client, args, isPrefix, command, Func }) => {
         try {
-            if (!args || !args[0]) return client.reply(m.chat, Func.example(isPrefix, command, 'YouTube video URL'), m);
+            const url = 'https://www.youtube.com/watch?v=YOUR_VIDEO_ID';
 
-            client.sendReact(m.chat, '🕒', m.key);
-
-            const videoUrl = args.join(' ');
-
-            // Function to get download link from Y2Mate
-            async function getDownloadLink(videoUrl) {
-                try {
-                    // Get the Y2Mate page for the video URL
-                    const { data } = await axios.post(Y2MATE_URL, { url: videoUrl });
-
-                    // Load the page content with cheerio
-                    const $ = cheerio.load(data);
-
-                    // Find the download links
-                    const downloadLinks = [];
-                    $('a[data-video-url]').each((index, element) => {
-                        const downloadUrl = $(element).attr('href');
-                        const quality = $(element).text().trim();
-                        downloadLinks.push({ quality, downloadUrl });
-                    });
-
-                    // Check if we have any download links
-                    if (downloadLinks.length === 0) {
-                        throw new Error('No download links found.');
+            // quality download, pilih di Quality Available
+            const quality = "128"
+            
+            /* 
+             * atau kamu bisa langsung url
+             * saja untuk default quality (128)
+             * example: ytmp3(url)
+            */
+            
+            ytmp3(url, quality)
+                .then(result => {
+                    if (result.status) {
+                        console.log('Download Link:', result.download);
+                        console.log('Metadata:', result.metadata);
+                    } else {
+                        console.error('Error:', result.result);
                     }
-
-                    return downloadLinks;
-                } catch (error) {
-                    console.error('Error while scraping Y2Mate:', error.message);
-                    throw error;
-                }
-            }
-
-            // Fetch download links
-            const downloadLinks = await getDownloadLink(videoUrl);
-            if (!downloadLinks) {
-                return client.reply(m.chat, 'Failed to fetch download links.', m);
-            }
-
-            // Check for 720p link, if not available use 480p
-            let downloadUrl = downloadLinks.find(link => link.quality.includes('720p'))?.downloadUrl;
-            if (!downloadUrl) {
-                downloadUrl = downloadLinks.find(link => link.quality.includes('480p'))?.downloadUrl;
-            }
-
-            if (!downloadUrl) {
-                return client.reply(m.chat, 'No suitable download quality found.', m);
-            }
-
-            // Send the video download link to the user
-            client.reply(m.chat, `Here is your download link: ${downloadUrl}`, m);
-
+                });
         } catch (e) {
             console.error(e);
             return client.reply(m.chat, 'An error occurred while processing your request.', m);
