@@ -24,6 +24,7 @@ exports.run = {
          if (!firstResp) return client.reply(m.chat, '*Song not found 😓*', m)
 
          const downResult =  ytmp3(firstResp.url, "320");
+         const downUrl = downResult.download.url;
    
 
          let caption = `乂  *Y T - P L A Y*\n\n`
@@ -39,10 +40,10 @@ exports.run = {
 
          await client.sendMessageModify(m.chat, caption, m, {
             largeThumb: true,
-            thumbnail: thumb
+            thumbnail: firstResp.thumbnail
          })
 
-         await client.sendFile(m.chat, downResult.download.url, `${firstResp.title}.mp3`, '', m, {
+         await client.sendFile(m.chat, downUrl, `${firstResp.title}.mp3`, '', m, {
             document: true,
             APIC: thumb
          })
