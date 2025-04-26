@@ -22,8 +22,8 @@ exports.run = {
          const json  = await  search(text);
          const firstResp = json.results[0]
          if (!firstResp) return client.reply(m.chat, '*Song not found 😓*', m)
-
-         const downResult =  ytmp3(firstResp.url, "320");
+         const quality = "320"
+         const downResult =  ytmp3(firstResp.url, quality);
          const downUrl = downResult.download.url;
    
 
