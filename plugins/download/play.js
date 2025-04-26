@@ -1,4 +1,4 @@
-const { ytmp3 } = require('@vreden/youtube_scraper');
+const { ytmp3, search } = require('@vreden/youtube_scraper');
 
 exports.run = {
    usage: ['play'],
@@ -19,8 +19,8 @@ exports.run = {
 
          client.sendReact(m.chat, '🕒', m.key)
 
-         const json  = await  Func.fetchJson(`https://delirius-apiofc.vercel.app/search/searchtrack?q=${text}`)
-         const firstResp = json[0]
+         const json  = await  search(text);
+         const firstResp = json.results[0]
          if (!firstResp) return client.reply(m.chat, '*Song not found 😓*', m)
 
          const downResult =  ytmp3(firstResp.url, "320");
@@ -28,20 +28,21 @@ exports.run = {
 
          let caption = `乂  *Y T - P L A Y*\n\n`
          caption += `◦ *Title* : ${firstResp.title}\n`
-         caption += `◦ *Duration* : ${firstResp.duration.label}\n`
-         caption += `◦ *Views* : ${firstResp.Metadata}\n`
-         caption += `◦ *Channel* : ${firstResp.author.name}\n`
-         caption += `◦ *URL* : ${firstResp.url}\n\n`
+         caption += `◦ *Duration* : ${firstResp.timestamp}\n`
+         caption += `◦ *Views* : ${firstResp.views}\n`
+         caption += `◦ *Channel* : ${firstResp.author}\n`
+         caption += `◦ *Views* : ${firstResp.views}\n`
+         caption += `◦ *Uploaded* : ${firstResp.ago}\n\n`
          caption += global.footer
 
-         const thumb = await Func.fetchBuffer(video.thumbnail)
+         const thumb = await Func.fetchBuffer(firstResp.thumbnail)
 
          await client.sendMessageModify(m.chat, caption, m, {
             largeThumb: true,
             thumbnail: thumb
          })
 
-         await client.sendFile(m.chat, downloadUrl, `${video.title}.mp3`, '', m, {
+         await client.sendFile(m.chat, downResult.download.url, `${firstResp.title}.mp3`, '', m, {
             document: true,
             APIC: thumb
          })
