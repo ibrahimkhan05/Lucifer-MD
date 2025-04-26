@@ -24,12 +24,12 @@
    },
    "homepage": "https://github.com/neoxr/neoxr-bot#readme",
    "dependencies": {
-      "@adiwajshing/baileys": "npm:@neoxr/baileys@7.6.15",
+      "@adiwajshing/baileys": "npm:@neoxr/baileys@7.7.16",
       "@adiwajshing/keyed-db": "^0.2.4",
       "@colors/colors": "^1.6.0",
       "@database/mongo": "github:neoxr/database#mongo",
       "@database/postgres": "github:neoxr/database#postgresql",
-      "@neoxr/wb": "^5.0.8",
+      "@neoxr/wb": "^5.3.10",
       "@session/mongo": "github:neoxr/session#mongo",
       "@session/postgres": "github:neoxr/session#postgresql",
       "cfonts": "3.1.1",
@@ -54,6 +54,7 @@
       "aptoide-scraper": "1.0.1",
       "@xct007/frieren-scraper": "^0.0.2",
       "yt-search": "2.11.1",
-      "ruhend-scraper": "^8.0.8"
+      "ruhend-scraper": "^8.0.8",
+      "denethdev-ytmp3": "^1.0.3"
    }
 }
