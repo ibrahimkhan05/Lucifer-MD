@@ -1,4 +1,4 @@
-const SYTDL = require("s-ytdl");
+const { youtube } = require('scrape-youtube');
 
 exports.run = {
     usage: ['testttt'],
@@ -6,15 +6,10 @@ exports.run = {
     category: 'downloader',
     async: async (m, { client, args, isPrefix, command, Func, text }) => {
         try {
-            const audio = await SYTDL.dl(
-                "https://youtu.be/O2QiUN-7Rjw?si=B5RCHEfk__K1ywjH",
-                "4",
-                "audio"
-            );
-            
-            console.log(audio); // 🔥 Log the result
-            
-            return client.reply(m.chat, `✅ Audio downloaded: ${JSON.stringify(audio)}`, m);
+            youtube.search('Short Change Hero').then((results) => {
+                // Unless you specify a custom type you will only receive 'video' results
+                console.log(results);
+            });
 
         } catch (e) {
             console.error(e);
