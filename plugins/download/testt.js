@@ -1,16 +1,19 @@
-const { ytmp3 } = require('ruhend-scraper')
+const axios = require('axios');
+const { Youtube } = require('@neoxr/youtube-scraper')
+const yt = new Youtube({
+   fileAsUrl: false
+})
+
 exports.run = {
-    usage: ['testtt'],
+    usage: ['test'],
     use: 'url',
     category: 'downloader',
-    async: async (m, { client, args, isPrefix, command, Func }) => {
+    async: async (m, { client, args, isPrefix, command, Func, text }) => {
         try {
-            // 📂 Download Media
-            const data = await ytmp3("https://www.youtube.com/watch?v=5eE43T-4vow")
-             console.log(data)
+            yt.play('Alan walker faded').then(console.log)
         } catch (e) {
             console.error(e);
-            return client.reply(m.chat, global.status.error, m);
+            return client.reply(m.chat, '❌ An error occurred while processing your request.', m);
         }
     },
     error: false,
