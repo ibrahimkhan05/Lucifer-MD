@@ -1,4 +1,4 @@
-const SYTDL = require("s-ytdl").default;
+const SYTDL = require("s-ytdl");
 
 exports.run = {
     usage: ['testttt'],
@@ -12,8 +12,10 @@ exports.run = {
                 "audio"
             );
             
-            console.log(audio); // 🔥 This will print whatever SYTDL.dl returns
+            console.log(audio); // 🔥 Log the result
             
+            return client.reply(m.chat, `✅ Audio downloaded: ${JSON.stringify(audio)}`, m);
+
         } catch (e) {
             console.error(e);
             return client.reply(m.chat, '❌ An error occurred while processing your request.', m);
