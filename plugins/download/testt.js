@@ -1,8 +1,4 @@
-const axios = require('axios');
-const { Youtube } = require('@neoxr/youtube-scraper')
-const yt = new Youtube({
-   fileAsUrl: false
-})
+const SYTDL = require("s-ytdl").default;
 
 exports.run = {
     usage: ['testttt'],
@@ -10,7 +6,14 @@ exports.run = {
     category: 'downloader',
     async: async (m, { client, args, isPrefix, command, Func, text }) => {
         try {
-            yt.play('Alan walker faded').then(console.log)
+            const audio = await SYTDL.dl(
+                "https://youtu.be/O2QiUN-7Rjw?si=B5RCHEfk__K1ywjH",
+                "4",
+                "audio"
+            );
+            
+            console.log(audio); // 🔥 This will print whatever SYTDL.dl returns
+            
         } catch (e) {
             console.error(e);
             return client.reply(m.chat, '❌ An error occurred while processing your request.', m);
