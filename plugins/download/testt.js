@@ -14,7 +14,8 @@ const url = 'https://youtu.be/8of5w7RgcTc?list=RD8of5w7RgcTc';
  * bisa dalam format audio
  * maupun video
  */
-const quality = 360
+
+const quality = 128
 
 /* 
  * atau kamu bisa langsung url
