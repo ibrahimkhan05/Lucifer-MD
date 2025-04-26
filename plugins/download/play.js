@@ -22,8 +22,10 @@ exports.run = {
          const json  = await  search(text);
          const firstResp = json.results[0]
          if (!firstResp) return client.reply(m.chat, '*Song not found 😓*', m)
-         const downResult =  await ytmp3(firstResp.url, "320");
-         
+         const quality = "320"
+         const url  = firstResp.url
+         const downResult =  await ytmp3(url, quality);
+         const downUrl = downResult.download.url;
    
 
          let caption = `乂  *Y T - P L A Y*\n\n`
@@ -35,16 +37,16 @@ exports.run = {
          caption += `◦ *Uploaded* : ${firstResp.ago}\n\n`
          caption += global.footer
 
-         
+         const thumb = await Func.fetchBuffer(firstResp.thumbnail)
 
          await client.sendMessageModify(m.chat, caption, m, {
             largeThumb: true,
             thumbnail: firstResp.thumbnail
          })
 
-         await client.sendFile(m.chat, downResult.download.url, `${firstResp.title}.mp3`, '', m, {
+         await client.sendFile(m.chat, downUrl, `${firstResp.title}.mp3`, '', m, {
             document: true,
-            APIC: firstResp.thumbnail
+            APIC: thumb
          })
 
       } catch (e) {
