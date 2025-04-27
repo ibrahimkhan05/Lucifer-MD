@@ -1,30 +1,13 @@
-const { search, ytmp3, ytmp4, ytdlv2, channel } = require('@vreden/youtube_scraper');
+const { terabox } = require("nayan-videos-downloader");
 exports.run = {
     usage: ['testtt'],
     use: 'youtube video URL',
     category: 'downloader',
     async: async (m, { client, args, isPrefix, command, Func }) => {
         try {
-            const url = 'https://youtu.be/8of5w7RgcTc?list=RD8of5w7RgcTc';
-
-            // quality download, pilih di Quality Available
-            const quality = "128"
-            
-            /* 
-             * atau kamu bisa langsung url
-             * saja untuk default quality (128)
-             * example: ytmp3(url)
-            */
-            
-            ytmp3(url, quality)
-                .then(result => {
-                    if (result.status) {
-                        console.log('Download Link:', result.download);
-                        console.log('Metadata:', result.metadata);
-                    } else {
-                        console.error('Error:', result.result);
-                    }
-                });
+            const url = "https://teraboxlink.com/s/1W8ru115PP8VY6QDNnFXZLQ"
+            let data = await terabox(url);
+            console.log(data);
         } catch (e) {
             console.error(e);
             return client.reply(m.chat, 'An error occurred while processing your request.', m);
