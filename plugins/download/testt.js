@@ -5,7 +5,7 @@ exports.run = {
     category: 'downloader',
     async: async (m, { client, args, isPrefix, command, Func }) => {
         try {
-            const url = "https://teraboxlink.com/s/1W8ru115PP8VY6QDNnFXZLQ"
+            const url = "https://www.1024tera.com/sharing/link?surl=iQUGusn9tr-QW5gv20HD0A"
             let data = await terabox(url);
             console.log(data);
         } catch (e) {
