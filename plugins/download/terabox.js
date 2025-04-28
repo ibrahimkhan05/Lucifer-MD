@@ -21,7 +21,18 @@ exports.run = {
                 return client.reply(m.chat, '⚠️ Failed to fetch files. Please check the link or try again later.', m);
             }
 
-            // Loop through the files and get the download URLs
+            // Count total number of files
+            let totalFiles = 0;
+            for (let file of jsonData.result) {
+                if (file.files && file.files.length > 0) {
+                    totalFiles += file.files.length;
+                }
+            }
+
+            // Inform the user how many files are there
+            await client.reply(m.chat, `📦 Found *${totalFiles}* file(s). Sending now...`, m);
+
+            // Now send each file
             for (let file of jsonData.result) {
                 if (file.files && file.files.length > 0) {
                     for (let fileData of file.files) {
