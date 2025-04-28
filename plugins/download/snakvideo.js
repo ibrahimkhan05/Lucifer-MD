@@ -11,7 +11,7 @@ exports.run = {
             let json = await Func.fetchJson(`https://api.agatz.xyz/api/snackvideodl?url=${args[0]}&apikey=${global.betabotz}`);
             
             if (!json.status) return client.reply(m.chat, global.status.fail, m)
-          let teks = `乂  *S N A K  V I D E O  D O W N L O A D E R *\n\n`
+          let teks = `乂  *S N A K  V I D E O  D O W N L O A D E R*\n\n`
           teks += '	◦  *Name* : ' + json.data.title + '\n'
           teks += '	◦  *Creater* : ' + json.data.author + '\n'
           teks += '	◦  *Like*: ' + json.data.like + '\n'
