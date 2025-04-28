@@ -8,15 +8,17 @@ exports.run = {
  
             client.sendReact(m.chat, '🕒', m.key);
  
-            let json = await Func.fetchJson(`https://api.betabotz.eu.org/api/download/snackvideo?url=${args[0]}&apikey=${global.betabotz}`);
+            let json = await Func.fetchJson(`https://api.agatz.xyz/api/snackvideodl?url=${args[0]}&apikey=${global.betabotz}`);
             
             if (!json.status) return client.reply(m.chat, global.status.fail, m)
           let teks = `乂  *S N A K  V I D E O  D O W N L O A D E R *\n\n`
-          teks += '	◦  *Name* : ' + json.result.author + '\n'
-          teks += '	◦  *Like*: ' + json.result.like + '\n'
-          teks += '	◦  *Comment* : ' + json.result.comment + '\n'
+          teks += '	◦  *Name* : ' + json.data.title + '\n'
+          teks += '	◦  *Creater* : ' + json.data.author + '\n'
+          teks += '	◦  *Like*: ' + json.data.like + '\n'
+          teks += '	◦  *Comment* : ' + json.data.comment + '\n'
+          teks += '	◦  *Shares* : ' + json.data.share + '\n\n'
           teks += global.footer
-          client.sendFile(m.chat, json.result.media, '', teks, m).then(() => {
+          client.sendFile(m.chat, json.data.media, '', teks, m).then(() => {
              
           })
         } catch (e) {
