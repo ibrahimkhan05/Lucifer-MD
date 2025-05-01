@@ -6,19 +6,26 @@ exports.run = {
     async: async (m, { client, args, isPrefix, command, Func }) => {
         try {
 
-            const url = 'https://cdn306.savetube.su/download-direct/video/360/43650049619893a6aae7b5262e5fbf695b3ccdd3';
+            const https = require('https');
 
-https.request(url, {
-  method: 'HEAD',
-  headers: { 'User-Agent': 'Mozilla/5.0' }
-}, res => {
-  const size = res.headers['content-length'];
-  if (size) {
-    console.log('Size in MB:', (size / 1024 / 1024).toFixed(2));
-  } else {
-    console.log('Content-Length header not found');
-  }
-}).end();
+            const url = 'https://cdn306.savetube.su/download-direct/video/360/43650049619893a6aae7b5262e5fbf695b3ccdd3';
+            
+            https.get(url, {
+              headers: {
+                'Range': 'bytes=0-0',
+                'User-Agent': 'Mozilla/5.0'
+              }
+            }, res => {
+              const range = res.headers['content-range'];
+              const match = /\/(\d+)$/.exec(range);
+              if (match) {
+                const size = parseInt(match[1]);
+                console.log('Size in MB:', (size / 1024 / 1024).toFixed(2));
+              } else {
+                console.log('Could not determine file size.');
+              }
+            });
+            
         } catch (e) {
             console.error(e);
             return client.reply(m.chat, 'An error occurred while processing your request.', m);
