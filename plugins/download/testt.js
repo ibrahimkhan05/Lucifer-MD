@@ -1,30 +1,30 @@
-const  https = require('https');
+const { search, ytmp3, ytmp4, ytdlv2, channel } = require('@vreden/youtube_scraper');
 exports.run = {
     usage: ['testtt'],
     use: 'youtube video URL',
     category: 'downloader',
     async: async (m, { client, args, isPrefix, command, Func }) => {
         try {
+          const url = 'https://www.youtube.com/watch?v=uyiG6uw-6pA';
 
-            const https = require('https');
-
-            const url = 'https://cdn306.savetube.su/download-direct/video/360/43650049619893a6aae7b5262e5fbf695b3ccdd3';
-            
-            https.get(url, {
-              headers: {
-                'Range': 'bytes=0-0',
-                'User-Agent': 'Mozilla/5.0'
-              }
-            }, res => {
-              const range = res.headers['content-range'];
-              const match = /\/(\d+)$/.exec(range);
-              if (match) {
-                const size = parseInt(match[1]);
-                console.log('Size in MB:', (size / 1024 / 1024).toFixed(2));
-              } else {
-                console.log('Could not determine file size.');
-              }
-            });
+          // quality download, pilih di Quality Available
+          const quality = "720"
+          
+          /* 
+           * atau kamu bisa langsung url
+           * saja untuk default quality (128)
+           * example: ytmp3(url)
+          */
+          
+          ytmp3(url, quality)
+              .then(result => {
+                  if (result.status) {
+                      console.log('Download Link:', result.download);
+                      console.log('Metadata:', result.metadata);
+                  } else {
+                      console.error('Error:', result.result);
+                  }
+              });
             
         } catch (e) {
             console.error(e);
