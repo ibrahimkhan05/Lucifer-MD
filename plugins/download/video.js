@@ -1,4 +1,4 @@
-const { ytmp3, search } = require('@vreden/youtube_scraper');
+const { ytmp4, search } = require('@vreden/youtube_scraper');
 const fs = require('fs');
 const axios = require('axios');
 const path = require('path');
@@ -26,7 +26,7 @@ exports.run = {
          const url = firstResp.url;
 
          // Get video download info
-         const downResult = await ytmp3(url, quality);
+         const downResult = await ytmp4(url, quality);
          const downUrl = downResult.download.url;
 
          // Clean filename
