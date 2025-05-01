@@ -1,4 +1,4 @@
-const { ytmp4, search } = require('@vreden/youtube_scraper');
+const { ytmp3, search } = require('@vreden/youtube_scraper');
 const fs = require('fs');
 const axios = require('axios');
 const path = require('path');
@@ -14,7 +14,10 @@ exports.run = {
 
          client.sendReact(m.chat, '🕒', m.key);
 
-         // Search YouTube
+         // Notify user file is being downloaded
+         await client.reply(m.chat, '*🔄 Please wait, your file is being downloaded. This may take some time...*', m);
+
+         // Search video
          const json = await search(text);
          const firstResp = json.results[0];
          if (!firstResp) return client.reply(m.chat, '*Video not found 😓*', m);
@@ -22,11 +25,11 @@ exports.run = {
          const quality = "720";
          const url = firstResp.url;
 
-         // Download video via ytmp3
-         const downResult = await ytmp4(url, quality);
+         // Get video download info
+         const downResult = await ytmp3(url, quality);
          const downUrl = downResult.download.url;
 
-         // Prepare file path
+         // Clean filename
          const fileName = `${firstResp.title.replace(/[^\w\s]/gi, '')}.mp4`;
          const tmpDir = path.join(__dirname, '../tmp');
          if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
@@ -34,7 +37,7 @@ exports.run = {
          const filePath = path.join(tmpDir, fileName);
          const writer = fs.createWriteStream(filePath);
 
-         // Download and save file to disk
+         // Download video to disk
          const response = await axios({
             method: 'GET',
             url: downUrl,
@@ -48,19 +51,15 @@ exports.run = {
             writer.on('error', reject);
          });
 
-         // Get actual file size from disk
+         // Get real file size
          const stats = fs.statSync(filePath);
          const sizeInMB = stats.size / 1024 / 1024;
 
-         // Validate file size limit
-         const chSize = Func.sizeLimit(sizeInMB, users.premium ? env.max_upload : env.max_upload_free);
-         const isOver = users.premium 
-            ? `💀 File size (${sizeInMB.toFixed(2)} MB) exceeds the maximum limit.` 
-            : `⚠️ File size (${sizeInMB.toFixed(2)} MB), you can only download files up to ${env.max_upload_free} MB (or ${env.max_upload} MB for premium users).`;
-
-         if (chSize.oversize) {
-            fs.unlinkSync(filePath); // Clean up
-            return client.reply(m.chat, isOver, m);
+         // Custom file size check
+         const limit = users.premium ? env.max_upload : env.max_upload_free;
+         if (sizeInMB > limit) {
+            fs.unlinkSync(filePath); // cleanup
+            return client.reply(m.chat, `⚠️ File size (${sizeInMB.toFixed(2)} MB) exceeds your limit of ${limit} MB.`, m);
          }
 
          // Build caption
@@ -72,15 +71,14 @@ exports.run = {
          caption += `◦ *Uploaded* : ${firstResp.ago}\n\n`;
          caption += global.footer;
 
-         // Send video
+         // Decide to send as document or direct
          const sendOpts = sizeInMB > 99
             ? { document: true, jpegThumbnail: firstResp.thumbnail }
             : {};
 
          await client.sendFile(m.chat, filePath, fileName, caption, m, sendOpts);
 
-         // Delete file after sending
-         fs.unlinkSync(filePath);
+         fs.unlinkSync(filePath); // Clean after sending
 
       } catch (e) {
          console.error(e);
