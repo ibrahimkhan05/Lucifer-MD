@@ -64,7 +64,7 @@ exports.run = {
          }
 
          // Build caption
-         let caption = `乂  *Y T - P L A Y*\n\n`;
+         let caption = `乂  *Y T - V I D E O*\n\n`;
          caption += `◦ *Title* : ${firstResp.title}\n`;
          caption += `◦ *Duration* : ${firstResp.duration.timestamp}\n`;
          caption += `◦ *Views* : ${firstResp.views}\n`;
