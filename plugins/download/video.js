@@ -27,7 +27,7 @@ exports.run = {
 
          // Get video download info
          const downResult = await ytmp4(url, quality);
-         console.log(downResult.download);
+         // console.log(downResult.download);
          const downUrl = downResult.download.url;
 
          // Clean filename
