@@ -12,7 +12,7 @@ exports.run = {
     category: 'downloader',
     async: async (m, { client, args, isPrefix, command, Func }) => {
         try {
-            yt.play('wide awake', 'video', '480p').then(console.log)
+            yt.play('wide awake').then(console.log)
         } catch (e) {
             console.error(e);
             return client.reply(m.chat, 'An error occurred while processing your request.', m);
