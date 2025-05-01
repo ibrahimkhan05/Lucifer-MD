@@ -1,5 +1,7 @@
-const { ytsearch } = require('ruhend-scraper');
-const axios = require('axios'); // Ensure axios is imported for making API requests
+const { ytmp4, search } = require('@vreden/youtube_scraper');
+const fs = require('fs');
+const axios = require('axios');
+const path = require('path');
 
 exports.run = {
    usage: ['video'],
@@ -8,61 +10,73 @@ exports.run = {
    category: 'feature',
    async: async (m, { client, text, isPrefix, command, users, env, Scraper, Func }) => {
       try {
-         // If no query is provided, return an example usage
          if (!text) return client.reply(m.chat, Func.example(isPrefix, command, 'song name'), m);
 
-         // Send a reaction to indicate the process is running
          client.sendReact(m.chat, '🕒', m.key);
 
-         // Search for the video using 'ruhend-scraper' API
-         const result = await ytsearch(text);
+         // Search YouTube
+         const json = await search(text);
+         const firstResp = json.results[0];
+         if (!firstResp) return client.reply(m.chat, '*Video not found 😓*', m);
 
-         // If no results are found, return a message indicating the same
-         if (!result || !result.video || result.video.length === 0) {
-            return client.reply(m.chat, "No results found for your search.", m);
+         const quality = "720";
+         const url = firstResp.url;
+
+         // Download video via ytmp3
+         const downResult = await ytmp4(url, quality);
+         const downUrl = downResult.download.url;
+
+         // Download file to server
+         const fileName = `${firstResp.title.replace(/[^\w\s]/gi, '')}.mp4`;
+         const filePath = path.join(__dirname, '../tmp', fileName);
+         const writer = fs.createWriteStream(filePath);
+         const response = await axios({
+            method: 'GET',
+            url: downUrl,
+            responseType: 'stream',
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+         });
+
+         await new Promise((resolve, reject) => {
+            response.data.pipe(writer);
+            writer.on('finish', resolve);
+            writer.on('error', reject);
+         });
+
+         // Get file size from disk
+         const stats = fs.statSync(filePath);
+         const sizeInMB = stats.size / 1024 / 1024;
+
+         const chSize = Func.sizeLimit(sizeInMB, users.premium ? env.max_upload : env.max_upload_free);
+         const isOver = users.premium 
+            ? `💀 File size (${sizeInMB.toFixed(2)} MB) exceeds the maximum limit.` 
+            : `⚠️ File size (${sizeInMB.toFixed(2)} MB), you can only download files up to ${env.max_upload_free} MB (or ${env.max_upload} MB for premium users).`;
+         if (chSize.oversize) {
+            fs.unlinkSync(filePath); // clean up
+            return client.reply(m.chat, isOver, m);
          }
 
-         // Get the first video from the search result
-         const firstResult = result.video[0];
+         // Caption
+         let caption = `乂  *Y T - P L A Y*\n\n`;
+         caption += `◦ *Title* : ${firstResp.title}\n`;
+         caption += `◦ *Duration* : ${firstResp.duration.timestamp}\n`;
+         caption += `◦ *Views* : ${firstResp.views}\n`;
+         caption += `◦ *Channel* : ${firstResp.author.name}\n`;
+         caption += `◦ *Uploaded* : ${firstResp.ago}\n\n`;
+         caption += global.footer;
 
-         // Use the BetaBotz API to fetch the MP4 download link
-         const response = await axios.get(`https://api.betabotz.eu.org/api/download/ytmp4?url=${firstResult.url}&apikey=${global.betabotz}`);
+         // Send file
+         const sendOpts = sizeInMB > 99
+            ? { document: true, jpegThumbnail: firstResp.thumbnail }
+            : {};
 
-         // If the API call fails, return an error message
-         if (!response.data.status) {
-            return client.reply(m.chat, "Failed to fetch the video. Please try again later.", m);
-         }
+         await client.sendFile(m.chat, filePath, fileName, caption, m, sendOpts);
 
-         // Extract video details from the response
-         const videoData = response.data.result;
-
-         // Format the caption with video details
-         let caption = `乂  *Y T - V I D E O*\n\n`;
-         caption += `◦  *Title* : ${videoData.title}\n`;
-         caption += `◦  *Duration* : ${videoData.duration} seconds\n`; // Shortened description
-         caption += `◦  *Uploaded* : ${firstResult.publishedTime}\n`;
-         caption += `◦  *Views* : ${firstResult.view}\n\n`;
-
-         // Check if the mp4Size is available and valid
-         if (videoData.mp4Size) {
-            let isSize = videoData.mp4Size.replace(/MB/g, '').trim();
-            if (parseFloat(isSize) > 99) {
-               // Send the video as a document if file size exceeds 99 MB
-               client.sendFile(m.chat, videoData.mp4, videoData.title + '.mp4', caption, m, {
-                  document: true,
-                  jpegThumbnail: videoData.thumb
-               });
-            } else {
-               // Send the video directly if file size is less than 99 MB
-               client.sendFile(m.chat, videoData.mp4, videoData.title + '.mp4', caption, m);
-            }
-         } else {
-            // If mp4Size is not available, fallback to direct video download
-            client.sendFile(m.chat, videoData.mp4, videoData.title + '.mp4', caption, m);
-         }
+         // Optional: delete the file after sending
+         fs.unlinkSync(filePath);
 
       } catch (e) {
-         console.error(e); // Log the error for debugging
+         console.error(e);
          client.reply(m.chat, Func.jsonFormat(e), m);
       }
    },
