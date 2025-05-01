@@ -27,6 +27,7 @@ exports.run = {
 
          // Get video download info
          const downResult = await ytmp4(url, quality);
+         console.log(downResult.download);
          const downUrl = downResult.download.url;
 
          // Clean filename
@@ -71,14 +72,21 @@ exports.run = {
          caption += `◦ *Uploaded* : ${firstResp.ago}\n\n`;
          caption += global.footer;
 
-         // Decide to send as document or direct
-         const sendOpts = sizeInMB > 99
-            ? { document: true, jpegThumbnail: firstResp.thumbnail }
-            : {};
-
-         await client.sendFile(m.chat, filePath, fileName, caption, m, sendOpts);
-
-         fs.unlinkSync(filePath); // Clean after sending
+         // Decide to send as document or regular file based on size
+         if (sizeInMB > 99) {
+            // Send as document if file size exceeds 99 MB
+            return client.sendMessageModify(m.chat, caption, m, {
+               largeThumb: true,
+               thumbnail: await Func.fetchBuffer(firstResp.thumbnail)
+            }).then(async () => {
+               await client.sendFile(m.chat, filePath, fileName, caption, m, { document: true });
+               fs.unlinkSync(filePath); // Clean after sending
+            });
+         } else {
+            // Send as regular file if file size is under 99 MB
+            await client.sendFile(m.chat, filePath, fileName, caption, m);
+            fs.unlinkSync(filePath); // Clean after sending
+         }
 
       } catch (e) {
          console.error(e);
