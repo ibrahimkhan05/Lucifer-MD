@@ -26,10 +26,15 @@ exports.run = {
          const downResult = await ytmp4(url, quality);
          const downUrl = downResult.download.url;
 
-         // Download file to server
+         // Prepare file path
          const fileName = `${firstResp.title.replace(/[^\w\s]/gi, '')}.mp4`;
-         const filePath = path.join(__dirname, '../tmp', fileName);
+         const tmpDir = path.join(__dirname, '../tmp');
+         if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+
+         const filePath = path.join(tmpDir, fileName);
          const writer = fs.createWriteStream(filePath);
+
+         // Download and save file to disk
          const response = await axios({
             method: 'GET',
             url: downUrl,
@@ -43,20 +48,22 @@ exports.run = {
             writer.on('error', reject);
          });
 
-         // Get file size from disk
+         // Get actual file size from disk
          const stats = fs.statSync(filePath);
          const sizeInMB = stats.size / 1024 / 1024;
 
+         // Validate file size limit
          const chSize = Func.sizeLimit(sizeInMB, users.premium ? env.max_upload : env.max_upload_free);
          const isOver = users.premium 
             ? `💀 File size (${sizeInMB.toFixed(2)} MB) exceeds the maximum limit.` 
             : `⚠️ File size (${sizeInMB.toFixed(2)} MB), you can only download files up to ${env.max_upload_free} MB (or ${env.max_upload} MB for premium users).`;
+
          if (chSize.oversize) {
-            fs.unlinkSync(filePath); // clean up
+            fs.unlinkSync(filePath); // Clean up
             return client.reply(m.chat, isOver, m);
          }
 
-         // Caption
+         // Build caption
          let caption = `乂  *Y T - P L A Y*\n\n`;
          caption += `◦ *Title* : ${firstResp.title}\n`;
          caption += `◦ *Duration* : ${firstResp.duration.timestamp}\n`;
@@ -65,14 +72,14 @@ exports.run = {
          caption += `◦ *Uploaded* : ${firstResp.ago}\n\n`;
          caption += global.footer;
 
-         // Send file
+         // Send video
          const sendOpts = sizeInMB > 99
             ? { document: true, jpegThumbnail: firstResp.thumbnail }
             : {};
 
          await client.sendFile(m.chat, filePath, fileName, caption, m, sendOpts);
 
-         // Optional: delete the file after sending
+         // Delete file after sending
          fs.unlinkSync(filePath);
 
       } catch (e) {

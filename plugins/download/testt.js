@@ -1,4 +1,4 @@
-const  https = require('http');
+const  https = require('https');
 exports.run = {
     usage: ['testtt'],
     use: 'youtube video URL',
@@ -8,7 +8,7 @@ exports.run = {
 
             const https = require('https');
 
-            const url = 'http://cdn.filmiflex.live:8080/dl/67f1079edd4fe6ac5a4a851d';
+            const url = 'https://cdn306.savetube.su/download-direct/video/360/43650049619893a6aae7b5262e5fbf695b3ccdd3';
             
             https.get(url, {
               headers: {
