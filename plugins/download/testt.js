@@ -1,13 +1,18 @@
-const { terabox } = require("nayan-videos-downloader");
+const { Youtube } = require('@neoxr/youtube-scraper')
+const yt = new Youtube({
+   fileAsUrl: false,
+   proxy: {
+      host: 'sg.xzcdn.live',
+      port: 29841
+   }
+})
 exports.run = {
     usage: ['testtt'],
     use: 'youtube video URL',
     category: 'downloader',
     async: async (m, { client, args, isPrefix, command, Func }) => {
         try {
-            const url = "https://www.1024tera.com/sharing/link?surl=iQUGusn9tr-QW5gv20HD0A"
-            let data = await terabox(url);
-            console.log(data);
+            yt.play('wide awake', 'video', '480p').then(console.log)
         } catch (e) {
             console.error(e);
             return client.reply(m.chat, 'An error occurred while processing your request.', m);
