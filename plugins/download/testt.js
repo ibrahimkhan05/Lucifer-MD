@@ -16,7 +16,7 @@ exports.run = {
            * example: ytmp3(url)
           */
           
-          ytmp3(url, quality)
+          ytmp4(url, quality)
               .then(result => {
                   if (result.status) {
                       console.log('Download Link:', result.download);
