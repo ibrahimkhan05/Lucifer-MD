@@ -15,7 +15,7 @@ exports.run = {
          client.sendReact(m.chat, '🕒', m.key);
 
          
-        const json = Func.fetchJson(`https://bk9.fun/ai/deepseek-r1?q=${text}`);
+        const json = await Func.fetchJson(`https://bk9.fun/ai/deepseek-r1?q=${text}`);
 
          // Check the API response
          if (json.status != true) return client.reply(m.chat, global.status.fail, m);
