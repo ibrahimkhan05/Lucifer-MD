@@ -14,12 +14,12 @@ exports.run = {
          // Display a loading reaction
          client.sendReact(m.chat, '🕒', m.key);
 
-         // Prepare the prompt
+         
         const json = Func.fetchJson(`https://bk9.fun/ai/deepseek-r1?q=${text}`);
 
          // Check the API response
          if (json.status != true) return client.reply(m.chat, global.status.fail, m);
-         m.reply(json.BK9.content);
+         client.reply(m.chat, json.BK9.content, m);
          
       } catch (e) {
          // Handle and log errors
