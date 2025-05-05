@@ -18,7 +18,7 @@ exports.run = {
         const json = Func.fetchJson(`https://bk9.fun/ai/deepseek-r1?q=${text}`);
 
          // Check the API response
-         if (!json.status) return client.reply(m.chat, global.status.fail, m);
+         if (json.status != true) return client.reply(m.chat, global.status.fail, m);
          m.reply(json.BK9.content);
          
       } catch (e) {
