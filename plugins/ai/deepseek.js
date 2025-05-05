@@ -1,5 +1,3 @@
-const { gpt } = require("gpti");
-
 exports.run = {
    usage: ['deepseek'],
    use: 'prompt',
