@@ -79,7 +79,7 @@ exports.run = {
                largeThumb: true,
                thumbnail: await Func.fetchBuffer(firstResp.thumbnail)
             }).then(async () => {
-               await client.sendFile(m.chat, filePath, fileName, m, { document: true });
+               await client.sendFile(m.chat, filePath, fileName, '', m, { document: true });
                fs.unlinkSync(filePath); // Clean after sending
             });
          } else {
